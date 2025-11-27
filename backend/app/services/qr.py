@@ -10,6 +10,7 @@ from psycopg.rows import dict_row
 from app.core.config import get_settings
 from app.core.db import get_connection
 from app.schemas.qr import QRCode, QRCodeCreate, QRCodeStats
+from app.services import subscriptions as subscription_service
 
 settings = get_settings()
 
@@ -41,6 +42,7 @@ def create_qr_code(organization_id: str, user_id: str, payload: QRCodeCreate) ->
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             _ensure_role(cur, organization_id, user_id, MANAGER_ROLES)
+            subscription_service.check_org_limit(organization_id, 'qr_codes')
             cur.execute('SELECT slug FROM organizations WHERE id = %s', (organization_id,))
             org = cur.fetchone()
             if not org:

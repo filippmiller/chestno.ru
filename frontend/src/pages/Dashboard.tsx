@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle } from 'lucide-react'
+import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle, Package, CreditCard } from 'lucide-react'
 
 import { fetchSession } from '@/api/authService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -197,6 +197,20 @@ export const DashboardPage = () => {
                 <Link to="/dashboard/organization/qr">
                   <QrCode className="mr-2 h-4 w-4" />
                   QR-коды
+                </Link>
+              </Button>
+              {canEditProfile && (
+                <Button asChild>
+                  <Link to="/dashboard/organization/products">
+                    <Package className="mr-2 h-4 w-4" />
+                    Товары
+                  </Link>
+                </Button>
+              )}
+              <Button asChild variant="outline">
+                <Link to="/dashboard/organization/plan">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Тариф и лимиты
                 </Link>
               </Button>
             </div>

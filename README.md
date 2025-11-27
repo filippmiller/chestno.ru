@@ -74,6 +74,14 @@ psql "$DATABASE_URL" -f supabase/migrations/0003_login_throttle.sql
 psql "$DATABASE_URL" -f supabase/migrations/0004_organization_invites.sql
 psql "$DATABASE_URL" -f supabase/migrations/0005_moderation_flags.sql
 psql "$DATABASE_URL" -f supabase/migrations/0006_qr_codes.sql
+psql "$DATABASE_URL" -f supabase/migrations/0007_auth_providers.sql
+psql "$DATABASE_URL" -f supabase/migrations/0008_ai_integrations.sql
+psql "$DATABASE_URL" -f supabase/migrations/0009_dev_tasks.sql
+psql "$DATABASE_URL" -f supabase/migrations/0010_fix_org_policies.sql
+psql "$DATABASE_URL" -f supabase/migrations/0011_migration_drafts.sql
+psql "$DATABASE_URL" -f supabase/migrations/0012_notifications.sql
+psql "$DATABASE_URL" -f supabase/migrations/0013_products.sql
+psql "$DATABASE_URL" -f supabase/migrations/0014_subscriptions.sql
 ```
 
 `DATABASE_URL` берём из Supabase (pooler: `postgresql://...pooler.supabase.com:6543/postgres?sslmode=require`) либо из Railway переменных.
@@ -87,8 +95,16 @@ psql "$DATABASE_URL" -f supabase/migrations/0006_qr_codes.sql
 - Инвайты (`/dashboard/organization/invites`, `/invite/:code`): создание менеджерами, принятие по ссылке.
 - Модерация (`/dashboard/moderation/organizations`): platform_owner/platform_admin видят pending/verified/rejected и обновляют статусы.
 - Admin-панель (`/admin`): вкладки Pending Registrations (заглушка), AI Integrations (CRUD + health-check), Dev / To-Do (чеклист интеграций).
+- Database Explorer (`/admin/db`): просмотр таблиц, колонок, данных и создание миграционных черновиков (`migration_drafts`).
 - Публичные страницы (`/org/:slug`): Read-only данные только для `public_visible=true` и `verified`.
 - QR-коды (`/dashboard/organization/qr`, `/q/{code}`): генерация ссылок, логирование `qr_events`, базовая статистика.
+- Notifications: in-app уведомления с колокольчиком в шапке, отдельная страница `/notifications` и настройки `/settings/notifications`. Бэкенд: таблицы `notification_types`, `notifications`, `notification_deliveries`, `user_notification_settings`, `reminders`.
+- Products: управление товарами организации (`/dashboard/organization/products`) + публичная витрина на странице производителя.
+- Subscription plans & limits: таблицы `subscription_plans`, `organization_subscriptions`, страница `/dashboard/organization/plan`, проверка лимитов при создании товаров и QR-кодов.
+- Публичный каталог (`/orgs`, `/api/public/organizations/search`) с фильтрами и поиском; расширенная публичная страница производителя (`/org/:slug`) с товарами, сертификатами и ссылками «Где купить».
+- Онбординг (`/dashboard/organization/onboarding`) с прогресс-баром и шагами (профиль, товары, QR-коды, верификация, инвайты).
+- Аналитика (`/dashboard/organization/analytics`, `/api/analytics/organizations/{id}/qr-overview`) — статистика QR-сканов по дням.
+- Мини-админка платформы (`/dashboard/admin`) — агрегированные показатели по организациям, товарам, QR.
 - Supabase миграции:
   - `0001_init`
   - `0002_roles_and_profiles`
@@ -99,6 +115,15 @@ psql "$DATABASE_URL" -f supabase/migrations/0006_qr_codes.sql
   - `0007_auth_providers`
   - `0008_ai_integrations`
   - `0009_dev_tasks`
+  - `0010_fix_org_policies`
+  - `0011_migration_drafts`
+  - `0012_notifications`
+  - `0013_products`
+  - `0014_subscriptions`
+  - `0015_org_profile_extended`
+  - `0012_notifications`
+  - `0013_products`
+  - `0014_subscriptions`
 
 ## Хостинг (ориентир)
 
@@ -142,5 +167,19 @@ curl -H "Authorization: Bearer <admin_token>" https://<backend>/api/admin/ai/int
 curl -H "Authorization: Bearer <admin_token>" -H "Content-Type: application/json" \
   -d '{"title":"Настроить Яндекс OAuth","category":"auth","related_provider":"yandex"}' \
   https://<backend>/api/admin/dev-tasks
+
+# Database Explorer: список таблиц
+curl -H "Authorization: Bearer <admin_token>" https://<backend>/api/admin/db/tables
+
+# Создать товар
+curl -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"name":"Продукт","slug":"produkt","status":"published"}' \
+  https://<backend>/api/organizations/<org_id>/products
+
+# Получить тариф и лимиты
+curl -H "Authorization: Bearer <token>" https://<backend>/api/organizations/<org_id>/subscription
+
+# Уведомления (список)
+curl -H "Authorization: Bearer <token>" https://<backend>/api/notifications
 ```
 

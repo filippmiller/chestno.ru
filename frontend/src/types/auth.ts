@@ -196,6 +196,177 @@ export interface DevTaskPayload {
   notes_internal?: string
 }
 
+export interface DbTableInfo {
+  table_name: string
+  schema_name: string
+  approx_rows: number
+  comment?: string | null
+}
+
+export interface DbColumnInfo {
+  column_name: string
+  data_type: string
+  is_nullable: boolean
+  column_default?: string | null
+  comment?: string | null
+  is_primary_key: boolean
+  is_foreign_key: boolean
+}
+
+export interface DbRowsResponse {
+  columns: string[]
+  rows: Array<Record<string, unknown>>
+  limit: number
+  offset: number
+  count: number
+}
+
+export interface MigrationDraftPayload {
+  table_name: string
+  column_name: string
+  column_type: string
+  default_value?: string | null
+  is_nullable?: boolean
+}
+
+export interface Product {
+  id: string
+  organization_id: string
+  slug: string
+  name: string
+  short_description?: string | null
+  long_description?: string | null
+  category?: string | null
+  tags?: string | null
+  price_cents?: number | null
+  currency?: string | null
+  status: 'draft' | 'published' | 'archived'
+  is_featured: boolean
+  main_image_url?: string | null
+  gallery?: Array<{ url: string; caption?: string | null }> | null
+  external_url?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductPayload {
+  name: string
+  slug: string
+  short_description?: string | null
+  long_description?: string | null
+  category?: string | null
+  tags?: string | null
+  price_cents?: number | null
+  currency?: string | null
+  status?: 'draft' | 'published' | 'archived'
+  is_featured?: boolean
+  main_image_url?: string | null
+  gallery?: Array<{ url: string; caption?: string | null }> | null
+  external_url?: string | null
+}
+
+export interface PublicProduct {
+  id: string
+  organization_id: string
+  slug: string
+  name: string
+  short_description?: string | null
+  price_cents?: number | null
+  currency?: string | null
+  main_image_url?: string | null
+  external_url?: string | null
+}
+
+export interface SubscriptionPlan {
+  id: string
+  code: string
+  name: string
+  description?: string | null
+  price_monthly_cents?: number | null
+  price_yearly_cents?: number | null
+  currency: string
+  max_products?: number | null
+  max_qr_codes?: number | null
+  max_members?: number | null
+  analytics_level: 'basic' | 'advanced'
+  is_default: boolean
+  is_active: boolean
+}
+
+export interface OrganizationUsage {
+  products_used: number
+  qr_codes_used: number
+  members_used: number
+}
+
+export interface OrganizationSubscriptionSummary {
+  plan: SubscriptionPlan
+  usage: OrganizationUsage
+}
+
+export interface OrganizationSubscription {
+  id: string
+  organization_id: string
+  plan_id: string
+  status: string
+  current_period_start: string
+  current_period_end?: string | null
+  cancel_at?: string | null
+  created_at: string
+  updated_at: string
+  plan: SubscriptionPlan
+}
+
+export interface NotificationItem {
+  id: string
+  notification_type_id: string
+  org_id?: string | null
+  title: string
+  body: string
+  payload?: Record<string, unknown> | null
+  severity: string
+  category: string
+  created_at: string
+}
+
+export interface NotificationDelivery {
+  id: string
+  notification_id: string
+  channel: string
+  status: 'pending' | 'sent' | 'failed' | 'read' | 'dismissed'
+  read_at?: string | null
+  dismissed_at?: string | null
+  created_at: string
+  notification: NotificationItem
+}
+
+export interface NotificationListResponse {
+  items: NotificationDelivery[]
+  next_cursor?: string | null
+}
+
+export interface NotificationSetting {
+  id?: string | null
+  notification_type_id: string
+  notification_type: {
+    id: string
+    key: string
+    category: string
+    severity: string
+    title_template: string
+    body_template: string
+    default_channels: string[]
+  }
+  channels: string[]
+  muted: boolean
+}
+
+export interface NotificationSettingUpdate {
+  notification_type_id: string
+  channels?: string[]
+  muted?: boolean
+}
+
 export interface SessionPayload {
   user: AppUser
   memberships: OrganizationMembership[]

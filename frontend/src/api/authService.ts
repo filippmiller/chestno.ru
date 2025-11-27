@@ -2,21 +2,34 @@ import type {
   AfterSignupPayload,
   AiIntegration,
   AiIntegrationPayload,
+  DbColumnInfo,
+  DbRowsResponse,
+  DbTableInfo,
+  DevTask,
+  DevTaskPayload,
   LoginResponse,
+  MigrationDraftPayload,
   ModerationActionPayload,
   ModerationOrganization,
+  NotificationListResponse,
+  NotificationSetting,
+  NotificationSettingUpdate,
   OrganizationInvite,
   OrganizationInvitePayload,
   OrganizationInvitePreview,
   OrganizationProfile,
   OrganizationProfilePayload,
+  OrganizationSubscription,
+  OrganizationSubscriptionSummary,
+  Product,
+  ProductPayload,
   PublicOrganizationProfile,
+  PublicProduct,
   QRCode,
   QRCodePayload,
   QRCodeStats,
   SessionPayload,
-  DevTask,
-  DevTaskPayload,
+  SubscriptionPlan,
 } from '@/types/auth'
 
 import { httpClient } from './httpClient'
@@ -148,5 +161,125 @@ export const updateDevTask = async (taskId: string, payload: Partial<DevTaskPayl
 
 export const deleteDevTask = async (taskId: string) => {
   const { data } = await httpClient.delete<DevTask>(`/api/admin/dev-tasks/${taskId}`)
+  return data
+}
+
+export const listDbTables = async () => {
+  const { data } = await httpClient.get<DbTableInfo[]>('/api/admin/db/tables')
+  return data
+}
+
+export const getDbTableColumns = async (tableName: string) => {
+  const { data } = await httpClient.get<DbColumnInfo[]>(`/api/admin/db/tables/${tableName}/columns`)
+  return data
+}
+
+export const getDbTableRows = async (
+  tableName: string,
+  params: { limit?: number; offset?: number; search?: string; order_by?: string } = {},
+) => {
+  const { data } = await httpClient.get<DbRowsResponse>(`/api/admin/db/tables/${tableName}/rows`, { params })
+  return data
+}
+
+export const createMigrationDraft = async (payload: MigrationDraftPayload) => {
+  const { data } = await httpClient.post('/api/admin/db/migration-draft', payload)
+  return data
+}
+
+export const listNotifications = async (params: { limit?: number; cursor?: string; status?: 'unread' | 'all' } = {}) => {
+  const query = {
+    limit: params.limit ?? 20,
+    cursor: params.cursor,
+    status: params.status,
+  }
+  const { data } = await httpClient.get<NotificationListResponse>('/api/notifications', { params: query })
+  return data
+}
+
+export const getUnreadNotificationsCount = async () => {
+  const { data } = await httpClient.get<{ count: number }>('/api/notifications/unread-count')
+  return data.count
+}
+
+export const markNotificationRead = async (deliveryId: string) => {
+  await httpClient.post(`/api/notifications/${deliveryId}/read`)
+}
+
+export const dismissNotification = async (deliveryId: string) => {
+  await httpClient.post(`/api/notifications/${deliveryId}/dismiss`)
+}
+
+export const getNotificationSettings = async () => {
+  const { data } = await httpClient.get<NotificationSetting[]>('/api/notification-settings')
+  return data
+}
+
+export const updateNotificationSettings = async (payload: NotificationSettingUpdate[]) => {
+  const { data } = await httpClient.patch<NotificationSetting[]>('/api/notification-settings', payload)
+  return data
+}
+
+export const listProducts = async (
+  organizationId: string,
+  params: { status?: string; limit?: number; offset?: number } = {},
+) => {
+  const { data } = await httpClient.get<Product[]>(`/api/organizations/${organizationId}/products`, { params })
+  return data
+}
+
+export const createProduct = async (organizationId: string, payload: ProductPayload) => {
+  const { data } = await httpClient.post<Product>(`/api/organizations/${organizationId}/products`, payload)
+  return data
+}
+
+export const updateProduct = async (organizationId: string, productId: string, payload: Partial<ProductPayload>) => {
+  const { data } = await httpClient.put<Product>(`/api/organizations/${organizationId}/products/${productId}`, payload)
+  return data
+}
+
+export const archiveProduct = async (organizationId: string, productId: string) => {
+  const { data } = await httpClient.post<Product>(`/api/organizations/${organizationId}/products/${productId}/archive`)
+  return data
+}
+
+export const fetchPublicOrganizationProducts = async (slug: string) => {
+  const { data } = await httpClient.get<PublicProduct[]>(`/api/public/organizations/${slug}/products`)
+  return data
+}
+
+export const fetchPublicProduct = async (slug: string) => {
+  const { data } = await httpClient.get<PublicProduct>(`/api/public/products/${slug}`)
+  return data
+}
+
+export const getOrganizationSubscription = async (organizationId: string) => {
+  const { data } = await httpClient.get<OrganizationSubscriptionSummary>(`/api/organizations/${organizationId}/subscription`)
+  return data
+}
+
+export const listSubscriptionPlans = async (includeInactive = false) => {
+  const { data } = await httpClient.get<SubscriptionPlan[]>('/api/admin/subscriptions/plans', {
+    params: { include_inactive: includeInactive },
+  })
+  return data
+}
+
+export const createSubscriptionPlan = async (payload: SubscriptionPlan) => {
+  const { data } = await httpClient.post<SubscriptionPlan>('/api/admin/subscriptions/plans', payload)
+  return data
+}
+
+export const updateSubscriptionPlan = async (planId: string, payload: Partial<SubscriptionPlan>) => {
+  const { data } = await httpClient.patch<SubscriptionPlan>(`/api/admin/subscriptions/plans/${planId}`, payload)
+  return data
+}
+
+export const setOrganizationSubscription = async (organizationId: string, planId: string) => {
+  const { data } = await httpClient.post<OrganizationSubscription>(
+    `/api/admin/subscriptions/organizations/${organizationId}/subscription`,
+    undefined,
+    { params: { plan_id: planId } },
+  )
   return data
 }

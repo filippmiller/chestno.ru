@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
-import { fetchPublicOrganization } from '@/api/authService'
+import { fetchPublicOrganization, fetchPublicOrganizationProducts } from '@/api/authService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { PublicOrganizationProfile } from '@/types/auth'
+import type { PublicOrganizationProfile, PublicProduct } from '@/types/auth'
 
 export const PublicOrganizationPage = () => {
   const { slug } = useParams<{ slug: string }>()
   const [data, setData] = useState<PublicOrganizationProfile | null>(null)
+  const [products, setProducts] = useState<PublicProduct[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -22,6 +23,10 @@ export const PublicOrganizationPage = () => {
         const result = await fetchPublicOrganization(slug)
         if (!isMounted) return
         setData(result)
+        const goods = await fetchPublicOrganizationProducts(slug)
+        if (isMounted) {
+          setProducts(goods)
+        }
       } catch (err) {
         console.error(err)
         if (isMounted) {
@@ -174,6 +179,38 @@ export const PublicOrganizationPage = () => {
             </span>
           ))}
         </div>
+      )}
+
+      {products.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Товары производителя</CardTitle>
+            <CardDescription>Небольшая витрина продукции.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            {products.map((product) => (
+              <div key={product.id} className="rounded-lg border border-border p-4">
+                <p className="text-lg font-semibold">{product.name}</p>
+                {product.short_description && <p className="text-sm text-muted-foreground">{product.short_description}</p>}
+                {product.price_cents && (
+                  <p className="mt-2 font-medium">
+                    {(product.price_cents / 100).toLocaleString('ru-RU', { style: 'currency', currency: product.currency ?? 'RUB' })}
+                  </p>
+                )}
+                {product.external_url && (
+                  <a
+                    className="mt-2 inline-block text-sm text-primary underline"
+                    href={product.external_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Подробнее
+                  </a>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
     </div>
   )

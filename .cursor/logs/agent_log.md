@@ -9,4 +9,9 @@
 2025-11-27T18:19:11 - Stage 3 planning started
 2025-11-27T18:48:53 - Stage 3 implemented (invites, moderation, public pages, QR)
 2025-11-27T20:21:09 - Stage 3b: social logins and admin panels delivered
+2025-11-27T22:05:00 - Added Database Explorer backend/frontend and migration drafts
+2025-11-27T22:45:32 - Initiated hero page import from project-1e1e6477 repo
+2025-11-27T22:53:40 - Cloned hero source into tmp/hero-source for integration
+2025-11-28T00:55:00 - Stage 4: notifications, products, subscriptions, docs update
+2025-11-27T23:10:12 - Imported hero landing UI, theme tokens, and routing changes
 

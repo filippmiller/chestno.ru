@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -59,12 +60,15 @@ export const AdminPanelPage = () => {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {ADMIN_TABS.map((tab) => (
           <Button key={tab.id} variant={activeTab === tab.id ? 'default' : 'outline'} onClick={() => setActiveTab(tab.id)}>
             {tab.label}
           </Button>
         ))}
+        <Button variant="secondary" asChild>
+          <Link to="/admin/db">Database Explorer</Link>
+        </Button>
       </div>
       {activeTab === 'pending' && <PendingRegistrationsSection />}
       {activeTab === 'ai' && <AiIntegrationsSection />}
