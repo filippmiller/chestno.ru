@@ -1,0 +1,40 @@
+# Node / frontend artifacts
+node_modules/
+dist/
+build/
+.vite/
+.parcel-cache/
+.turbo/
+.next/
+
+# Python / backend artifacts
+__pycache__/
+*.pyc
+.venv/
+env/
+venv/
+.mypy_cache/
+.pytest_cache/
+
+# Env & tooling
+.env
+.env.*
+!.env.example
+!.env.local.example
+!/frontend/.env.example
+!/frontend/env.example
+!/backend/.env.example
+!/backend/env.example
+.DS_Store
+thumbs.db
+
+# IDE / tooling
+.idea/
+.vscode/
+.cursor/workspace.json
+.cursor/tmp/
+
+# Supabase generated files
+supabase/.branches/
+supabase/.temp/
+

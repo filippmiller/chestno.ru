@@ -1,0 +1,231 @@
+import { useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle } from 'lucide-react'
+
+import { fetchSession } from '@/api/authService'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useUserStore } from '@/store/userStore'
+
+const roleLabels: Record<string, string> = {
+  owner: 'Владелец',
+  admin: 'Администратор',
+  manager: 'Менеджер',
+  editor: 'Редактор',
+  analyst: 'Аналитик',
+  viewer: 'Наблюдатель',
+}
+
+const PROFILE_EDIT_ROLES = new Set(['owner', 'admin', 'manager', 'editor'])
+const INVITE_ROLES = new Set(['owner', 'admin', 'manager'])
+const MODERATOR_ROLES = new Set(['platform_admin', 'moderator'])
+
+export const DashboardPage = () => {
+  const {
+    user,
+    memberships,
+    organizations,
+    selectedOrganizationId,
+    setSessionData,
+    loading,
+    setLoading,
+    setSelectedOrganization,
+    platformRoles,
+  } = useUserStore()
+
+  useEffect(() => {
+    if (!user) {
+      setLoading(true)
+      fetchSession()
+        .then((session) => setSessionData(session))
+        .finally(() => setLoading(false))
+        .catch((error) => console.error(error))
+    }
+  }, [user, setLoading, setSessionData])
+
+  useEffect(() => {
+    if (!selectedOrganizationId && memberships[0]) {
+      setSelectedOrganization(memberships[0].organization_id)
+    }
+  }, [selectedOrganizationId, memberships, setSelectedOrganization])
+
+  const selectedOrganization = useMemo(
+    () => organizations.find((org) => org.id === selectedOrganizationId) ?? organizations[0],
+    [organizations, selectedOrganizationId],
+  )
+  const selectedMembership = memberships.find((m) => m.organization_id === selectedOrganization?.id)
+  const canEditProfile = selectedMembership ? PROFILE_EDIT_ROLES.has(selectedMembership.role) : false
+  const canManageInvites = selectedMembership ? INVITE_ROLES.has(selectedMembership.role) : false
+  const showModerationLink = platformRoles.some((role) => MODERATOR_ROLES.has(role))
+
+  return (
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
+      <div>
+        <p className="text-sm text-muted-foreground">Кабинет участника платформы</p>
+        <h1 className="mt-1 text-3xl font-semibold">Здравствуйте{user?.full_name ? `, ${user.full_name}` : ''}</h1>
+        <p className="mt-2 text-muted-foreground">
+          Управляйте организациями, контентом и профилем производства. Следите за статусом проверок и приглашайте коллег.
+        </p>
+      </div>
+      {!loading && organizations.length === 0 && (
+        <Alert>
+          <AlertTitle>Пока нет организаций</AlertTitle>
+          <AlertDescription>
+            Вы можете зарегистрироваться как производитель, чтобы создать организацию, или дождаться приглашения.
+          </AlertDescription>
+        </Alert>
+      )}
+      {loading && (
+        <Alert>
+          <AlertTitle>Загружаем данные профиля…</AlertTitle>
+          <AlertDescription>Пожалуйста, подождите пару секунд.</AlertDescription>
+        </Alert>
+      )}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Профиль</CardTitle>
+            <CardDescription>Данные синхронизируются с Supabase Auth</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div>
+              <p className="text-muted-foreground">Email</p>
+              <p className="font-medium">{user?.email}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Имя</p>
+              <p className="font-medium">{user?.full_name ?? '—'}</p>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ShieldCheck className="h-4 w-4" />
+              <span>Права доступа определяются ролями в организациях.</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Организации</CardTitle>
+            <CardDescription>Вы участник {memberships.length} организации(-й)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {organizations.length > 1 && (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Текущая организация</p>
+                <select
+                  value={selectedOrganization?.id ?? ''}
+                  onChange={(event) => setSelectedOrganization(event.target.value || null)}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {organizations.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {memberships.map((membership) => {
+              const organization = organizations.find((org) => org.id === membership.organization_id)
+              return (
+                <div
+                  key={membership.id}
+                  className={`rounded-lg border p-3 ${membership.organization_id === selectedOrganization?.id ? 'border-primary' : 'border-border'}`}
+                >
+                  <div className="flex items-center gap-2 font-medium">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    {organization?.name ?? 'Организация'}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Роль: {roleLabels[membership.role] ?? membership.role}
+                    {organization?.city ? ` • ${organization.city}` : ''}
+                  </p>
+                  {organization?.verification_status && (
+                    <p className="text-xs uppercase text-muted-foreground">
+                      Статус верификации: {organization.verification_status}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+            {memberships.length === 0 && <p className="text-sm text-muted-foreground">Нет членств</p>}
+          </CardContent>
+        </Card>
+      </div>
+
+      {selectedOrganization && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Профиль организации</CardTitle>
+            <CardDescription>
+              Обновляйте описание, материалы и теги, чтобы посетители видели честную историю вашего производства.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 text-sm text-muted-foreground">
+            <div>
+              <p className="font-medium text-foreground">{selectedOrganization.name}</p>
+              <p>
+                {selectedOrganization.city && `${selectedOrganization.city}, `}
+                {selectedOrganization.country}
+              </p>
+              {selectedOrganization.website_url && (
+                <a href={selectedOrganization.website_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                  {selectedOrganization.website_url}
+                </a>
+              )}
+            </div>
+            {selectedMembership && (
+              <p>
+                Ваша роль: <span className="font-medium">{roleLabels[selectedMembership.role] ?? selectedMembership.role}</span>
+              </p>
+            )}
+            <div className="flex flex-wrap gap-3">
+              <Button asChild variant={canEditProfile ? 'default' : 'outline'}>
+                <Link to="/dashboard/organization/profile">
+                  <FileText className="mr-2 h-4 w-4" />
+                  {canEditProfile ? 'Редактировать профиль' : 'Открыть профиль'}
+                </Link>
+              </Button>
+              <Button asChild variant={canManageInvites ? 'default' : 'outline'}>
+                <Link to="/dashboard/organization/invites">
+                  <Users className="mr-2 h-4 w-4" />
+                  Инвайты
+                </Link>
+              </Button>
+              <Button asChild variant={canEditProfile ? 'default' : 'outline'}>
+                <Link to="/dashboard/organization/qr">
+                  <QrCode className="mr-2 h-4 w-4" />
+                  QR-коды
+                </Link>
+              </Button>
+            </div>
+            {!canEditProfile && (
+              <p className="text-xs text-muted-foreground">
+                Для редактирования профиля обратитесь к владельцу или администратору.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {showModerationLink && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Модерация платформы</CardTitle>
+            <CardDescription>Проверяйте новых производителей и обновляйте статусы.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link to="/dashboard/moderation/organizations">
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Перейти к модерации
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+

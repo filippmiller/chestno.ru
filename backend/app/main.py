@@ -1,0 +1,42 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routes.auth import router as auth_router
+from app.api.routes.admin_ai import router as admin_ai_router
+from app.api.routes.dev_tasks import router as dev_tasks_router
+from app.api.routes.invites import router as invites_router
+from app.api.routes.moderation import router as moderation_router
+from app.api.routes.organizations import public_router as public_org_router, router as organizations_router
+from app.api.routes.qr import redirect_router as qr_redirect_router, router as qr_router
+from app.api.routes.social import router as social_router
+from app.core.config import get_settings
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    app = FastAPI(
+        title='Работаем Честно! Backend',
+        version='0.1.0',
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.allowed_origins_list,
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
+    )
+    app.include_router(auth_router)
+    app.include_router(invites_router)
+    app.include_router(moderation_router)
+    app.include_router(admin_ai_router)
+    app.include_router(dev_tasks_router)
+    app.include_router(organizations_router)
+    app.include_router(public_org_router)
+    app.include_router(qr_router)
+    app.include_router(qr_redirect_router)
+    app.include_router(social_router)
+    return app
+
+
+app = create_app()
+
