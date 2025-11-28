@@ -297,7 +297,7 @@ export const PublicOrganizationPage = () => {
             )}
             {data.social_links && data.social_links.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {data.social_links.map((link, idx) => (
+                {data.social_links.map((link: { type: string; label: string; url: string }, idx: number) => (
                   <Button key={idx} asChild variant="outline" size="sm">
                     <a href={link.url} target="_blank" rel="noreferrer">
                       {link.label}

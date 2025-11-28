@@ -212,7 +212,7 @@ export const NotificationSettingsPage = () => {
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={setting.channels.includes('in_app')}
-                  onCheckedChange={() => toggleChannel(setting, 'in_app')}
+                  onChange={() => toggleChannel(setting, 'in_app')}
                   disabled={loading}
                 />
                 In-app
@@ -220,13 +220,13 @@ export const NotificationSettingsPage = () => {
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={setting.channels.includes('email')}
-                  onCheckedChange={() => toggleChannel(setting, 'email')}
+                  onChange={() => toggleChannel(setting, 'email')}
                   disabled={loading}
                 />
                 Email
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={setting.muted} onCheckedChange={() => toggleMuted(setting)} disabled={loading} />
+                <Checkbox checked={setting.muted} onChange={() => toggleMuted(setting)} disabled={loading} />
                 Отключить
               </label>
             </CardContent>

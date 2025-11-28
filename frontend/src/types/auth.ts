@@ -1,4 +1,4 @@
-export type PlatformRole = 'platform_admin' | 'moderator' | 'support'
+export type PlatformRole = 'platform_admin' | 'platform_owner' | 'moderator' | 'support'
 
 export type OrganizationRole = 'owner' | 'admin' | 'manager' | 'editor' | 'analyst' | 'viewer'
 
@@ -421,6 +421,14 @@ export interface PublicOrganizationDetails extends PublicOrganizationProfile {
   quality_standards?: string | null
   buy_links: BuyLinkItem[]
   products: PublicProduct[]
+  // Contacts
+  contact_email?: string | null
+  contact_phone?: string | null
+  contact_website?: string | null
+  contact_address?: string | null
+  contact_telegram?: string | null
+  contact_whatsapp?: string | null
+  social_links?: SocialLink[]
 }
 
 export interface OnboardingStep {

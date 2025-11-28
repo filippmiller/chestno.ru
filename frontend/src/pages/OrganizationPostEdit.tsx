@@ -43,7 +43,7 @@ export const OrganizationPostEditPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null)
-  const [gallery, setGallery] = useState<Array<{ url: string; alt?: string; sort_order?: number }>>([])
+  const [gallery, setGallery] = useState<Array<{ url: string; alt?: string | null; sort_order?: number | null }>>([])
 
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
@@ -76,7 +76,11 @@ export const OrganizationPostEditPage = () => {
           is_pinned: post.is_pinned,
         })
         setMainImageUrl(post.main_image_url || null)
-        setGallery(post.gallery || [])
+        setGallery(post.gallery?.map(item => ({ 
+          url: item.url, 
+          alt: item.alt ?? undefined, 
+          sort_order: item.sort_order ?? undefined 
+        })) || [])
       })
       .catch((err) => {
         console.error(err)
@@ -255,7 +259,7 @@ export const OrganizationPostEditPage = () => {
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={loading} />
+                      <Checkbox checked={field.value} onChange={(e) => field.onChange(e.target.checked)} disabled={loading} />
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel>Закрепить пост</FormLabel>
