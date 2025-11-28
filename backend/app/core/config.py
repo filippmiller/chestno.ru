@@ -20,6 +20,21 @@ class Settings(BaseSettings):
     yandex_client_secret: str | None = None
     yandex_redirect_uri: str | None = None
     environment: str = 'development'
+    # Email (SMTP) settings
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str | None = None
+    smtp_from_name: str = 'Работаем Честно!'
+    smtp_use_tls: bool = True
+    # Telegram Bot settings
+    telegram_bot_token: str | None = None
+    telegram_default_chat_id: str | None = None
+    # Web Push (VAPID) settings
+    vapid_public_key: str | None = None
+    vapid_private_key: str | None = None
+    vapid_subject: str = 'mailto:noreply@chestno.ru'
 
     model_config = SettingsConfigDict(
         env_file=('.env', 'backend/.env'),

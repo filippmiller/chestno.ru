@@ -14,47 +14,50 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { getSupabaseClient } from '@/lib/supabaseClient'
 import { useUserStore } from '@/store/userStore'
 
-const baseSchema = z
+const baseFields = {
+  contactName: z.string().min(2, 'Укажите контактное лицо'),
+  email: z.string().email('Неверный email'),
+  password: z
+    .string()
+    .min(8, 'Минимум 8 символов')
+    .regex(/^(?=.*[A-Z])(?=.*\d).+$/, 'Пароль должен содержать букву верхнего регистра и цифру'),
+  confirmPassword: z.string(),
+  inviteCode: z.string().optional(),
+  websiteUrl: z
+    .string()
+    .url('Некорректный URL')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  phone: z.string().optional(),
+  agree: z.boolean().refine((value) => value, {
+    message: 'Необходимо согласие с условиями',
+  }),
+}
+
+const producerSchema = z
   .object({
-    accountType: z.enum(['producer', 'user']),
-    contactName: z.string().min(2, 'Укажите контактное лицо'),
-    email: z.string().email('Неверный email'),
-    password: z
-      .string()
-      .min(8, 'Минимум 8 символов')
-      .regex(/^(?=.*[A-Z])(?=.*\d).+$/, 'Пароль должен содержать букву верхнего регистра и цифру'),
-    confirmPassword: z.string(),
-    inviteCode: z.string().optional(),
-    websiteUrl: z
-      .string()
-      .url('Некорректный URL')
-      .optional()
-      .or(z.literal('').transform(() => undefined)),
-    phone: z.string().optional(),
-    agree: z.boolean().refine((value) => value, {
-      message: 'Необходимо согласие с условиями',
-    }),
+    ...baseFields,
+    accountType: z.literal('producer'),
+    companyName: z.string().min(2, 'Укажите название компании'),
+    country: z.string().min(2, 'Укажите страну'),
+    city: z.string().min(2, 'Укажите город'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],
     message: 'Пароли не совпадают',
   })
 
-const producerSchema = baseSchema.extend({
-  accountType: z.literal('producer'),
-  companyName: z.string().min(2, 'Укажите название компании'),
-  country: z.string().min(2, 'Укажите страну'),
-  city: z.string().min(2, 'Укажите город'),
-})
+const userSchema = z
+  .object({
+    ...baseFields,
+    accountType: z.literal('user'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Пароли не совпадают',
+  })
 
-const userSchema = baseSchema.extend({
-  accountType: z.literal('user'),
-  companyName: z.string().optional(),
-  country: z.string().optional(),
-  city: z.string().optional(),
-})
-
-const registerSchema = z.discriminatedUnion('accountType', [producerSchema, userSchema])
+const registerSchema = z.union([producerSchema, userSchema])
 
 type RegisterFormValues = z.infer<typeof registerSchema>
 

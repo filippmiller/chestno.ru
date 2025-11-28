@@ -2,16 +2,31 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 from fastapi import HTTPException, status
 from psycopg.rows import dict_row
 
 from app.core.db import get_connection
 from app.schemas.auth import OrganizationProfile, OrganizationProfileUpdate, PublicOrganizationProfile, GalleryItem
+from app.schemas.public import (
+    PublicOrganizationSummary,
+    PublicOrganizationDetails,
+    CertificationItem,
+    BuyLinkItem,
+)
+from app.schemas.products import PublicProduct
 
 EDIT_ROLES = {'owner', 'admin', 'manager', 'editor'}
 VIEW_ROLES = EDIT_ROLES | {'analyst', 'viewer'}
+
+
+def _deserialize_list(raw):
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        return raw
+    return json.loads(raw)
 
 
 def _require_role(cur, organization_id: str, user_id: str, allowed_roles: set[str]) -> str:
@@ -104,46 +119,158 @@ def upsert_organization_profile(
 
 
 def get_public_profile_by_slug(slug: str) -> PublicOrganizationProfile:
-    with get_connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                '''
-                SELECT o.name, o.slug, o.country, o.city, o.website_url, o.is_verified, o.verification_status,
-                       p.short_description, p.long_description, p.production_description,
-                       p.safety_and_quality, p.video_url, p.gallery, p.tags
-                FROM organizations o
-                LEFT JOIN organization_profiles p ON p.organization_id = o.id
-                WHERE o.slug = %s
-                  AND o.public_visible = true
-                  AND o.verification_status = 'verified'
-                ''',
-                (slug,),
-            )
-            row = cur.fetchone()
-            if not row:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Производитель не найден или не опубликован')
+    details = get_public_organization_details_by_slug(slug)
+    return PublicOrganizationProfile(
+        name=details.name,
+        slug=details.slug,
+        country=details.country,
+        city=details.city,
+        website_url=details.website_url,
+        is_verified=details.is_verified,
+        verification_status=details.verification_status or '',
+        short_description=details.short_description,
+        long_description=details.long_description,
+        production_description=details.production_description,
+        safety_and_quality=details.quality_standards,
+        video_url=details.video_url,
+        gallery=details.gallery,
+        tags=details.tags,
+    )
 
-            gallery_items: list[GalleryItem] = []
-            gallery = row.get('gallery')
-            if gallery:
-                if isinstance(gallery, str):
-                    gallery = json.loads(gallery)
-                gallery_items = [GalleryItem(**item) for item in gallery]
 
-            return PublicOrganizationProfile(
+def search_public_organizations(
+    q: str | None,
+    country: str | None,
+    category: str | None,
+    verified_only: bool,
+    limit: int,
+    offset: int,
+) -> Tuple[List[PublicOrganizationSummary], int]:
+    where_clauses = ['o.public_visible = true']
+    params: list[Any] = []
+    if verified_only:
+        where_clauses.append("o.verification_status = 'verified'")
+    if country:
+        where_clauses.append('o.country = %s')
+        params.append(country)
+    if category:
+        where_clauses.append('(o.primary_category = %s OR p.category = %s)')
+        params.extend([category, category])
+    if q:
+        like = f'%{q}%'
+        where_clauses.append(
+            '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(o.tags, \'\') ILIKE %s OR COALESCE(p.category, \'\') ILIKE %s)'
+        )
+        params.extend([like, like, like, like])
+    where_sql = ' AND '.join(where_clauses)
+    base_query = '''
+        FROM organizations o
+        LEFT JOIN organization_profiles p ON p.organization_id = o.id
+    '''
+    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(f'SELECT COUNT(*) {base_query} WHERE {where_sql}', params)
+        total = cur.fetchone()['count']
+
+        cur.execute(
+            f'''
+            SELECT o.id, o.name, o.slug, o.country, o.city, o.primary_category,
+                   o.is_verified, o.verification_status, p.short_description, p.gallery
+            {base_query}
+            WHERE {where_sql}
+            ORDER BY o.is_verified DESC, o.created_at DESC
+            LIMIT %s OFFSET %s
+            ''',
+            params + [limit, offset],
+        )
+        rows = cur.fetchall()
+
+    summaries: List[PublicOrganizationSummary] = []
+    for row in rows:
+        gallery_items = _deserialize_list(row.get('gallery'))
+        main_image = None
+        if gallery_items:
+            item = gallery_items[0]
+            if isinstance(item, dict):
+                main_image = item.get('url')
+        summaries.append(
+            PublicOrganizationSummary(
                 name=row['name'],
                 slug=row['slug'],
                 country=row['country'],
                 city=row['city'],
-                website_url=row['website_url'],
+                primary_category=row.get('primary_category'),
                 is_verified=row['is_verified'],
-                verification_status=row['verification_status'],
+                verification_status=row.get('verification_status'),
                 short_description=row.get('short_description'),
-                long_description=row.get('long_description'),
-                production_description=row.get('production_description'),
-                safety_and_quality=row.get('safety_and_quality'),
-                video_url=row.get('video_url'),
-                gallery=gallery_items,
-                tags=row.get('tags'),
+                main_image_url=main_image,
             )
+        )
+    return summaries, total
+
+
+def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDetails:
+    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            '''
+            SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
+                   o.verification_status, o.primary_category, o.tags,
+                   p.short_description, p.long_description, p.production_description,
+                   p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
+                   p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
+                   p.quality_standards, p.buy_links
+            FROM organizations o
+            LEFT JOIN organization_profiles p ON p.organization_id = o.id
+            WHERE o.slug = %s
+              AND o.public_visible = true
+              AND o.verification_status = 'verified'
+            ''',
+            (slug,),
+        )
+        org = cur.fetchone()
+        if not org:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Производитель не найден или не опубликован')
+
+        org_id = org['id']
+        gallery = [GalleryItem(**item) for item in _deserialize_list(org.get('gallery'))]
+        certifications = [CertificationItem(**item) for item in _deserialize_list(org.get('certifications'))]
+        buy_links = [BuyLinkItem(**item) for item in _deserialize_list(org.get('buy_links'))]
+
+        cur.execute(
+            '''
+            SELECT id, organization_id, slug, name, short_description, price_cents, currency,
+                   main_image_url, external_url
+            FROM products
+            WHERE organization_id = %s AND status = 'published'
+            ORDER BY is_featured DESC, created_at DESC
+            ''',
+            (org_id,),
+        )
+        products = [PublicProduct(**row) for row in cur.fetchall()]
+
+    return PublicOrganizationDetails(
+        name=org['name'],
+        slug=org['slug'],
+        country=org['country'],
+        city=org['city'],
+        website_url=org['website_url'],
+        is_verified=org['is_verified'],
+        verification_status=org['verification_status'],
+        short_description=org.get('short_description'),
+        long_description=org.get('long_description'),
+        production_description=org.get('production_description'),
+        safety_and_quality=org.get('safety_and_quality'),
+        video_url=org.get('video_url'),
+        gallery=gallery,
+        tags=org.get('tags'),
+        primary_category=org.get('primary_category'),
+        founded_year=org.get('founded_year'),
+        employee_count=org.get('employee_count'),
+        factory_size=org.get('factory_size'),
+        category=org.get('category'),
+        certifications=certifications,
+        sustainability_practices=org.get('sustainability_practices'),
+        quality_standards=org.get('quality_standards'),
+        buy_links=buy_links,
+        products=products,
+    )
 

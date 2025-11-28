@@ -51,3 +51,32 @@ async def update_settings(
         raise HTTPException(status_code=400, detail='No updates provided')
     return notifications_service.update_notification_settings(current_user_id, updates)
 
+
+@router.post('/notification-settings/push-subscription')
+async def save_push_subscription(
+    payload: dict,
+    current_user_id: str = Depends(get_current_user_id),
+) -> dict:
+    """
+    Сохраняет push subscription для пользователя.
+    """
+    subscription = payload.get('subscription', {})
+    notifications_service.save_push_subscription(
+        current_user_id,
+        subscription.get('endpoint'),
+        subscription.get('keys', {}).get('p256dh'),
+        subscription.get('keys', {}).get('auth'),
+    )
+    return {'message': 'Push subscription saved'}
+
+
+@router.delete('/notification-settings/push-subscription')
+async def delete_push_subscription(
+    current_user_id: str = Depends(get_current_user_id),
+) -> dict:
+    """
+    Удаляет push subscription пользователя.
+    """
+    notifications_service.delete_push_subscription(current_user_id)
+    return {'message': 'Push subscription deleted'}
+

@@ -19,17 +19,22 @@ import type {
   OrganizationInvitePreview,
   OrganizationProfile,
   OrganizationProfilePayload,
+  OnboardingSummary,
   OrganizationSubscription,
   OrganizationSubscriptionSummary,
   Product,
   ProductPayload,
   PublicOrganizationProfile,
+  PublicOrganizationDetails,
+  PublicOrganizationsResponse,
   PublicProduct,
   QRCode,
   QRCodePayload,
   QRCodeStats,
+  QROverviewResponse,
   SessionPayload,
   SubscriptionPlan,
+  AdminDashboardSummary,
 } from '@/types/auth'
 
 import { httpClient } from './httpClient'
@@ -61,6 +66,25 @@ export const upsertOrganizationProfile = async (organizationId: string, payload:
 
 export const fetchPublicOrganization = async (slug: string) => {
   const { data } = await httpClient.get<PublicOrganizationProfile>(`/api/public/organizations/by-slug/${slug}`)
+  return data
+}
+
+export const fetchPublicOrganizationDetails = async (slug: string) => {
+  const { data } = await httpClient.get<PublicOrganizationDetails>(`/api/public/organizations/details/${slug}`)
+  return data
+}
+
+export const searchPublicOrganizations = async (params: {
+  q?: string
+  country?: string
+  category?: string
+  verified_only?: boolean
+  limit?: number
+  offset?: number
+}) => {
+  const { data } = await httpClient.get<PublicOrganizationsResponse>('/api/public/organizations/search', {
+    params,
+  })
   return data
 }
 
@@ -281,5 +305,51 @@ export const setOrganizationSubscription = async (organizationId: string, planId
     undefined,
     { params: { plan_id: planId } },
   )
+  return data
+}
+
+export const getOnboardingSummary = async (organizationId: string) => {
+  const { data } = await httpClient.get<OnboardingSummary>(`/api/organizations/${organizationId}/onboarding`)
+  return data
+}
+
+export const getQrOverview = async (organizationId: string, days = 30) => {
+  const { data } = await httpClient.get<QROverviewResponse>(
+    `/api/analytics/organizations/${organizationId}/qr-overview`,
+    { params: { days } },
+  )
+  return data
+}
+
+export const exportQrData = async (organizationId: string, days = 30, format: 'csv' | 'json' = 'csv') => {
+  const response = await httpClient.get(`/api/analytics/organizations/${organizationId}/qr-export`, {
+    params: { days, format },
+    responseType: 'blob',
+  })
+  const blob = new Blob([response.data])
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `qr-analytics-${organizationId.slice(0, 8)}.${format}`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+export interface LinkedAccount {
+  provider: string
+  provider_user_id: string
+  email: string | null
+  created_at: string | null
+}
+
+export const getLinkedAccounts = async () => {
+  const { data } = await httpClient.get<LinkedAccount[]>('/api/auth/linked-accounts')
+  return data
+}
+
+export const getAdminDashboardSummary = async () => {
+  const { data } = await httpClient.get<AdminDashboardSummary>('/api/admin/dashboard/summary')
   return data
 }

@@ -367,6 +367,93 @@ export interface NotificationSettingUpdate {
   muted?: boolean
 }
 
+export interface PublicOrganizationSummary {
+  name: string
+  slug: string
+  country?: string | null
+  city?: string | null
+  primary_category?: string | null
+  is_verified: boolean
+  verification_status?: string | null
+  short_description?: string | null
+  main_image_url?: string | null
+}
+
+export interface PublicOrganizationsResponse {
+  items: PublicOrganizationSummary[]
+  total: number
+}
+
+export interface CertificationItem {
+  name: string
+  issuer?: string | null
+  valid_until?: string | null
+  link?: string | null
+}
+
+export interface BuyLinkItem {
+  label: string
+  url: string
+}
+
+export interface PublicOrganizationDetails extends PublicOrganizationProfile {
+  primary_category?: string | null
+  founded_year?: number | null
+  employee_count?: number | null
+  factory_size?: string | null
+  category?: string | null
+  certifications: CertificationItem[]
+  sustainability_practices?: string | null
+  quality_standards?: string | null
+  buy_links: BuyLinkItem[]
+  products: PublicProduct[]
+}
+
+export interface OnboardingStep {
+  key: 'profile' | 'products' | 'qr_codes' | 'verification' | 'invites'
+  label: string
+  completed: boolean
+}
+
+export interface OnboardingSummary {
+  organization_id: string
+  completion_percent: number
+  steps: OnboardingStep[]
+}
+
+export interface DailyMetric {
+  date: string
+  count: number
+}
+
+export interface CountryMetric {
+  country: string | null
+  count: number
+}
+
+export interface SourceMetric {
+  source: string | null
+  count: number
+}
+
+export interface QROverviewResponse {
+  total_scans: number
+  first_scan_at?: string | null
+  last_scan_at?: string | null
+  daily: DailyMetric[]
+  by_country: CountryMetric[]
+  by_source: SourceMetric[]
+}
+
+export interface AdminDashboardSummary {
+  total_organizations: number
+  verified_organizations: number
+  public_organizations: number
+  total_products: number
+  total_qr_codes: number
+  total_qr_events: number
+}
+
 export interface SessionPayload {
   user: AppUser
   memberships: OrganizationMembership[]

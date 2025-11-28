@@ -10,9 +10,11 @@ import {
   deleteDevTask,
   listAiIntegrations,
   listDevTasks,
+  listModerationOrganizations,
   runAiIntegrationCheck,
   updateAiIntegration,
   updateDevTask,
+  verifyOrganizationStatus,
 } from '@/api/authService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -20,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { useUserStore } from '@/store/userStore'
-import type { AiIntegration, DevTask } from '@/types/auth'
+import type { AiIntegration, DevTask, ModerationOrganization } from '@/types/auth'
 
 const AI_FORM_SCHEMA = z.object({
   provider: z.string().min(2),
@@ -77,20 +79,117 @@ export const AdminPanelPage = () => {
   )
 }
 
-const PendingRegistrationsSection = () => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Pending Registrations</CardTitle>
-      <CardDescription>Здесь будет список заявок бизнесов (реализация на предыдущем этапе). Пока заглушка.</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <Alert>
-        <AlertTitle>TODO</AlertTitle>
-        <AlertDescription>Секция Pending Registrations реализуется отдельным этапом. Текущий код оставляет её без изменений.</AlertDescription>
-      </Alert>
-    </CardContent>
-  </Card>
-)
+const PendingRegistrationsSection = () => {
+  const [organizations, setOrganizations] = useState<ModerationOrganization[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await listModerationOrganizations('pending')
+      setOrganizations(data)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить заявки')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const handleAction = async (org: ModerationOrganization, action: 'verify' | 'reject') => {
+    const comment = window.prompt('Комментарий к решению', org.verification_comment ?? '')
+    if (comment === null) return // Пользователь отменил
+
+    setLoading(true)
+    setError(null)
+    try {
+      await verifyOrganizationStatus(org.id, { action, comment: comment || undefined })
+      await load() // Перезагружаем список
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось обновить статус')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Pending Registrations</CardTitle>
+        <CardDescription>Список заявок на регистрацию производителей, ожидающих модерации.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Ошибка</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {loading && organizations.length === 0 && <p className="text-sm text-muted-foreground">Загружаем...</p>}
+
+        {!loading && organizations.length === 0 && (
+          <p className="text-sm text-muted-foreground">Нет заявок на модерацию</p>
+        )}
+
+        <div className="space-y-3">
+          {organizations.map((org) => (
+            <div key={org.id} className="rounded-md border border-border p-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="font-semibold">{org.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {org.city ? `${org.city}, ` : ''}
+                      {org.country}
+                    </p>
+                    {org.website_url && (
+                      <a
+                        href={org.website_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-primary underline"
+                      >
+                        {org.website_url}
+                      </a>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Заявка от: {new Date(org.created_at).toLocaleDateString('ru-RU')}
+                    </p>
+                  </div>
+                  <span className="text-xs uppercase text-muted-foreground">{org.verification_status}</span>
+                </div>
+                {org.verification_comment && (
+                  <p className="text-sm text-muted-foreground">Комментарий: {org.verification_comment}</p>
+                )}
+                <div className="mt-2 flex gap-2">
+                  <Button variant="outline" asChild size="sm">
+                    <a href={`/org/${org.slug}`} target="_blank" rel="noreferrer">
+                      Открыть профиль
+                    </a>
+                  </Button>
+                  <Button size="sm" onClick={() => handleAction(org, 'verify')} disabled={loading}>
+                    Подтвердить
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleAction(org, 'reject')} disabled={loading}>
+                    Отклонить
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 const AiIntegrationsSection = () => {
   const [items, setItems] = useState<AiIntegration[]>([])

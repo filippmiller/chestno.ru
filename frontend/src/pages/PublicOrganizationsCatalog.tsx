@@ -10,9 +10,11 @@ export const PublicOrganizationsCatalogPage = () => {
   const [items, setItems] = useState<PublicOrganizationSummary[]>([])
   const [query, setQuery] = useState('')
   const [country, setCountry] = useState('')
+  const [category, setCategory] = useState('')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [total, setTotal] = useState(0)
 
   const load = async () => {
     setLoading(true)
@@ -21,9 +23,11 @@ export const PublicOrganizationsCatalogPage = () => {
       const data = await searchPublicOrganizations({
         q: query || undefined,
         country: country || undefined,
+        category: category || undefined,
         verified_only: verifiedOnly,
       })
       setItems(data.items)
+      setTotal(data.total)
     } catch (err) {
       console.error(err)
       setError('Не удалось загрузить производителей')
@@ -47,10 +51,12 @@ export const PublicOrganizationsCatalogPage = () => {
       <div>
         <p className="text-sm text-muted-foreground">Каталог производителей</p>
         <h1 className="text-3xl font-semibold">Производители, работающие честно</h1>
-        <p className="text-muted-foreground">Фильтруйте по стране, категории или ищите по названию.</p>
+        <p className="text-muted-foreground">
+          Фильтруйте по стране, категории или ищите по названию. Найдено {total} производителей.
+        </p>
       </div>
 
-      <form className="grid gap-4 rounded-lg border border-border p-4 md:grid-cols-4" onSubmit={handleSubmit}>
+      <form className="grid gap-4 rounded-lg border border-border p-4 md:grid-cols-5" onSubmit={handleSubmit}>
         <input
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
           placeholder="Поиск по названию или городу"
@@ -66,6 +72,16 @@ export const PublicOrganizationsCatalogPage = () => {
           <option value="Россия">Россия</option>
           <option value="Казахстан">Казахстан</option>
           <option value="Беларусь">Беларусь</option>
+        </select>
+        <select
+          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          <option value="">Все категории</option>
+          <option value="текстиль">Текстиль</option>
+          <option value="упаковка">Упаковка</option>
+          <option value="пищевое производство">Пищевое производство</option>
         </select>
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
@@ -87,7 +103,10 @@ export const PublicOrganizationsCatalogPage = () => {
 
       <div className="grid gap-4 md:grid-cols-2">
         {items.map((org) => (
-          <Card key={org.slug}>
+          <Card key={org.slug} className="overflow-hidden">
+            {org.main_image_url && (
+              <img src={org.main_image_url} alt={org.name} className="h-40 w-full object-cover" loading="lazy" />
+            )}
             <CardHeader>
               <CardTitle>{org.name}</CardTitle>
               <CardDescription>
@@ -95,14 +114,18 @@ export const PublicOrganizationsCatalogPage = () => {
                 {org.country}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-muted-foreground">{org.short_description ?? 'Описание появится позже.'}</p>
-              {org.primary_category && <p className="text-xs uppercase text-muted-foreground">{org.primary_category}</p>}
-              {org.is_verified && (
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
-                  Проверено
-                </span>
-              )}
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground line-clamp-3">
+                {org.short_description ?? 'Описание появится позже.'}
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs uppercase text-muted-foreground">
+                {org.primary_category && <span>{org.primary_category}</span>}
+                {org.is_verified && (
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 font-semibold text-green-700">
+                    Проверено
+                  </span>
+                )}
+              </div>
               <Button asChild size="sm" className="mt-2">
                 <a href={`/org/${org.slug}`}>Посмотреть</a>
               </Button>

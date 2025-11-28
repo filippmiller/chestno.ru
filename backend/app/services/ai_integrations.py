@@ -117,8 +117,44 @@ def _perform_provider_check(provider: str, token: str) -> tuple[str, str]:
                 return 'ok', 'OpenAI reachable'
             return 'error', f'OpenAI error: {response.status_code}'
         elif provider in {'yandex_ai', 'yandexgpt'}:
-            # TODO: implement real health-check once API requirements clarified.
-            return 'ok', 'ENV present (Yandex AI check TODO)'
+            # Yandex GPT API health check через минимальный completion запрос
+            try:
+                # Используем минимальный запрос для проверки валидности API ключа
+                response = httpx.post(
+                    'https://llm.api.cloud.yandex.net/foundationModels/v1/completion',
+                    headers={
+                        'Authorization': f'Api-Key {token}',
+                        'Content-Type': 'application/json',
+                    },
+                    json={
+                        'modelUri': 'gpt://yandexgpt/latest',
+                        'completionOptions': {
+                            'stream': False,
+                            'temperature': 0.1,
+                            'maxTokens': 1,
+                        },
+                        'messages': [
+                            {
+                                'role': 'user',
+                                'text': 'ok',
+                            },
+                        ],
+                    },
+                    timeout=10.0,
+                )
+                if response.status_code == 200:
+                    return 'ok', 'Yandex GPT API reachable'
+                elif response.status_code == 401:
+                    return 'error', 'Yandex GPT API: Invalid API key'
+                elif response.status_code == 403:
+                    return 'error', 'Yandex GPT API: Access forbidden'
+                else:
+                    error_detail = response.text[:200] if response.text else f'Status {response.status_code}'
+                    return 'error', f'Yandex GPT API error: {error_detail}'
+            except httpx.TimeoutException:
+                return 'error', 'Yandex GPT API: Request timeout'
+            except Exception as e:
+                return 'error', f'Yandex GPT API: {str(e)[:100]}'
         else:
             return 'ok', 'ENV present'
     except httpx.HTTPError as exc:

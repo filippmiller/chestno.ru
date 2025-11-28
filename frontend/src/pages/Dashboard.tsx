@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle, Package, CreditCard } from 'lucide-react'
+import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle, Package, CreditCard, ClipboardList, BarChart2, LayoutDashboard, Link2 } from 'lucide-react'
 
 import { fetchSession } from '@/api/authService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -58,6 +58,7 @@ export const DashboardPage = () => {
   const canEditProfile = selectedMembership ? PROFILE_EDIT_ROLES.has(selectedMembership.role) : false
   const canManageInvites = selectedMembership ? INVITE_ROLES.has(selectedMembership.role) : false
   const showModerationLink = platformRoles.some((role) => MODERATOR_ROLES.has(role))
+  const isPlatformAdmin = platformRoles.includes('platform_admin')
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
@@ -213,6 +214,18 @@ export const DashboardPage = () => {
                   Тариф и лимиты
                 </Link>
               </Button>
+              <Button asChild variant="outline">
+                <Link to="/dashboard/organization/onboarding">
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Онбординг
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/dashboard/organization/analytics">
+                  <BarChart2 className="mr-2 h-4 w-4" />
+                  Аналитика
+                </Link>
+              </Button>
             </div>
             {!canEditProfile && (
               <p className="text-xs text-muted-foreground">
@@ -222,6 +235,29 @@ export const DashboardPage = () => {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Настройки аккаунта</CardTitle>
+          <CardDescription>Управляйте настройками вашего аккаунта и способами входа.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to="/settings/linked-accounts">
+                <Link2 className="mr-2 h-4 w-4" />
+                Связанные аккаунты
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/settings/notifications">
+                <FileText className="mr-2 h-4 w-4" />
+                Уведомления
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {showModerationLink && (
         <Card>
@@ -234,6 +270,23 @@ export const DashboardPage = () => {
               <Link to="/dashboard/moderation/organizations">
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Перейти к модерации
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {isPlatformAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Админ-дашборд</CardTitle>
+            <CardDescription>Ключевые метрики по организациям и активности.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link to="/dashboard/admin">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Перейти к метрикам
               </Link>
             </Button>
           </CardContent>

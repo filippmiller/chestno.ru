@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.api.routes.auth import get_current_user_id
 from app.schemas.subscriptions import (
@@ -10,7 +10,6 @@ from app.schemas.subscriptions import (
 )
 from app.services import subscriptions as subscriptions_service
 from app.services.admin_guard import assert_platform_admin
-from app.services import subscriptions as subscriptions_service
 
 router = APIRouter(prefix='/api', tags=['subscriptions'])
 admin_router = APIRouter(prefix='/api/admin/subscriptions', tags=['subscriptions'])
@@ -54,7 +53,8 @@ async def admin_update_plan(
 @admin_router.post('/organizations/{organization_id}/subscription', response_model=OrganizationSubscription)
 async def admin_set_org_subscription(
     organization_id: str,
-    plan_id: str,
+    plan_id: str = Query(..., description='ID тарифного плана'),
     current_user_id: str = Depends(get_current_user_id),
 ) -> OrganizationSubscription:
+    assert_platform_admin(current_user_id)
     return subscriptions_service.set_org_subscription(organization_id, plan_id, actor_user_id=current_user_id)

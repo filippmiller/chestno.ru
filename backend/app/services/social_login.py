@@ -153,11 +153,39 @@ def _ensure_user_for_provider(
 
     supabase_user = supabase_admin.get_user_by_email(email)
     if supabase_user:
-        # TODO: allow linking to existing accounts gracefully.
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail='Email already registered. Please log in with email/password and link Yandex in profile (TODO).',
-        )
+        # Email уже зарегистрирован - возвращаем специальный ответ для связывания аккаунта
+        existing_user_id = supabase_user['id']
+        # Проверяем, не связан ли уже этот провайдер с другим аккаунтом
+        with get_connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    '''
+                    SELECT user_id FROM auth_providers
+                    WHERE provider = %s AND provider_user_id = %s
+                    ''',
+                    (provider, provider_user_id),
+                )
+                existing_link = cur.fetchone()
+                if existing_link and existing_link['user_id'] != existing_user_id:
+                    # Провайдер уже связан с другим аккаунтом
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail='This social account is already linked to another user.',
+                    )
+                # Связываем провайдер с существующим аккаунтом
+                cur.execute(
+                    '''
+                    INSERT INTO auth_providers (user_id, provider, provider_user_id, email)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (provider, provider_user_id) DO UPDATE SET
+                        user_id = EXCLUDED.user_id,
+                        email = EXCLUDED.email
+                    ''',
+                    (existing_user_id, provider, provider_user_id, email),
+                )
+                conn.commit()
+        # Возвращаем существующий user_id - пользователь будет залогинен
+        return existing_user_id, email
 
     password = _provider_password(provider, provider_user_id)
     new_user = supabase_admin.create_user(email=email, password=password, user_metadata={'full_name': full_name})

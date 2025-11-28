@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 
+from app.core.db import get_connection
 from app.core.supabase import supabase_admin
 from app.schemas.auth import AfterSignupRequest, LoginRequest, LoginResponse, SessionResponse
 from app.services import login_throttle
 from app.services.accounts import get_session_data, handle_after_signup
+from psycopg.rows import dict_row
 
 router = APIRouter(prefix='/api/auth', tags=['auth'])
 
@@ -79,4 +81,32 @@ async def login(payload: LoginRequest) -> LoginResponse:
         organizations=session.organizations,
         memberships=session.memberships,
     )
+
+
+@router.get('/linked-accounts')
+async def get_linked_accounts(current_user_id: str = Depends(get_current_user_id)) -> list[dict]:
+    """
+    Возвращает список связанных социальных аккаунтов для текущего пользователя.
+    """
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                SELECT provider, provider_user_id, email, created_at
+                FROM auth_providers
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                ''',
+                (current_user_id,),
+            )
+            accounts = cur.fetchall()
+            return [
+                {
+                    'provider': row['provider'],
+                    'provider_user_id': row['provider_user_id'],
+                    'email': row['email'],
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                }
+                for row in accounts
+            ]
 

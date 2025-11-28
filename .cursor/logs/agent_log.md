@@ -14,4 +14,12 @@
 2025-11-27T22:53:40 - Cloned hero source into tmp/hero-source for integration
 2025-11-28T00:55:00 - Stage 4: notifications, products, subscriptions, docs update
 2025-11-27T23:10:12 - Imported hero landing UI, theme tokens, and routing changes
+2025-11-27T23:15:00 - Hero page integration completed: lint passed, landing page active on / and /orgs
+2025-11-28T14:05:00 - Stage 5: public catalog, onboarding, analytics, admin dashboard
+2025-11-28T14:30:00 - Added subscription plan change UI to Moderation Dashboard
+2025-11-28T15:00:00 - Implemented reminders worker service and pending registrations UI in Admin Panel
+2025-11-28T16:00:00 - Added email notifications (SMTP), enhanced analytics (export, metrics), and account linking for social logins
+2025-11-28T17:00:00 - Implemented tasks 3, 5, 7, 8: Telegram/Push channels, Yandex AI health-check, linked accounts UI, Web Push notifications
+2025-11-28T18:00:00 - Created comprehensive platform documentation (Complete-Platform-Documentation.md) and completed push subscription saving
+2025-11-28T19:00:00 - Set up local development environment, created QUICK_START.md and LOCAL_SETUP.md guides, configured .env files for localhost
 

@@ -9,14 +9,19 @@ import { LoginPage } from '@/pages/Login'
 import { ModerationDashboardPage } from '@/pages/ModerationDashboard'
 import { NotificationSettingsPage } from '@/pages/NotificationSettings'
 import { NotificationsPage } from '@/pages/Notifications'
+import { OrganizationAnalyticsPage } from '@/pages/OrganizationAnalytics'
 import { OrganizationInvitesPage } from '@/pages/OrganizationInvites'
+import { OrganizationOnboardingPage } from '@/pages/OrganizationOnboarding'
 import { OrganizationPlanPage } from '@/pages/OrganizationPlan'
 import { OrganizationProductsPage } from '@/pages/OrganizationProducts'
 import { OrganizationProfilePage } from '@/pages/OrganizationProfile'
 import { OrganizationQrPage } from '@/pages/OrganizationQr'
 import { ProducersLandingPage } from '@/pages/ProducersLanding'
 import { PublicOrganizationPage } from '@/pages/PublicOrganization'
+import { PublicOrganizationsCatalogPage } from '@/pages/PublicOrganizationsCatalog'
 import { RegisterPage } from '@/pages/Register'
+import { AdminDashboardPage } from '@/pages/AdminDashboard'
+import { LinkedAccountsPage } from '@/pages/LinkedAccounts'
 
 export const AppRoutes = () => (
   <Routes>
@@ -29,15 +34,19 @@ export const AppRoutes = () => (
     <Route path="/dashboard/organization/products" element={<OrganizationProductsPage />} />
     <Route path="/dashboard/organization/plan" element={<OrganizationPlanPage />} />
     <Route path="/dashboard/organization/invites" element={<OrganizationInvitesPage />} />
+    <Route path="/dashboard/organization/onboarding" element={<OrganizationOnboardingPage />} />
+    <Route path="/dashboard/organization/analytics" element={<OrganizationAnalyticsPage />} />
     <Route path="/dashboard/organization/qr" element={<OrganizationQrPage />} />
+    <Route path="/dashboard/notifications" element={<NotificationsPage />} />
+    <Route path="/dashboard/settings/notifications" element={<NotificationSettingsPage />} />
+    <Route path="/settings/linked-accounts" element={<LinkedAccountsPage />} />
     <Route path="/dashboard/moderation/organizations" element={<ModerationDashboardPage />} />
+    <Route path="/dashboard/admin" element={<AdminDashboardPage />} />
     <Route path="/admin" element={<AdminPanelPage />} />
     <Route path="/admin/db" element={<DatabaseExplorerPage />} />
-    <Route path="/notifications" element={<NotificationsPage />} />
-    <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
     <Route path="/invite/:code" element={<InviteLandingPage />} />
     <Route path="/org/:slug" element={<PublicOrganizationPage />} />
-    <Route path="/orgs" element={<ProducersLandingPage />} />
+    <Route path="/orgs" element={<PublicOrganizationsCatalogPage />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 )

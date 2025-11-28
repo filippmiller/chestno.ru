@@ -37,18 +37,62 @@ SOCIAL_STATE_SECRET=...
 YANDEX_CLIENT_ID=
 YANDEX_CLIENT_SECRET=
 YANDEX_REDIRECT_URI=https://backend.example.com/api/auth/yandex/callback
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM_EMAIL=noreply@chestno.ru
+SMTP_FROM_NAME=Работаем Честно!
+SMTP_USE_TLS=true
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_DEFAULT_CHAT_ID=
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:noreply@chestno.ru
 ```
 
 ## Локальный запуск
+
+### Быстрый старт
+
+**Гибридный вариант (рекомендуется):**
+- Frontend и Backend запускаются локально
+- База данных и Auth используют Supabase (удалённые)
+
+**Подробная инструкция:** См. `QUICK_START.md` или `LOCAL_SETUP.md`
+
+**Кратко:**
+
+```powershell
+# Терминал 1 - Backend
+cd backend
+.venv\Scripts\activate
+uvicorn app.main:app --reload
+
+# Терминал 2 - Frontend  
+cd frontend
+npm run dev
+
+# Откройте: http://localhost:5173
+```
+
+**Автоматическая настройка:**
+```powershell
+.\start-local.ps1
+```
 
 ### Frontend
 
 ```
 cd frontend
-cp env.example env.local  # заполните значениями
+cp env.example .env.local  # заполните значениями
 npm install
 npm run dev
 ```
+
+**Важно:** В `.env.local` укажите:
+- `VITE_BACKEND_URL=http://localhost:8000` (для локального backend)
+- Или `VITE_BACKEND_URL=https://your-backend.railway.app` (для Railway backend)
 
 ### Backend
 
@@ -60,6 +104,10 @@ python -m venv .venv
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
+
+**Важно:** В `.env` укажите:
+- `ALLOWED_ORIGINS=http://localhost:5173` (для локального frontend)
+- `DATABASE_URL` должен указывать на Supabase (или локальную PostgreSQL)
 
 ### Supabase миграции
 
@@ -82,6 +130,7 @@ psql "$DATABASE_URL" -f supabase/migrations/0011_migration_drafts.sql
 psql "$DATABASE_URL" -f supabase/migrations/0012_notifications.sql
 psql "$DATABASE_URL" -f supabase/migrations/0013_products.sql
 psql "$DATABASE_URL" -f supabase/migrations/0014_subscriptions.sql
+psql "$DATABASE_URL" -f supabase/migrations/0015_org_profile_extended.sql
 ```
 
 `DATABASE_URL` берём из Supabase (pooler: `postgresql://...pooler.supabase.com:6543/postgres?sslmode=require`) либо из Railway переменных.
@@ -103,8 +152,13 @@ psql "$DATABASE_URL" -f supabase/migrations/0014_subscriptions.sql
 - Subscription plans & limits: таблицы `subscription_plans`, `organization_subscriptions`, страница `/dashboard/organization/plan`, проверка лимитов при создании товаров и QR-кодов.
 - Публичный каталог (`/orgs`, `/api/public/organizations/search`) с фильтрами и поиском; расширенная публичная страница производителя (`/org/:slug`) с товарами, сертификатами и ссылками «Где купить».
 - Онбординг (`/dashboard/organization/onboarding`) с прогресс-баром и шагами (профиль, товары, QR-коды, верификация, инвайты).
-- Аналитика (`/dashboard/organization/analytics`, `/api/analytics/organizations/{id}/qr-overview`) — статистика QR-сканов по дням.
+- Аналитика (`/dashboard/organization/analytics`, `/api/analytics/organizations/{id}/qr-overview`) — статистика QR-сканов по дням, по странам, по источникам (UTM), экспорт в CSV/JSON.
 - Мини-админка платформы (`/dashboard/admin`) — агрегированные показатели по организациям, товарам, QR.
+- Email-уведомления: SMTP интеграция, worker для обработки pending email deliveries (`/api/admin/notifications/email/process`).
+- Telegram-уведомления: интеграция с Telegram Bot API, worker для обработки (`/api/admin/notifications/telegram/process`).
+- Web Push-уведомления: Service Worker для браузерных push-уведомлений, worker для обработки (`/api/admin/notifications/push/process`).
+- Связывание аккаунтов: автоматическое связывание социальных аккаунтов (Yandex, Google) с существующими email, endpoint `/api/auth/linked-accounts`, UI страница `/settings/linked-accounts`.
+- Health-check для Yandex AI: реальная проверка валидности API ключа через Yandex GPT API.
 - Supabase миграции:
   - `0001_init`
   - `0002_roles_and_profiles`
@@ -121,9 +175,6 @@ psql "$DATABASE_URL" -f supabase/migrations/0014_subscriptions.sql
   - `0013_products`
   - `0014_subscriptions`
   - `0015_org_profile_extended`
-  - `0012_notifications`
-  - `0013_products`
-  - `0014_subscriptions`
 
 ## Хостинг (ориентир)
 
@@ -181,5 +232,26 @@ curl -H "Authorization: Bearer <token>" https://<backend>/api/organizations/<org
 
 # Уведомления (список)
 curl -H "Authorization: Bearer <token>" https://<backend>/api/notifications
+
+# Экспорт аналитики (CSV)
+curl -H "Authorization: Bearer <token>" https://<backend>/api/analytics/organizations/<org_id>/qr-export?format=csv&days=30
+
+# Обработка email deliveries (admin)
+curl -X POST -H "Authorization: Bearer <admin_token>" https://<backend>/api/admin/notifications/email/process
+
+# Обработка telegram deliveries (admin)
+curl -X POST -H "Authorization: Bearer <admin_token>" https://<backend>/api/admin/notifications/telegram/process
+
+# Обработка push deliveries (admin)
+curl -X POST -H "Authorization: Bearer <admin_token>" https://<backend>/api/admin/notifications/push/process
+
+# Публичный каталог производителей
+curl "https://<backend>/api/public/organizations/search?q=текстиль&verified_only=true"
+
+# Онбординг
+curl -H "Authorization: Bearer <token>" https://<backend>/api/organizations/<org_id>/onboarding
+
+# Аналитика QR
+curl -H "Authorization: Bearer <token>" "https://<backend>/api/analytics/organizations/<org_id>/qr-overview?days=30"
 ```
 
