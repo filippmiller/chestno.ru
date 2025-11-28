@@ -1,2 +1,2 @@
-web: bash start.sh
+web: cd backend && bash start.sh
 
