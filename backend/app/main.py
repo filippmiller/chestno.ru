@@ -34,6 +34,15 @@ def create_app() -> FastAPI:
         allow_methods=['*'],
         allow_headers=['*'],
     )
+    
+    @app.get('/')
+    async def root():
+        return {
+            'message': 'Работаем Честно! Backend API',
+            'version': '0.1.0',
+            'docs': '/docs',
+            'redoc': '/redoc',
+        }
     app.include_router(auth_router)
     app.include_router(invites_router)
     app.include_router(moderation_router)
