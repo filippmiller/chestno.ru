@@ -8,5 +8,5 @@ cmds = [
 ]
 
 [start]
-cmd = "cd backend && bash start.sh"
+cmd = "bash start.sh"
 
