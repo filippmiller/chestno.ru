@@ -18,6 +18,9 @@ export interface Review {
   moderated_by?: string | null
   moderated_at?: string | null
   moderation_comment?: string | null
+  response?: string | null
+  response_by?: string | null
+  response_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -41,6 +44,10 @@ export interface ReviewModeration {
   moderation_comment?: string | null
 }
 
+export interface ReviewResponse {
+  response: string
+}
+
 export interface PublicReview {
   id: string
   product_id?: string | null
@@ -49,6 +56,8 @@ export interface PublicReview {
   title?: string | null
   body: string
   media: ReviewMediaItem[]
+  response?: string | null
+  response_at?: string | null
   created_at: string
 }
 

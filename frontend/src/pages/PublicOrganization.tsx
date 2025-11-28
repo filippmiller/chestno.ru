@@ -375,6 +375,19 @@ export const PublicOrganizationPage = () => {
                   <p className="mt-2 text-xs text-muted-foreground">
                     {new Date(review.created_at).toLocaleDateString('ru-RU')}
                   </p>
+                  {review.response && (
+                    <div className="mt-3 rounded-lg border border-border bg-muted/50 p-3">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="text-xs font-medium text-primary">Ответ организации</span>
+                        {review.response_at && (
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(review.response_at).toLocaleDateString('ru-RU')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-foreground">{review.response}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, XCircle, Clock, Star } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, Star, MessageSquare } from 'lucide-react'
 
-import { listOrganizationReviews, getReviewStats, moderateReview } from '@/api/reviewsService'
-import type { Review, ReviewStats } from '@/types/reviews'
+import { listOrganizationReviews, getReviewStats, moderateReview, respondToReview } from '@/api/reviewsService'
+import type { Review, ReviewStats, ReviewResponse } from '@/types/reviews'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import { useUserStore } from '@/store/userStore'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -28,6 +29,9 @@ export const OrganizationReviewsPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string | undefined>()
+  const [respondingTo, setRespondingTo] = useState<string | null>(null)
+  const [responseText, setResponseText] = useState('')
+  const [submittingResponse, setSubmittingResponse] = useState(false)
 
   const loadReviews = async () => {
     if (!selectedOrganizationId) return
@@ -228,6 +232,26 @@ export const OrganizationReviewsPage = () => {
                         </Button>
                       </div>
                     )}
+                    {review.status === 'approved' && !review.response && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStartRespond(review.id)}
+                      >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Ответить
+                      </Button>
+                    )}
+                    {review.status === 'approved' && review.response && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStartRespond(review.id, review.response)}
+                      >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Изменить ответ
+                      </Button>
+                    )}
                   </div>
                   {review.media && review.media.length > 0 && (
                     <div className="mt-4 grid grid-cols-4 gap-2">
@@ -240,6 +264,48 @@ export const OrganizationReviewsPage = () => {
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {review.response && respondingTo !== review.id && (
+                    <div className="mt-4 rounded-lg border border-border bg-muted/50 p-4">
+                      <div className="mb-2 flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Ответ организации</span>
+                        {review.response_at && (
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(review.response_at).toLocaleDateString('ru-RU')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-foreground">{review.response}</p>
+                    </div>
+                  )}
+                  {respondingTo === review.id && (
+                    <div className="mt-4 space-y-2 rounded-lg border border-border bg-muted/30 p-4">
+                      <Textarea
+                        placeholder="Введите ответ на отзыв..."
+                        value={responseText}
+                        onChange={(e) => setResponseText(e.target.value)}
+                        rows={4}
+                        className="min-h-[100px]"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSubmitResponse(review.id)}
+                          disabled={submittingResponse || !responseText.trim()}
+                        >
+                          {submittingResponse ? 'Отправка...' : 'Отправить ответ'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelRespond}
+                          disabled={submittingResponse}
+                        >
+                          Отмена
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>

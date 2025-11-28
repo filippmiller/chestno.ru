@@ -3,6 +3,7 @@ import type {
   Review,
   ReviewCreate,
   ReviewModeration,
+  ReviewResponse,
   ReviewsResponse,
   PublicReviewsResponse,
   ReviewStats,
@@ -33,6 +34,18 @@ export async function moderateReview(
 ): Promise<Review> {
   const response = await httpClient.patch<Review>(
     `/api/organizations/${organizationId}/reviews/${reviewId}/moderate`,
+    payload,
+  )
+  return response.data
+}
+
+export async function respondToReview(
+  organizationId: string,
+  reviewId: string,
+  payload: ReviewResponse,
+): Promise<Review> {
+  const response = await httpClient.post<Review>(
+    `/api/organizations/${organizationId}/reviews/${reviewId}/respond`,
     payload,
   )
   return response.data
