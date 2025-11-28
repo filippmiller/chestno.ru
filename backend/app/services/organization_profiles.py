@@ -241,7 +241,6 @@ def get_public_organization_details_by_id(organization_id: str) -> PublicOrganiz
             LEFT JOIN organization_profiles p ON p.organization_id = o.id
             WHERE o.id = %s
               AND o.public_visible = true
-              AND o.verification_status = 'verified'
             ''',
             (organization_id,),
         )
