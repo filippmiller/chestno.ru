@@ -77,6 +77,32 @@ export const OrganizationReviewsPage = () => {
     }
   }
 
+  const handleStartRespond = (reviewId: string, existingResponse?: string | null) => {
+    setRespondingTo(reviewId)
+    setResponseText(existingResponse || '')
+  }
+
+  const handleCancelRespond = () => {
+    setRespondingTo(null)
+    setResponseText('')
+  }
+
+  const handleSubmitResponse = async (reviewId: string) => {
+    if (!selectedOrganizationId || !responseText.trim()) return
+    setSubmittingResponse(true)
+    try {
+      await respondToReview(selectedOrganizationId, reviewId, { response: responseText.trim() })
+      await loadReviews()
+      setRespondingTo(null)
+      setResponseText('')
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось отправить ответ')
+    } finally {
+      setSubmittingResponse(false)
+    }
+  }
+
   if (!selectedOrganizationId) {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-10">
