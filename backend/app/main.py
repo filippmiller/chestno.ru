@@ -35,14 +35,41 @@ def create_app() -> FastAPI:
         allow_headers=['*'],
     )
     
-    @app.get('/')
+    @app.get('/', response_class=HTMLResponse)
     async def root():
-        return {
-            'message': 'Работаем Честно! Backend API',
-            'version': '0.1.0',
-            'docs': '/docs',
-            'redoc': '/redoc',
-        }
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Работаем Честно! Backend API</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+                .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                h1 { color: #333; }
+                .info { background: #e8f4f8; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                a { color: #0066cc; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+                .links { margin-top: 20px; }
+                .links a { display: inline-block; margin-right: 15px; padding: 8px 15px; background: #0066cc; color: white; border-radius: 4px; }
+                .links a:hover { background: #0052a3; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚀 Работаем Честно! Backend API</h1>
+                <div class="info">
+                    <p><strong>Версия:</strong> 0.1.0</p>
+                    <p><strong>Статус:</strong> ✅ Работает</p>
+                </div>
+                <div class="links">
+                    <a href="/docs">📚 Swagger UI</a>
+                    <a href="/redoc">📖 ReDoc</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
     app.include_router(auth_router)
     app.include_router(invites_router)
     app.include_router(moderation_router)
