@@ -68,21 +68,35 @@ def create_app() -> FastAPI:
     app.include_router(public_reviews_router)
     
     # Настройка раздачи статики фронтенда (после всех API роутеров)
-    # Учитываем, что Root Directory = /backend, поэтому путь к frontend = ../frontend
+    # Проверяем несколько возможных путей
     backend_path = Path(__file__).parent.parent.parent
-    frontend_dist_path = backend_path.parent / 'frontend' / 'dist'
+    possible_paths = [
+        backend_path.parent / 'frontend' / 'dist',  # ../frontend/dist (если Root Directory = /backend)
+        Path('/frontend/dist'),  # /frontend/dist (если в корне)
+        Path('/app/frontend/dist'),  # /app/frontend/dist
+        backend_path / 'frontend' / 'dist',  # backend/frontend/dist
+    ]
+    
+    frontend_dist_path = None
+    for path in possible_paths:
+        if path.exists() and (path / 'index.html').exists():
+            frontend_dist_path = path
+            break
     
     # Отладочное логирование
-    import logging
     logger = logging.getLogger(__name__)
     logger.info(f"Backend path: {backend_path}")
-    logger.info(f"Frontend dist path: {frontend_dist_path}")
-    logger.info(f"Frontend dist exists: {frontend_dist_path.exists()}")
-    if frontend_dist_path.exists():
-        logger.info(f"Index.html exists: {(frontend_dist_path / 'index.html').exists()}")
-        logger.info(f"Contents: {list(frontend_dist_path.iterdir())}")
+    logger.info(f"Checking paths: {[str(p) for p in possible_paths]}")
+    if frontend_dist_path:
+        logger.info(f"✅ Found frontend at: {frontend_dist_path}")
+    else:
+        logger.warning(f"❌ Frontend not found. Checked: {[str(p) for p in possible_paths]}")
+        # Проверяем что есть в корне
+        root = Path('/')
+        if root.exists():
+            logger.info(f"Root contents: {[p.name for p in root.iterdir() if p.is_dir()][:10]}")
     
-    if frontend_dist_path.exists() and (frontend_dist_path / 'index.html').exists():
+    if frontend_dist_path:
         # Раздаем статические файлы (JS, CSS, изображения и т.д.)
         static_assets_path = frontend_dist_path / 'assets'
         if static_assets_path.exists():
@@ -103,9 +117,27 @@ def create_app() -> FastAPI:
     # Если нет собранного фронтенда, показываем заглушку на корневом пути
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
     async def root():
+        # Используем тот же поиск путей
         backend_path = Path(__file__).parent.parent.parent
-        frontend_dist_path = backend_path.parent / 'frontend' / 'dist'
-        index_path = frontend_dist_path / 'index.html'
+        possible_paths = [
+            backend_path.parent / 'frontend' / 'dist',
+            Path('/frontend/dist'),
+            Path('/app/frontend/dist'),
+            backend_path / 'frontend' / 'dist',
+        ]
+        
+        frontend_dist_path = None
+        for path in possible_paths:
+            if path.exists() and (path / 'index.html').exists():
+                frontend_dist_path = path
+                break
+        
+        if not frontend_dist_path:
+            # Fallback заглушка
+            logger.warning("Frontend not found, showing fallback")
+            index_path = None
+        else:
+            index_path = frontend_dist_path / 'index.html'
         
         if index_path.exists():
             with open(index_path, 'r', encoding='utf-8') as f:
