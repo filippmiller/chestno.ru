@@ -25,11 +25,7 @@ export const LandingHeader = () => {
             <span className="text-2xl">🇷🇺</span>
             <span>Сделано в России! Честно!</span>
             {/* Made in Russia stamp - почтовая марка */}
-            <span className="absolute -top-1 -right-1 flex items-center justify-center w-14 h-14 bg-white shadow-lg rotate-12 hover:rotate-6 transition-transform" style={{
-              border: '2px dashed #dc2626',
-              borderRadius: '50%',
-              clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-            }}>
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-14 h-14 bg-white shadow-lg rotate-12 hover:rotate-6 transition-transform rounded-full border-2 border-dashed border-primary">
               <span className="text-[7px] font-extrabold text-primary leading-tight text-center px-0.5">
                 MADE<br />IN<br />RUSSIA
               </span>
