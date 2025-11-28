@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -79,6 +79,8 @@ const defaultValues: RegisterFormValues = {
 export const RegisterPage = () => {
   const supabase = getSupabaseClient()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const returnUrl = searchParams.get('returnUrl') || '/dashboard'
   const setSessionData = useUserStore((state) => state.setSessionData)
   const [serverError, setServerError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -137,8 +139,11 @@ export const RegisterPage = () => {
 
       setSessionData(session)
 
-      setSuccessMessage('Успешно! Перенаправляем в кабинет.')
-      navigate('/dashboard', { replace: true })
+      setSuccessMessage('Успешно! Перенаправляем...')
+      // Небольшая задержка для обновления состояния
+      setTimeout(() => {
+        navigate(returnUrl, { replace: true })
+      }, 500)
     } catch (err) {
       console.error(err)
       setServerError(

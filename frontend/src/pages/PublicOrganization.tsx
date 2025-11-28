@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 
 import { Link } from 'react-router-dom'
 import { fetchPublicOrganizationDetailsById } from '@/api/authService'
@@ -8,18 +8,30 @@ import { listPublicOrganizationReviewsById } from '@/api/reviewsService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useUserStore } from '@/store/userStore'
 import type { PublicOrganizationDetails } from '@/types/auth'
 import type { PublicOrganizationPost } from '@/types/posts'
 import type { PublicReview } from '@/types/reviews'
 
 export const PublicOrganizationPage = () => {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { user } = useUserStore()
   const [data, setData] = useState<PublicOrganizationDetails | null>(null)
   const [posts, setPosts] = useState<PublicOrganizationPost[]>([])
   const [reviews, setReviews] = useState<PublicReview[]>([])
   const [avgRating, setAvgRating] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const handleLeaveReview = () => {
+    if (!user) {
+      // Редирект на регистрацию с returnUrl
+      navigate(`/register?returnUrl=/org/${id}/review`)
+    } else {
+      navigate(`/org/${id}/review`)
+    }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -336,10 +348,17 @@ export const PublicOrganizationPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Отзывы</CardTitle>
-          {avgRating && (
-            <CardDescription>Средняя оценка: {avgRating.toFixed(1)} / 5</CardDescription>
-          )}
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Отзывы</CardTitle>
+              {avgRating && (
+                <CardDescription>Средняя оценка: {avgRating.toFixed(1)} / 5</CardDescription>
+              )}
+            </div>
+            <Button onClick={handleLeaveReview} size="sm">
+              Оставить отзыв
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {reviews.length > 0 ? (

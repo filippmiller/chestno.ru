@@ -22,6 +22,7 @@ import { OrganizationQrPage } from '@/pages/OrganizationQr'
 import { ProducersLandingPage } from '@/pages/ProducersLanding'
 import { PublicOrganizationPage } from '@/pages/PublicOrganization'
 import { PublicOrganizationsCatalogPage } from '@/pages/PublicOrganizationsCatalog'
+import { CreateReviewPage } from '@/pages/CreateReview'
 import { RegisterPage } from '@/pages/Register'
 import { AdminDashboardPage } from '@/pages/AdminDashboard'
 import { LinkedAccountsPage } from '@/pages/LinkedAccounts'
@@ -61,6 +62,7 @@ export const AppRoutes = () => (
     <Route path="/admin/db" element={<DatabaseExplorerPage />} />
     <Route path="/invite/:code" element={<InviteLandingPage />} />
     <Route path="/org/:id" element={<PublicOrganizationPage />} />
+    <Route path="/org/:id/review" element={<CreateReviewPage />} />
     <Route path="/orgs" element={<PublicOrganizationsCatalogPage />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
