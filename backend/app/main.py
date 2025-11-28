@@ -1,6 +1,9 @@
+import os
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.admin_ai import router as admin_ai_router
@@ -36,41 +39,7 @@ def create_app() -> FastAPI:
         allow_headers=['*'],
     )
     
-    @app.get('/', response_class=HTMLResponse)
-    async def root():
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Работаем Честно! Backend API</title>
-            <style>
-                body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
-                .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-                h1 { color: #333; }
-                .info { background: #e8f4f8; padding: 15px; border-radius: 4px; margin: 20px 0; }
-                a { color: #0066cc; text-decoration: none; }
-                a:hover { text-decoration: underline; }
-                .links { margin-top: 20px; }
-                .links a { display: inline-block; margin-right: 15px; padding: 8px 15px; background: #0066cc; color: white; border-radius: 4px; }
-                .links a:hover { background: #0052a3; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🚀 Работаем Честно! Backend API</h1>
-                <div class="info">
-                    <p><strong>Версия:</strong> 0.1.0</p>
-                    <p><strong>Статус:</strong> ✅ Работает</p>
-                </div>
-                <div class="links">
-                    <a href="/docs">📚 Swagger UI</a>
-                    <a href="/redoc">📖 ReDoc</a>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
+    # Регистрируем все API роутеры ПЕРЕД фронтендом
     app.include_router(auth_router)
     app.include_router(invites_router)
     app.include_router(moderation_router)
@@ -94,8 +63,75 @@ def create_app() -> FastAPI:
     app.include_router(public_posts_router)
     app.include_router(reviews_router)
     app.include_router(public_reviews_router)
+    
+    # Настройка раздачи статики фронтенда (после всех API роутеров)
+    frontend_dist_path = Path(__file__).parent.parent.parent / 'frontend' / 'dist'
+    
+    if frontend_dist_path.exists() and (frontend_dist_path / 'index.html').exists():
+        # Раздаем статические файлы (JS, CSS, изображения и т.д.)
+        static_assets_path = frontend_dist_path / 'assets'
+        if static_assets_path.exists():
+            app.mount('/assets', StaticFiles(directory=str(static_assets_path)), name='assets')
+        
+        # Для всех остальных путей (кроме API) отдаем index.html (SPA routing)
+        @app.get('/{full_path:path}', include_in_schema=False)
+        async def serve_frontend(full_path: str):
+            # Игнорируем API пути и системные пути
+            if full_path.startswith('api/') or full_path in ['docs', 'redoc', 'openapi.json']:
+                return None
+            
+            index_path = frontend_dist_path / 'index.html'
+            if index_path.exists():
+                with open(index_path, 'r', encoding='utf-8') as f:
+                    return HTMLResponse(content=f.read())
+    
+    # Если нет собранного фронтенда, показываем заглушку на корневом пути
+    @app.get('/', response_class=HTMLResponse, include_in_schema=False)
+    async def root():
+        frontend_dist_path = Path(__file__).parent.parent.parent / 'frontend' / 'dist'
+        index_path = frontend_dist_path / 'index.html'
+        
+        if index_path.exists():
+            with open(index_path, 'r', encoding='utf-8') as f:
+                return HTMLResponse(content=f.read())
+        
+        # Fallback заглушка
+        return HTMLResponse(content="""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Работаем Честно! Backend API</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+                .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                h1 { color: #333; }
+                .info { background: #e8f4f8; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                a { color: #0066cc; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+                .links { margin-top: 20px; }
+                .links a { display: inline-block; margin-right: 15px; padding: 8px 15px; background: #0066cc; color: white; border-radius: 4px; }
+                .links a:hover { background: #0052a3; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚀 Работаем Честно! Backend API</h1>
+                <div class="info">
+                    <p><strong>Версия:</strong> 0.1.0</p>
+                    <p><strong>Статус:</strong> ✅ Работает</p>
+                    <p><strong>Фронтенд:</strong> ⚠️ Не собран (запустите: cd frontend && npm run build)</p>
+                </div>
+                <div class="links">
+                    <a href="/docs">📚 Swagger UI</a>
+                    <a href="/redoc">📖 ReDoc</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+    
     return app
 
 
 app = create_app()
-
