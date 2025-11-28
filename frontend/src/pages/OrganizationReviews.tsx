@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { CheckCircle2, XCircle, Clock, Star, MessageSquare } from 'lucide-react'
 
 import { listOrganizationReviews, getReviewStats, moderateReview, respondToReview } from '@/api/reviewsService'
-import type { Review, ReviewStats, ReviewResponse } from '@/types/reviews'
+import type { Review, ReviewStats } from '@/types/reviews'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -77,17 +77,17 @@ export const OrganizationReviewsPage = () => {
     }
   }
 
-  const handleStartRespond = (reviewId: string, existingResponse?: string | null) => {
+  const handleStartRespond = (reviewId: string, existingResponse?: string | null): void => {
     setRespondingTo(reviewId)
     setResponseText(existingResponse || '')
   }
 
-  const handleCancelRespond = () => {
+  const handleCancelRespond = (): void => {
     setRespondingTo(null)
     setResponseText('')
   }
 
-  const handleSubmitResponse = async (reviewId: string) => {
+  const handleSubmitResponse = async (reviewId: string): Promise<void> => {
     if (!selectedOrganizationId || !responseText.trim()) return
     setSubmittingResponse(true)
     try {
