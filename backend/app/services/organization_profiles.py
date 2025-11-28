@@ -281,7 +281,7 @@ def get_public_organization_details_by_id(organization_id: str) -> PublicOrganiz
         video_url=org.get('video_url'),
         gallery=gallery,
         tags=org.get('tags'),
-        primary_category=org.get('category'),  # Используем category из профиля
+        primary_category=org.get('primary_category') or org.get('category'),  # Используем primary_category из organizations или category из профиля
         founded_year=org.get('founded_year'),
         employee_count=org.get('employee_count'),
         factory_size=org.get('factory_size'),
