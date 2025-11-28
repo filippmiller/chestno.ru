@@ -116,21 +116,21 @@ export const PublicOrganizationPage = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           {data.is_verified && (
-            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-[10px] font-semibold text-green-800 sm:px-3 sm:text-xs">
               Проверено Chestno.ru
             </span>
           )}
           {data.primary_category && (
-            <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-[10px] font-semibold text-blue-800 sm:px-3 sm:text-xs">
               {data.primary_category}
             </span>
           )}
         </div>
-        {data.short_description && <p className="text-lg text-muted-foreground">{data.short_description}</p>}
+        {data.short_description && <p className="text-sm text-muted-foreground sm:text-base lg:text-lg break-words">{data.short_description}</p>}
         {data.buy_links.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {data.buy_links.map((link) => (
-              <Button key={link.url} asChild variant="outline" size="sm">
+              <Button key={link.url} asChild variant="outline" size="sm" className="min-h-[36px] text-xs sm:text-sm">
                 <a href={link.url} target="_blank" rel="noreferrer">
                   {link.label}
                 </a>

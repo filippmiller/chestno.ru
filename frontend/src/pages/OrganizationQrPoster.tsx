@@ -133,10 +133,10 @@ export const OrganizationQrPosterPage = () => {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-6">
-        <h1 className="text-3xl font-semibold">QR Poster / Рекламный лист с QR-кодом</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl font-semibold sm:text-3xl">QR Poster / Рекламный лист с QR-кодом</h1>
+        <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
           Скачайте этот лист и распечатайте его. Разместите в вашем офисе, на входной двери или рядом с кассой — клиенты
           смогут сканировать QR-код и попадать на ваш профиль в нашей системе.
         </p>
@@ -188,23 +188,24 @@ export const OrganizationQrPosterPage = () => {
               </div>
 
               {/* Информация о QR */}
-              <div className="space-y-2 rounded-lg border border-border bg-muted/50 p-4">
-                <Label>Целевой URL</Label>
+              <div className="space-y-2 rounded-lg border border-border bg-muted/50 p-3 sm:p-4">
+                <Label className="text-sm">Целевой URL</Label>
                 <div className="flex items-center gap-2">
-                  <Input value={publicUrl} readOnly className="bg-background font-mono text-xs" />
-                  <Button type="button" variant="outline" size="sm" onClick={handleCopyUrl}>
+                  <Input value={publicUrl} readOnly className="bg-background font-mono text-[10px] sm:text-xs flex-1 min-w-0" />
+                  <Button type="button" variant="outline" size="sm" onClick={handleCopyUrl} className="flex-shrink-0">
                     <Copy className="h-4 w-4" />
+                    <span className="sr-only sm:not-sr-only sm:ml-1">Копировать</span>
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">
                   QR-код ведёт на публичную страницу вашей организации
                 </p>
               </div>
 
               {/* Кнопка скачивания */}
-              <Button onClick={handleDownloadPdf} disabled={loading} className="w-full" size="lg">
+              <Button onClick={handleDownloadPdf} disabled={loading} className="w-full min-h-[44px]" size="lg">
                 <Download className="mr-2 h-4 w-4" />
-                {loading ? 'Генерация PDF...' : 'Download PDF (A4)'}
+                <span className="text-sm sm:text-base">{loading ? 'Генерация PDF...' : 'Download PDF (A4)'}</span>
               </Button>
 
               {/* TODO: Другие форматы */}

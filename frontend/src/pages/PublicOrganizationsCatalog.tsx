@@ -56,9 +56,9 @@ export const PublicOrganizationsCatalogPage = () => {
         </p>
       </div>
 
-      <form className="grid gap-4 rounded-lg border border-border p-4 md:grid-cols-5" onSubmit={handleSubmit}>
+      <form className="grid gap-3 rounded-lg border border-border p-3 sm:p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5" onSubmit={handleSubmit}>
         <input
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:col-span-2 md:col-span-1"
           placeholder="Поиск по названию или городу"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -83,11 +83,11 @@ export const PublicOrganizationsCatalogPage = () => {
           <option value="упаковка">Упаковка</option>
           <option value="пищевое производство">Пищевое производство</option>
         </select>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
-          Только проверенные
+        <label className="flex items-center gap-2 text-sm text-muted-foreground sm:col-span-2 md:col-span-1">
+          <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} className="h-4 w-4" />
+          <span className="whitespace-nowrap">Только проверенные</span>
         </label>
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} className="h-10 min-h-[44px] sm:col-span-2 md:col-span-1 lg:col-span-1">
           Найти
         </Button>
       </form>

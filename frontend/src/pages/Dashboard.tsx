@@ -61,11 +61,11 @@ export const DashboardPage = () => {
   const isPlatformAdmin = platformRoles.includes('platform_admin')
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 sm:gap-6 px-4 py-6 sm:py-10">
       <div>
-        <p className="text-sm text-muted-foreground">Кабинет участника платформы</p>
-        <h1 className="mt-1 text-3xl font-semibold">Здравствуйте{user?.full_name ? `, ${user.full_name}` : ''}</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="text-xs text-muted-foreground sm:text-sm">Кабинет участника платформы</p>
+        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">Здравствуйте{user?.full_name ? `, ${user.full_name}` : ''}</h1>
+        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
           Управляйте организациями, контентом и профилем производства. Следите за статусом проверок и приглашайте коллег.
         </p>
       </div>
@@ -181,48 +181,52 @@ export const DashboardPage = () => {
                 Ваша роль: <span className="font-medium">{roleLabels[selectedMembership.role] ?? selectedMembership.role}</span>
               </p>
             )}
-            <div className="flex flex-wrap gap-3">
-              <Button asChild variant={canEditProfile ? 'default' : 'outline'}>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <Button asChild variant={canEditProfile ? 'default' : 'outline'} className="min-h-[44px] text-xs sm:text-sm">
                 <Link to="/dashboard/organization/profile">
-                  <FileText className="mr-2 h-4 w-4" />
-                  {canEditProfile ? 'Редактировать профиль' : 'Открыть профиль'}
+                  <FileText className="mr-1 h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{canEditProfile ? 'Редактировать профиль' : 'Открыть профиль'}</span>
+                  <span className="sm:hidden">Профиль</span>
                 </Link>
               </Button>
-              <Button asChild variant={canManageInvites ? 'default' : 'outline'}>
+              <Button asChild variant={canManageInvites ? 'default' : 'outline'} className="min-h-[44px] text-xs sm:text-sm">
                 <Link to="/dashboard/organization/invites">
-                  <Users className="mr-2 h-4 w-4" />
+                  <Users className="mr-1 h-4 w-4 sm:mr-2" />
                   Инвайты
                 </Link>
               </Button>
-              <Button asChild variant={canEditProfile ? 'default' : 'outline'}>
+              <Button asChild variant={canEditProfile ? 'default' : 'outline'} className="min-h-[44px] text-xs sm:text-sm">
                 <Link to="/dashboard/organization/qr">
-                  <QrCode className="mr-2 h-4 w-4" />
-                  QR-коды
+                  <QrCode className="mr-1 h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">QR-коды</span>
+                  <span className="sm:hidden">QR</span>
                 </Link>
               </Button>
-              <Button asChild variant={canEditProfile ? 'default' : 'outline'}>
+              <Button asChild variant={canEditProfile ? 'default' : 'outline'} className="min-h-[44px] text-xs sm:text-sm">
                 <Link to="/dashboard/organization/marketing/qr-poster">
-                  <QrCode className="mr-2 h-4 w-4" />
-                  QR Poster
+                  <QrCode className="mr-1 h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">QR Poster</span>
+                  <span className="sm:hidden">Poster</span>
                 </Link>
               </Button>
               {canEditProfile && (
-                <Button asChild>
+                <Button asChild className="min-h-[44px] text-xs sm:text-sm">
                   <Link to="/dashboard/organization/products">
-                    <Package className="mr-2 h-4 w-4" />
+                    <Package className="mr-1 h-4 w-4 sm:mr-2" />
                     Товары
                   </Link>
                 </Button>
               )}
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="min-h-[44px] text-xs sm:text-sm">
                 <Link to="/dashboard/organization/plan">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Тариф и лимиты
+                  <CreditCard className="mr-1 h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Тариф и лимиты</span>
+                  <span className="sm:hidden">Тариф</span>
                 </Link>
               </Button>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="min-h-[44px] text-xs sm:text-sm">
                 <Link to="/dashboard/organization/onboarding">
-                  <ClipboardList className="mr-2 h-4 w-4" />
+                  <ClipboardList className="mr-1 h-4 w-4 sm:mr-2" />
                   Онбординг
                 </Link>
               </Button>

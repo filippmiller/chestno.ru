@@ -114,10 +114,10 @@ export const OrganizationReviewsPage = () => {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6 px-4 py-6 sm:py-10">
       <div>
-        <h1 className="text-3xl font-semibold">Отзывы</h1>
-        <p className="text-muted-foreground">Управляйте отзывами о вашей организации и товарах</p>
+        <h1 className="text-2xl font-semibold sm:text-3xl">Отзывы</h1>
+        <p className="text-sm text-muted-foreground sm:text-base">Управляйте отзывами о вашей организации и товарах</p>
       </div>
 
       {stats && (
@@ -157,11 +157,12 @@ export const OrganizationReviewsPage = () => {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant={statusFilter === undefined ? 'default' : 'outline'}
           size="sm"
           onClick={() => setStatusFilter(undefined)}
+          className="min-h-[36px] text-xs sm:text-sm"
         >
           Все
         </Button>
@@ -169,6 +170,7 @@ export const OrganizationReviewsPage = () => {
           variant={statusFilter === 'pending' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setStatusFilter('pending')}
+          className="min-h-[36px] text-xs sm:text-sm"
         >
           На модерации
         </Button>
@@ -176,6 +178,7 @@ export const OrganizationReviewsPage = () => {
           variant={statusFilter === 'approved' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setStatusFilter('approved')}
+          className="min-h-[36px] text-xs sm:text-sm"
         >
           Одобрено
         </Button>
@@ -183,6 +186,7 @@ export const OrganizationReviewsPage = () => {
           variant={statusFilter === 'rejected' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setStatusFilter('rejected')}
+          className="min-h-[36px] text-xs sm:text-sm"
         >
           Отклонено
         </Button>
@@ -209,43 +213,44 @@ export const OrganizationReviewsPage = () => {
             return (
               <Card key={review.id}>
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <StatusIcon className="h-5 w-5" />
-                        <CardTitle className="text-lg">{review.title || 'Без заголовка'}</CardTitle>
-                        <div className="flex items-center gap-1">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusIcon className="h-5 w-5 flex-shrink-0" />
+                        <CardTitle className="text-base sm:text-lg break-words">{review.title || 'Без заголовка'}</CardTitle>
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
                               key={i}
-                              className={`h-4 w-4 ${
+                              className={`h-3 w-3 sm:h-4 sm:w-4 ${
                                 i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
                               }`}
                             />
                           ))}
                         </div>
                       </div>
-                      <CardDescription className="mt-2">{review.body}</CardDescription>
+                      <CardDescription className="mt-2 text-sm break-words">{review.body}</CardDescription>
                     </div>
-                    <Badge variant={review.status === 'approved' ? 'default' : 'secondary'}>
+                    <Badge variant={review.status === 'approved' ? 'default' : 'secondary'} className="flex-shrink-0 text-xs">
                       {STATUS_LABELS[review.status]}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-xs text-muted-foreground sm:text-sm">
                       {review.created_at && (
                         <span>Создано: {new Date(review.created_at).toLocaleDateString('ru-RU')}</span>
                       )}
-                      {review.product_id && <span className="ml-4">Отзыв о товаре</span>}
+                      {review.product_id && <span className="ml-2 sm:ml-4">Отзыв о товаре</span>}
                     </div>
                     {review.status === 'pending' && (
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleModerate(review.id, 'approved')}
+                          className="min-h-[36px] text-xs sm:text-sm"
                         >
                           Одобрить
                         </Button>
@@ -253,6 +258,7 @@ export const OrganizationReviewsPage = () => {
                           variant="destructive"
                           size="sm"
                           onClick={() => handleModerate(review.id, 'rejected')}
+                          className="min-h-[36px] text-xs sm:text-sm"
                         >
                           Отклонить
                         </Button>
@@ -263,9 +269,11 @@ export const OrganizationReviewsPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleStartRespond(review.id)}
+                        className="min-h-[36px] text-xs sm:text-sm"
                       >
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Ответить
+                        <MessageSquare className="mr-1 h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Ответить</span>
+                        <span className="sm:hidden">Ответ</span>
                       </Button>
                     )}
                     {review.status === 'approved' && review.response && (
@@ -273,9 +281,11 @@ export const OrganizationReviewsPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleStartRespond(review.id, review.response)}
+                        className="min-h-[36px] text-xs sm:text-sm"
                       >
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Изменить ответ
+                        <MessageSquare className="mr-1 h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Изменить ответ</span>
+                        <span className="sm:hidden">Изменить</span>
                       </Button>
                     )}
                   </div>

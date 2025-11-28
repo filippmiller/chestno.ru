@@ -140,7 +140,7 @@ export const OrganizationProfilePage = () => {
 
   if (!selectedOrganization) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-10">
+      <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-10">
         <Alert>
           <AlertTitle>Нет организаций</AlertTitle>
           <AlertDescription>Чтобы заполнить профиль, сначала создайте организацию или примите приглашение.</AlertDescription>

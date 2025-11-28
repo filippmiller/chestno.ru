@@ -96,7 +96,7 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="flex w-full justify-center px-4 py-10">
+    <div className="flex w-full justify-center px-4 py-6 sm:py-10">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Вход</CardTitle>
@@ -104,10 +104,10 @@ export const LoginPage = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-4 space-y-2">
-            <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
+            <Button variant="outline" className="w-full min-h-[44px]" onClick={handleGoogleLogin}>
               Войти через Google
             </Button>
-            <Button variant="outline" className="w-full" onClick={handleYandexLogin}>
+            <Button variant="outline" className="w-full min-h-[44px]" onClick={handleYandexLogin}>
               Войти через Яндекс
             </Button>
           </div>
@@ -147,7 +147,7 @@ export const LoginPage = () => {
               />
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full min-h-[44px]"
                 disabled={form.formState.isSubmitting || Boolean(retryAfter)}
               >
                 {form.formState.isSubmitting

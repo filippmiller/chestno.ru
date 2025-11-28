@@ -153,11 +153,11 @@ export const RegisterPage = () => {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 sm:gap-6 px-4 py-6 sm:py-10">
       <div>
-        <p className="text-sm uppercase text-muted-foreground">Платформа «Работаем Честно!»</p>
-        <h1 className="mt-2 text-3xl font-semibold">Регистрация на платформе</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="text-xs uppercase text-muted-foreground sm:text-sm">Платформа «Работаем Честно!»</p>
+        <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">Регистрация на платформе</h1>
+        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
           Зарегистрируйтесь как производитель или как пользователь, чтобы следить за честными брендами.
         </p>
       </div>
@@ -181,11 +181,11 @@ export const RegisterPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 grid gap-2 md:grid-cols-2">
-            <Button variant="outline" onClick={handleGoogleSignup}>
+          <div className="mb-4 grid gap-2 sm:grid-cols-2">
+            <Button variant="outline" onClick={handleGoogleSignup} className="min-h-[44px] text-xs sm:text-sm">
               Регистрация через Google
             </Button>
-            <Button variant="outline" onClick={handleYandexSignup}>
+            <Button variant="outline" onClick={handleYandexSignup} className="min-h-[44px] text-xs sm:text-sm">
               Регистрация через Яндекс
             </Button>
           </div>
@@ -386,7 +386,7 @@ export const RegisterPage = () => {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full min-h-[44px]"
                 disabled={form.formState.isSubmitting || !form.getValues('agree')}
               >
                 {form.formState.isSubmitting ? 'Создаём аккаунт...' : 'Зарегистрироваться'}
