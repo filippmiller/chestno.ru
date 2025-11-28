@@ -35,8 +35,9 @@ export const LandingHero = () => (
       <div className="grid gap-12 lg:grid-cols-5 lg:gap-16">
         <div className="space-y-8 lg:col-span-3">
           <div className="space-y-6 animate-slide-up">
-            <h1 className="font-display text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl">
-              Герои российского производства — <span className="text-primary">в одном месте</span>
+            <h1 className="font-display text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl flex items-center gap-3">
+              <span className="text-4xl sm:text-5xl lg:text-6xl">🇷🇺</span>
+              <span>Сделано в России! <span className="text-primary">Честно!</span></span>
             </h1>
             <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground lg:text-xl">
               Мы собираем доверенный каталог российских производителей, которые делают товары в России, создают рабочие

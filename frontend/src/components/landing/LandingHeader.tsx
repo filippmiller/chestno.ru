@@ -4,11 +4,11 @@ import { Factory, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const navLinks = [
-  { label: 'Каталог производителей', href: '#catalog' },
-  { label: 'Каталог товаров', href: '#products' },
-  { label: 'Истории героев', href: '#stories' },
-  { label: 'О проекте', href: '#about' },
-  { label: 'Тарифы для производителей', href: '#pricing' },
+  { label: 'Каталог производителей', href: '/orgs' },
+  { label: 'Каталог товаров', href: '/products' },
+  { label: 'Истории героев', href: '/stories' },
+  { label: 'О проекте', href: '/about' },
+  { label: 'Тарифы для производителей', href: '/pricing' },
 ]
 
 export const LandingHeader = () => {
@@ -21,8 +21,9 @@ export const LandingHeader = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary transition-transform group-hover:scale-105">
             <Factory className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-display text-lg font-semibold text-foreground lg:text-xl">
-            Герои производства
+          <span className="font-display text-lg font-semibold text-foreground lg:text-xl flex items-center gap-2">
+            <span className="text-2xl">🇷🇺</span>
+            Сделано в России! Честно!
           </span>
         </a>
 
@@ -40,14 +41,16 @@ export const LandingHeader = () => {
 
         <div className="hidden lg:flex lg:items-center lg:gap-3">
           <a
-            href="#login"
+            href="/login"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Войти
           </a>
-          <Button variant="outline" size="sm">
-            Регистрация
-          </Button>
+          <a href="/register">
+            <Button variant="outline" size="sm">
+              Регистрация
+            </Button>
+          </a>
           <Button variant="producer" size="sm">
             Я производитель
           </Button>
@@ -76,12 +79,14 @@ export const LandingHeader = () => {
               </a>
             ))}
             <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
-              <a href="#login" className="px-4 py-2 text-sm font-medium text-muted-foreground">
+              <a href="/login" className="px-4 py-2 text-sm font-medium text-muted-foreground">
                 Войти
               </a>
-              <Button variant="outline" className="w-full">
-                Регистрация
-              </Button>
+              <a href="/register" className="w-full">
+                <Button variant="outline" className="w-full">
+                  Регистрация
+                </Button>
+              </a>
               <Button variant="producer" className="w-full">
                 Я производитель
               </Button>

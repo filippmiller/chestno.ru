@@ -25,12 +25,20 @@ import { PublicOrganizationsCatalogPage } from '@/pages/PublicOrganizationsCatal
 import { RegisterPage } from '@/pages/Register'
 import { AdminDashboardPage } from '@/pages/AdminDashboard'
 import { LinkedAccountsPage } from '@/pages/LinkedAccounts'
+import { ProductsCatalogPage } from '@/pages/ProductsCatalog'
+import { StoriesPage } from '@/pages/StoriesPage'
+import { AboutPage } from '@/pages/AboutPage'
+import { PricingPage } from '@/pages/PricingPage'
 
 export const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<ProducersLandingPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/products" element={<ProductsCatalogPage />} />
+    <Route path="/stories" element={<StoriesPage />} />
+    <Route path="/about" element={<AboutPage />} />
+    <Route path="/pricing" element={<PricingPage />} />
     <Route path="/auth/callback" element={<AuthCallbackPage />} />
     <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/dashboard/organization/profile" element={<OrganizationProfilePage />} />

@@ -30,7 +30,10 @@ export const LandingFooter = () => (
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <Factory className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-display text-xl font-semibold">Герои производства</span>
+            <span className="font-display text-xl font-semibold flex items-center gap-2">
+              <span className="text-2xl">🇷🇺</span>
+              Сделано в России! Честно!
+            </span>
           </a>
           <p className="mt-4 max-w-sm text-sm text-primary-foreground/70">
             Доверенный каталог российских производителей. Знайте своих героев и поддерживайте тех, кто создаёт
@@ -102,7 +105,7 @@ export const LandingFooter = () => (
       </div>
 
       <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-primary-foreground/10 pt-8 sm:flex-row">
-        <p className="text-sm text-primary-foreground/60">© 2024 Герои производства. Все права защищены.</p>
+        <p className="text-sm text-primary-foreground/60">© 2024 Сделано в России! Честно! Все права защищены.</p>
         <div className="flex items-center gap-2">
           <span className="text-sm text-primary-foreground/60">Сделано с</span>
           <span className="text-primary">❤️</span>
