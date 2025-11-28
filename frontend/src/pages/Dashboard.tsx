@@ -200,6 +200,12 @@ export const DashboardPage = () => {
                   QR-коды
                 </Link>
               </Button>
+              <Button asChild variant={canEditProfile ? 'default' : 'outline'}>
+                <Link to="/dashboard/organization/marketing/qr-poster">
+                  <QrCode className="mr-2 h-4 w-4" />
+                  QR Poster
+                </Link>
+              </Button>
               {canEditProfile && (
                 <Button asChild>
                   <Link to="/dashboard/organization/products">

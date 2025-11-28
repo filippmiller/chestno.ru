@@ -19,6 +19,7 @@ import { OrganizationPostsPage } from '@/pages/OrganizationPosts'
 import { OrganizationPostEditPage } from '@/pages/OrganizationPostEdit'
 import { OrganizationReviewsPage } from '@/pages/OrganizationReviews'
 import { OrganizationQrPage } from '@/pages/OrganizationQr'
+import { OrganizationQrPosterPage } from '@/pages/OrganizationQrPoster'
 import { ProducersLandingPage } from '@/pages/ProducersLanding'
 import { PublicOrganizationPage } from '@/pages/PublicOrganization'
 import { PublicOrganizationsCatalogPage } from '@/pages/PublicOrganizationsCatalog'
@@ -52,7 +53,8 @@ export const AppRoutes = () => (
     <Route path="/dashboard/organization/invites" element={<OrganizationInvitesPage />} />
     <Route path="/dashboard/organization/onboarding" element={<OrganizationOnboardingPage />} />
     <Route path="/dashboard/organization/analytics" element={<OrganizationAnalyticsPage />} />
-    <Route path="/dashboard/organization/qr" element={<OrganizationQrPage />} />
+            <Route path="/dashboard/organization/qr" element={<OrganizationQrPage />} />
+            <Route path="/dashboard/organization/marketing/qr-poster" element={<OrganizationQrPosterPage />} />
     <Route path="/dashboard/notifications" element={<NotificationsPage />} />
     <Route path="/dashboard/settings/notifications" element={<NotificationSettingsPage />} />
     <Route path="/settings/linked-accounts" element={<LinkedAccountsPage />} />
