@@ -33,40 +33,42 @@ export const PublicOrganizationPage = () => {
     }
   }
 
-  useEffect(() => {
+  const loadData = async () => {
     if (!id) return
-    let isMounted = true
-    const load = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const [orgData, postsData, reviewsData] = await Promise.all([
-          fetchPublicOrganizationDetailsById(id),
-          listPublicOrganizationPostsById(id, { limit: 5, offset: 0 }),
-          listPublicOrganizationReviewsById(id, { limit: 5, offset: 0 }),
-        ])
-        if (isMounted) {
-          setData(orgData)
-          setPosts(postsData.items)
-          setReviews(reviewsData.items)
-          setAvgRating(reviewsData.average_rating || null)
-        }
-      } catch (err) {
-        console.error(err)
-        if (isMounted) {
-          setError('Организация не найдена или ещё находится на модерации')
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
+    setLoading(true)
+    setError(null)
+    try {
+      const [orgData, postsData, reviewsData] = await Promise.all([
+        fetchPublicOrganizationDetailsById(id),
+        listPublicOrganizationPostsById(id, { limit: 5, offset: 0 }),
+        listPublicOrganizationReviewsById(id, { limit: 5, offset: 0 }),
+      ])
+      setData(orgData)
+      setPosts(postsData.items)
+      setReviews(reviewsData.items)
+      setAvgRating(reviewsData.average_rating || null)
+    } catch (err) {
+      console.error(err)
+      setError('Организация не найдена или ещё находится на модерации')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadData()
+  }, [id])
+
+  // Обновляем данные при фокусе страницы (например, после возврата с создания отзыва)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (id && !loading) {
+        void loadData()
       }
     }
-    void load()
-    return () => {
-      isMounted = false
-    }
-  }, [id])
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [id, loading])
 
   if (!id) {
     return (
