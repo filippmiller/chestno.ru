@@ -36,7 +36,7 @@ export const LandingHero = () => (
         <div className="space-y-8 lg:col-span-3">
           <div className="space-y-6 animate-slide-up">
             <h1 className="font-display text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl flex items-center gap-3 relative">
-              <span className="text-4xl sm:text-5xl lg:text-6xl">🇷🇺</span>
+              <span className="text-5xl sm:text-6xl lg:text-7xl leading-none" role="img" aria-label="Флаг России">🇷🇺</span>
               <span>Сделано в России! <span className="text-primary">Честно!</span></span>
               {/* Made in Russia stamp - почтовая марка */}
               <span className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 lg:-top-6 lg:-right-6 flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 bg-white shadow-xl rotate-12 hover:rotate-6 transition-transform rounded-full border-2 border-dashed border-primary">
