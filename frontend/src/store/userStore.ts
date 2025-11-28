@@ -27,8 +27,9 @@ export const useUserStore = create<UserState>((set) => ({
   selectedOrganizationId: null,
   platformRoles: [],
   loading: false,
-  setSessionData: ({ user, memberships, organizations, platform_roles }) =>
-    set((state) => ({
+  setSessionData: ({ user, memberships, organizations, platform_roles }) => {
+    console.log('setSessionData called with platform_roles:', platform_roles)
+    return set((state) => ({
       user,
       memberships,
       organizations,
@@ -37,7 +38,8 @@ export const useUserStore = create<UserState>((set) => ({
         state.selectedOrganizationId && memberships.some((m) => m.organization_id === state.selectedOrganizationId)
           ? state.selectedOrganizationId
           : memberships[0]?.organization_id ?? null,
-    })),
+    }))
+  },
   setLoading: (loading) => set({ loading }),
   setSelectedOrganization: (organizationId) => set({ selectedOrganizationId: organizationId }),
   reset: () =>

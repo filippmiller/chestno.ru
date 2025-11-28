@@ -38,9 +38,13 @@ export const DashboardPage = () => {
     if (!user) {
       setLoading(true)
       fetchSession()
-        .then((session) => setSessionData(session))
+        .then((session) => {
+          console.log('Session data:', session)
+          console.log('Platform roles:', session.platform_roles)
+          setSessionData(session)
+        })
         .finally(() => setLoading(false))
-        .catch((error) => console.error(error))
+        .catch((error) => console.error('Error fetching session:', error))
     }
   }, [user, setLoading, setSessionData])
 
@@ -59,6 +63,13 @@ export const DashboardPage = () => {
   const canManageInvites = selectedMembership ? INVITE_ROLES.has(selectedMembership.role) : false
   const showModerationLink = platformRoles.some((role) => MODERATOR_ROLES.has(role))
   const isPlatformAdmin = platformRoles.includes('platform_admin')
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Dashboard - platformRoles:', platformRoles)
+    console.log('Dashboard - isPlatformAdmin:', isPlatformAdmin)
+    console.log('Dashboard - showModerationLink:', showModerationLink)
+  }, [platformRoles, isPlatformAdmin, showModerationLink])
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 sm:gap-6 px-4 py-6 sm:py-10">
