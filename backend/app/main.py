@@ -65,7 +65,9 @@ def create_app() -> FastAPI:
     app.include_router(public_reviews_router)
     
     # Настройка раздачи статики фронтенда (после всех API роутеров)
-    frontend_dist_path = Path(__file__).parent.parent.parent / 'frontend' / 'dist'
+    # Учитываем, что Root Directory = /backend, поэтому путь к frontend = ../frontend
+    backend_path = Path(__file__).parent.parent.parent
+    frontend_dist_path = backend_path.parent / 'frontend' / 'dist'
     
     if frontend_dist_path.exists() and (frontend_dist_path / 'index.html').exists():
         # Раздаем статические файлы (JS, CSS, изображения и т.д.)
@@ -88,7 +90,8 @@ def create_app() -> FastAPI:
     # Если нет собранного фронтенда, показываем заглушку на корневом пути
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
     async def root():
-        frontend_dist_path = Path(__file__).parent.parent.parent / 'frontend' / 'dist'
+        backend_path = Path(__file__).parent.parent.parent
+        frontend_dist_path = backend_path.parent / 'frontend' / 'dist'
         index_path = frontend_dist_path / 'index.html'
         
         if index_path.exists():
