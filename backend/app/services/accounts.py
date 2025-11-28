@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 from psycopg.rows import dict_row
@@ -35,6 +35,8 @@ def _fetch_session(cur, user_id: str) -> SessionResponse:
             status_code=status.HTTP_404_NOT_FOUND,
             detail='User profile not found. Please complete registration.',
         )
+    # Конвертируем UUID в строки
+    user_row = {k: str(v) if isinstance(v, UUID) else v for k, v in user_row.items()}
 
     cur.execute(
         '''
@@ -46,9 +48,13 @@ def _fetch_session(cur, user_id: str) -> SessionResponse:
         (user_id,),
     )
     organizations = cur.fetchall()
+    # Конвертируем UUID в строки для всех организаций
+    organizations = [{k: str(v) if isinstance(v, UUID) else v for k, v in org.items()} for org in organizations]
 
     cur.execute('SELECT * FROM organization_members WHERE user_id = %s', (user_id,))
     memberships = cur.fetchall()
+    # Конвертируем UUID в строки для всех memberships
+    memberships = [{k: str(v) if isinstance(v, UUID) else v for k, v in mem.items()} for mem in memberships]
 
     cur.execute('SELECT role FROM platform_roles WHERE user_id = %s', (user_id,))
     platform_roles_rows = cur.fetchall()
