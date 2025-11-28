@@ -24,5 +24,7 @@ EXPOSE 8080
 WORKDIR /app/backend
 
 # Railway sets PORT env var automatically
-CMD sh -c 'python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}'
+# Using exec form to avoid shell issues
+ENTRYPOINT ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0"]
+CMD ["--port", "8080"]
 
