@@ -69,13 +69,15 @@ def create_app() -> FastAPI:
     
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей
-    backend_path = Path(__file__).parent.parent.parent  # /app/backend или /app (зависит от Root Directory)
+    backend_path = Path(__file__).parent.parent.parent  # /app/backend или /app
+    # Убираем дубликаты и проверяем реальные пути
     possible_paths = [
-        backend_path.parent / 'frontend' / 'dist',  # /app/frontend/dist (если Root Directory = /backend)
-        backend_path / 'frontend' / 'dist',  # /app/frontend/dist (если Root Directory = /)
-        Path('/app/frontend/dist'),  # /app/frontend/dist
+        Path('/app/frontend/dist'),  # /app/frontend/dist (стандартный путь Railway)
+        backend_path.parent / 'frontend' / 'dist' if backend_path != Path('/') else Path('/frontend/dist'),  # ../frontend/dist
         Path('/frontend/dist'),  # /frontend/dist
     ]
+    # Убираем дубликаты
+    possible_paths = list(dict.fromkeys(possible_paths))
     
     frontend_dist_path = None
     for path in possible_paths:
@@ -118,13 +120,14 @@ def create_app() -> FastAPI:
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
     async def root():
         # Используем тот же поиск путей
-        backend_path = Path(__file__).parent.parent.parent  # /app/backend
+        backend_path = Path(__file__).parent.parent.parent  # /app/backend или /app
         possible_paths = [
-            backend_path.parent / 'frontend' / 'dist',  # /app/frontend/dist
-            Path('/app/frontend/dist'),  # /app/frontend/dist
+            Path('/app/frontend/dist'),  # /app/frontend/dist (стандартный путь Railway)
+            backend_path.parent / 'frontend' / 'dist' if backend_path != Path('/') else Path('/frontend/dist'),  # ../frontend/dist
             Path('/frontend/dist'),  # /frontend/dist
-            backend_path / 'frontend' / 'dist',  # /app/backend/frontend/dist
         ]
+        # Убираем дубликаты
+        possible_paths = list(dict.fromkeys(possible_paths))
         
         frontend_dist_path = None
         for path in possible_paths:
