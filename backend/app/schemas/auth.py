@@ -63,6 +63,12 @@ class GalleryItem(BaseModel):
     caption: str | None = None
 
 
+class SocialLink(BaseModel):
+    type: Literal['instagram', 'vk', 'youtube', 'ok', 'tiktok', 'facebook', 'other']
+    label: str
+    url: str
+
+
 class OrganizationProfile(BaseModel):
     id: str
     organization_id: str
@@ -74,6 +80,14 @@ class OrganizationProfile(BaseModel):
     gallery: list[GalleryItem] = Field(default_factory=list)
     tags: str | None = None
     language: str = 'ru'
+    # Contacts
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    contact_website: str | None = None
+    contact_address: str | None = None
+    contact_telegram: str | None = None
+    contact_whatsapp: str | None = None
+    social_links: list[SocialLink] = Field(default_factory=list)
     created_at: str | None = None
     updated_at: str | None = None
 
@@ -87,6 +101,14 @@ class OrganizationProfileUpdate(BaseModel):
     gallery: list[GalleryItem] | None = None
     tags: str | None = None
     language: str | None = None
+    # Contacts
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    contact_website: str | None = None
+    contact_address: str | None = None
+    contact_telegram: str | None = None
+    contact_whatsapp: str | None = None
+    social_links: list[SocialLink] | None = None
 
 
 class SessionResponse(BaseModel):

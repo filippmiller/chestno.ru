@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
+import { Link } from 'react-router-dom'
 import { fetchPublicOrganizationDetails } from '@/api/authService'
+import { listPublicOrganizationPosts } from '@/api/postsService'
+import { listPublicOrganizationReviews } from '@/api/reviewsService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { PublicOrganizationDetails } from '@/types/auth'
+import type { PublicOrganizationPost } from '@/types/posts'
+import type { PublicReview } from '@/types/reviews'
 
 export const PublicOrganizationPage = () => {
   const { slug } = useParams<{ slug: string }>()
   const [data, setData] = useState<PublicOrganizationDetails | null>(null)
+  const [posts, setPosts] = useState<PublicOrganizationPost[]>([])
+  const [reviews, setReviews] = useState<PublicReview[]>([])
+  const [avgRating, setAvgRating] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -20,9 +28,16 @@ export const PublicOrganizationPage = () => {
       setLoading(true)
       setError(null)
       try {
-        const result = await fetchPublicOrganizationDetails(slug)
+        const [orgData, postsData, reviewsData] = await Promise.all([
+          fetchPublicOrganizationDetails(slug),
+          listPublicOrganizationPosts(slug, { limit: 5, offset: 0 }),
+          listPublicOrganizationReviews(slug, { limit: 5, offset: 0 }),
+        ])
         if (isMounted) {
-          setData(result)
+          setData(orgData)
+          setPosts(postsData.items)
+          setReviews(reviewsData.items)
+          setAvgRating(reviewsData.average_rating || null)
         }
       } catch (err) {
         console.error(err)
@@ -249,6 +264,104 @@ export const PublicOrganizationPage = () => {
           </CardContent>
         </Card>
       )}
+
+      {data.contact_email || data.contact_phone || data.contact_website || data.social_links?.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Контакты</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {data.contact_email && (
+              <div>
+                <span className="text-muted-foreground">Email: </span>
+                <a href={`mailto:${data.contact_email}`} className="text-primary underline">
+                  {data.contact_email}
+                </a>
+              </div>
+            )}
+            {data.contact_phone && (
+              <div>
+                <span className="text-muted-foreground">Телефон: </span>
+                <a href={`tel:${data.contact_phone}`} className="text-primary underline">
+                  {data.contact_phone}
+                </a>
+              </div>
+            )}
+            {data.contact_website && (
+              <div>
+                <span className="text-muted-foreground">Сайт: </span>
+                <a href={data.contact_website} target="_blank" rel="noreferrer" className="text-primary underline">
+                  {data.contact_website}
+                </a>
+              </div>
+            )}
+            {data.social_links && data.social_links.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {data.social_links.map((link, idx) => (
+                  <Button key={idx} asChild variant="outline" size="sm">
+                    <a href={link.url} target="_blank" rel="noreferrer">
+                      {link.label}
+                    </a>
+                  </Button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {posts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Новости</CardTitle>
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/org/${slug}/posts`}>Все новости</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {posts.map((post) => (
+              <div key={post.id} className="border-b border-border pb-4 last:border-0">
+                <h3 className="font-semibold">{post.title}</h3>
+                {post.excerpt && <p className="mt-1 text-sm text-muted-foreground">{post.excerpt}</p>}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {new Date(post.published_at).toLocaleDateString('ru-RU')}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Отзывы</CardTitle>
+          {avgRating && (
+            <CardDescription>Средняя оценка: {avgRating.toFixed(1)} / 5</CardDescription>
+          )}
+        </CardHeader>
+        <CardContent>
+          {reviews.length > 0 ? (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review.id} className="border-b border-border pb-4 last:border-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{review.rating} / 5</span>
+                    {review.title && <span className="text-sm font-medium">{review.title}</span>}
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{review.body}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {new Date(review.created_at).toLocaleDateString('ru-RU')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Пока нет отзывов</p>
+          )}
+        </CardContent>
+      </Card>
 
       {data.tags && (
         <div className="flex flex-wrap gap-2">

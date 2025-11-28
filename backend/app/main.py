@@ -16,6 +16,8 @@ from app.api.routes.products import public_router as public_products_router, rou
 from app.api.routes.qr import redirect_router as qr_redirect_router, router as qr_router
 from app.api.routes.social import router as social_router
 from app.api.routes.subscriptions import admin_router as admin_subscriptions_router, router as subscriptions_router
+from app.api.routes.posts import router as posts_router, public_router as public_posts_router
+from app.api.routes.reviews import router as reviews_router, public_router as public_reviews_router
 from app.core.config import get_settings
 
 
@@ -51,6 +53,10 @@ def create_app() -> FastAPI:
     app.include_router(subscriptions_router)
     app.include_router(qr_redirect_router)
     app.include_router(social_router)
+    app.include_router(posts_router)
+    app.include_router(public_posts_router)
+    app.include_router(reviews_router)
+    app.include_router(public_reviews_router)
     return app
 
 

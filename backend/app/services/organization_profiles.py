@@ -57,7 +57,10 @@ def get_organization_profile(organization_id: str, user_id: str) -> Organization
             cur.execute(
                 '''
                 SELECT id, organization_id, short_description, long_description, production_description,
-                       safety_and_quality, video_url, gallery, tags, language, created_at, updated_at
+                       safety_and_quality, video_url, gallery, tags, language,
+                       contact_email, contact_phone, contact_website, contact_address,
+                       contact_telegram, contact_whatsapp, social_links,
+                       created_at, updated_at
                 FROM organization_profiles
                 WHERE organization_id = %s
                 ''',
@@ -81,6 +84,9 @@ def upsert_organization_profile(
             _require_role(cur, organization_id, user_id, EDIT_ROLES)
             data = payload.model_dump(exclude_unset=True)
             data = _serialize_gallery(data)
+            # Сериализация social_links если есть
+            if 'social_links' in data and data['social_links'] is not None:
+                data['social_links'] = json.dumps([item.model_dump() if hasattr(item, 'model_dump') else item for item in data['social_links']])
             now = datetime.now(timezone.utc)
             columns = ['organization_id']
             values = [organization_id]
@@ -105,7 +111,10 @@ def upsert_organization_profile(
                 ON CONFLICT (organization_id) DO UPDATE SET
                     {set_clause}
                 RETURNING id, organization_id, short_description, long_description, production_description,
-                          safety_and_quality, video_url, gallery, tags, language, created_at, updated_at
+                          safety_and_quality, video_url, gallery, tags, language,
+                          contact_email, contact_phone, contact_website, contact_address,
+                          contact_telegram, contact_whatsapp, social_links,
+                          created_at, updated_at
                 ''',
                 values,
             )
@@ -114,6 +123,12 @@ def upsert_organization_profile(
                 row['gallery'] = []
             elif isinstance(row['gallery'], str):
                 row['gallery'] = json.loads(row['gallery'])
+            # Десериализация social_links
+            if row.get('social_links'):
+                if isinstance(row['social_links'], str):
+                    row['social_links'] = json.loads(row['social_links'])
+            else:
+                row['social_links'] = []
             conn.commit()
             return OrganizationProfile(**row)
 
@@ -217,7 +232,9 @@ def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDeta
                    p.short_description, p.long_description, p.production_description,
                    p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
                    p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
-                   p.quality_standards, p.buy_links
+                   p.quality_standards, p.buy_links,
+                   p.contact_email, p.contact_phone, p.contact_website, p.contact_address,
+                   p.contact_telegram, p.contact_whatsapp, p.social_links
             FROM organizations o
             LEFT JOIN organization_profiles p ON p.organization_id = o.id
             WHERE o.slug = %s
@@ -234,6 +251,7 @@ def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDeta
         gallery = [GalleryItem(**item) for item in _deserialize_list(org.get('gallery'))]
         certifications = [CertificationItem(**item) for item in _deserialize_list(org.get('certifications'))]
         buy_links = [BuyLinkItem(**item) for item in _deserialize_list(org.get('buy_links'))]
+        social_links = _deserialize_list(org.get('social_links'))
 
         cur.execute(
             '''
@@ -272,5 +290,12 @@ def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDeta
         quality_standards=org.get('quality_standards'),
         buy_links=buy_links,
         products=products,
+        contact_email=org.get('contact_email'),
+        contact_phone=org.get('contact_phone'),
+        contact_website=org.get('contact_website'),
+        contact_address=org.get('contact_address'),
+        contact_telegram=org.get('contact_telegram'),
+        contact_whatsapp=org.get('contact_whatsapp'),
+        social_links=social_links,
     )
 

@@ -5,13 +5,18 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-OnboardingKey = Literal['profile', 'products', 'qr_codes', 'verification', 'invites']
+OnboardingKey = Literal[
+    'profile_basic', 'contacts', 'story_and_photos', 'video_presentation',
+    'products', 'qr_codes', 'verification', 'invites', 'first_post'
+]
 
 
 class OnboardingStep(BaseModel):
     key: OnboardingKey
     label: str
     completed: bool
+    description: str | None = None
+    link: str | None = None
 
 
 class OnboardingSummary(BaseModel):

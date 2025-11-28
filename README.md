@@ -1,6 +1,21 @@
 # Работаем Честно! — монорепозиторий
 
-Платформа для производителей, которые хотят прозрачно показывать своё производство. Текущий этап охватывает регистрацию/логин производителей, базовый кабинет, а также backend-службу с безопасной логикой.
+Платформа для производителей, которые хотят прозрачно показывать своё производство.
+
+## Последние обновления (Ноябрь 2024)
+
+**Медиа, Отзывы и Посты:**
+- ✅ Богатые медиа-профили производителей (фото + видео + длинные тексты)
+- ✅ Пользовательские отзывы с фото/видео и модерацией
+- ✅ Новости/посты производителя (CRUD + публичные страницы)
+- ✅ Контакты и социальные сети в профиле
+- ✅ Интеграция с Supabase Storage для загрузки медиа
+- ✅ Расширенный онбординг (9 шагов)
+- ✅ Уведомления о новых отзывах
+
+**Документация:**
+- 📄 `docs/Media-Reviews-Posts-Implementation.md` - подробное описание нового функционала
+- 📄 `docs/media-storage.md` - архитектура медиа-хранилища
 
 ## Структура
 
@@ -131,6 +146,8 @@ psql "$DATABASE_URL" -f supabase/migrations/0012_notifications.sql
 psql "$DATABASE_URL" -f supabase/migrations/0013_products.sql
 psql "$DATABASE_URL" -f supabase/migrations/0014_subscriptions.sql
 psql "$DATABASE_URL" -f supabase/migrations/0015_org_profile_extended.sql
+psql "$DATABASE_URL" -f supabase/migrations/0016_media_reviews_posts.sql
+psql "$DATABASE_URL" -f supabase/migrations/0017_add_review_notification_type.sql
 ```
 
 `DATABASE_URL` берём из Supabase (pooler: `postgresql://...pooler.supabase.com:6543/postgres?sslmode=require`) либо из Railway переменных.
@@ -159,6 +176,15 @@ psql "$DATABASE_URL" -f supabase/migrations/0015_org_profile_extended.sql
 - Web Push-уведомления: Service Worker для браузерных push-уведомлений, worker для обработки (`/api/admin/notifications/push/process`).
 - Связывание аккаунтов: автоматическое связывание социальных аккаунтов (Yandex, Google) с существующими email, endpoint `/api/auth/linked-accounts`, UI страница `/settings/linked-accounts`.
 - Health-check для Yandex AI: реальная проверка валидности API ключа через Yandex GPT API.
+- **Медиа, Отзывы и Посты (Ноябрь 2024):**
+  - Богатые медиа-профили производителей (фото + видео + длинные тексты)
+  - Пользовательские отзывы с фото/видео и модерацией (`/dashboard/organization/reviews`)
+  - Новости/посты производителя (`/dashboard/organization/posts`) — CRUD + публичные страницы
+  - Контакты и социальные сети в профиле организации
+  - Интеграция с Supabase Storage для загрузки медиа (компонент `MediaUploader`)
+  - Расширенный онбординг (9 шагов, включая контакты, историю, видео, первый пост)
+  - Уведомления о новых отзывах (`business.new_review`)
+  - Публичные страницы обновлены: блоки новостей, отзывов, контактов и соцсетей
 - Supabase миграции:
   - `0001_init`
   - `0002_roles_and_profiles`
@@ -175,6 +201,8 @@ psql "$DATABASE_URL" -f supabase/migrations/0015_org_profile_extended.sql
   - `0013_products`
   - `0014_subscriptions`
   - `0015_org_profile_extended`
+  - `0016_media_reviews_posts` (медиа, отзывы, посты)
+  - `0017_add_review_notification_type` (уведомления для отзывов)
 
 ## Хостинг (ориентир)
 
@@ -253,5 +281,20 @@ curl -H "Authorization: Bearer <token>" https://<backend>/api/organizations/<org
 
 # Аналитика QR
 curl -H "Authorization: Bearer <token>" "https://<backend>/api/analytics/organizations/<org_id>/qr-overview?days=30"
+
+# Создать пост
+curl -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"slug":"my-post","title":"Заголовок","body":"Текст поста","status":"published"}' \
+  https://<backend>/api/organizations/<org_id>/posts
+
+# Создать отзыв (публичный API)
+curl -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"rating":5,"body":"Отличный товар!","title":"Рекомендую"}' \
+  https://<backend>/api/public/organizations/by-slug/<slug>/reviews
+
+# Модерировать отзыв
+curl -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"status":"approved","moderation_comment":"Одобрено"}' \
+  -X PATCH https://<backend>/api/organizations/<org_id>/reviews/<review_id>/moderate
 ```
 

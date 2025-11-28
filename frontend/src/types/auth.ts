@@ -41,6 +41,12 @@ export interface AfterSignupPayload {
   invite_code?: string
 }
 
+export interface SocialLink {
+  type: 'instagram' | 'vk' | 'youtube' | 'ok' | 'tiktok' | 'facebook' | 'other'
+  label: string
+  url: string
+}
+
 export interface OrganizationProfile {
   id: string
   organization_id: string
@@ -52,6 +58,14 @@ export interface OrganizationProfile {
   gallery: Array<{ url: string; caption?: string | null }>
   tags?: string | null
   language: string
+  // Contacts
+  contact_email?: string | null
+  contact_phone?: string | null
+  contact_website?: string | null
+  contact_address?: string | null
+  contact_telegram?: string | null
+  contact_whatsapp?: string | null
+  social_links?: SocialLink[]
   created_at?: string | null
   updated_at?: string | null
 }
@@ -410,9 +424,20 @@ export interface PublicOrganizationDetails extends PublicOrganizationProfile {
 }
 
 export interface OnboardingStep {
-  key: 'profile' | 'products' | 'qr_codes' | 'verification' | 'invites'
+  key:
+    | 'profile_basic'
+    | 'contacts'
+    | 'story_and_photos'
+    | 'video_presentation'
+    | 'products'
+    | 'qr_codes'
+    | 'verification'
+    | 'invites'
+    | 'first_post'
   label: string
   completed: boolean
+  description?: string | null
+  link?: string | null
 }
 
 export interface OnboardingSummary {

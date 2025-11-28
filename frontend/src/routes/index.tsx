@@ -15,6 +15,9 @@ import { OrganizationOnboardingPage } from '@/pages/OrganizationOnboarding'
 import { OrganizationPlanPage } from '@/pages/OrganizationPlan'
 import { OrganizationProductsPage } from '@/pages/OrganizationProducts'
 import { OrganizationProfilePage } from '@/pages/OrganizationProfile'
+import { OrganizationPostsPage } from '@/pages/OrganizationPosts'
+import { OrganizationPostEditPage } from '@/pages/OrganizationPostEdit'
+import { OrganizationReviewsPage } from '@/pages/OrganizationReviews'
 import { OrganizationQrPage } from '@/pages/OrganizationQr'
 import { ProducersLandingPage } from '@/pages/ProducersLanding'
 import { PublicOrganizationPage } from '@/pages/PublicOrganization'
@@ -30,7 +33,11 @@ export const AppRoutes = () => (
     <Route path="/login" element={<LoginPage />} />
     <Route path="/auth/callback" element={<AuthCallbackPage />} />
     <Route path="/dashboard" element={<DashboardPage />} />
-    <Route path="/dashboard/organization/profile" element={<OrganizationProfilePage />} />
+            <Route path="/dashboard/organization/profile" element={<OrganizationProfilePage />} />
+            <Route path="/dashboard/organization/posts" element={<OrganizationPostsPage />} />
+            <Route path="/dashboard/organization/posts/new" element={<OrganizationPostEditPage />} />
+            <Route path="/dashboard/organization/posts/:postId" element={<OrganizationPostEditPage />} />
+            <Route path="/dashboard/organization/reviews" element={<OrganizationReviewsPage />} />
     <Route path="/dashboard/organization/products" element={<OrganizationProductsPage />} />
     <Route path="/dashboard/organization/plan" element={<OrganizationPlanPage />} />
     <Route path="/dashboard/organization/invites" element={<OrganizationInvitesPage />} />

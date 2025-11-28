@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { getOrganizationProfile, upsertOrganizationProfile } from '@/api/authService'
+import { MediaUploader } from '@/components/MediaUploader'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +22,13 @@ const profileSchema = z.object({
   tags: z.string().optional(),
   language: z.string().default('ru'),
   galleryInput: z.string().optional(),
+  // Contacts
+  contact_email: z.string().email('Неверный email').optional().or(z.literal('').transform(() => undefined)),
+  contact_phone: z.string().optional(),
+  contact_website: z.string().url('Введите корректный URL').optional().or(z.literal('').transform(() => undefined)),
+  contact_address: z.string().optional(),
+  contact_telegram: z.string().optional(),
+  contact_whatsapp: z.string().optional(),
 })
 
 type ProfileFormValues = z.infer<typeof profileSchema>
@@ -32,6 +40,8 @@ export const OrganizationProfilePage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [mainImageUrl, setMainImageUrl] = useState<string | null>(null)
+  const [gallery, setGallery] = useState<Array<{ url: string; caption?: string | null }>>([])
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -44,6 +54,12 @@ export const OrganizationProfilePage = () => {
       tags: '',
       language: 'ru',
       galleryInput: '',
+      contact_email: '',
+      contact_phone: '',
+      contact_website: '',
+      contact_address: '',
+      contact_telegram: '',
+      contact_whatsapp: '',
     },
   })
 
@@ -73,7 +89,15 @@ export const OrganizationProfilePage = () => {
           galleryInput: profile?.gallery
             ? profile.gallery.map((item) => (item.caption ? `${item.url} | ${item.caption}` : item.url)).join('\n')
             : '',
+          contact_email: profile?.contact_email ?? '',
+          contact_phone: profile?.contact_phone ?? '',
+          contact_website: profile?.contact_website ?? '',
+          contact_address: profile?.contact_address ?? '',
+          contact_telegram: profile?.contact_telegram ?? '',
+          contact_whatsapp: profile?.contact_whatsapp ?? '',
         })
+        setMainImageUrl(profile?.gallery?.[0]?.url || null)
+        setGallery(profile?.gallery || [])
       })
       .catch((err) => {
         console.error(err)
@@ -88,19 +112,7 @@ export const OrganizationProfilePage = () => {
     setError(null)
     setSuccessMessage(null)
     try {
-      const gallery = values.galleryInput
-        ? values.galleryInput
-            .split('\n')
-            .map((line) => line.trim())
-            .filter(Boolean)
-            .map((line) => {
-              const [url, ...captionParts] = line.split('|')
-              return {
-                url: url.trim(),
-                caption: captionParts.join('|').trim() || undefined,
-              }
-            })
-        : undefined
+      // gallery уже в состоянии
       await upsertOrganizationProfile(organizationId, {
         short_description: values.short_description,
         long_description: values.long_description,
@@ -110,6 +122,12 @@ export const OrganizationProfilePage = () => {
         tags: values.tags,
         language: values.language,
         gallery,
+        contact_email: values.contact_email,
+        contact_phone: values.contact_phone,
+        contact_website: values.contact_website,
+        contact_address: values.contact_address,
+        contact_telegram: values.contact_telegram,
+        contact_whatsapp: values.contact_whatsapp,
       })
       setSuccessMessage('Профиль обновлён')
     } catch (err) {
@@ -245,37 +263,50 @@ export const OrganizationProfilePage = () => {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="video_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Видео о производстве</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://youtu.be/..." disabled={!canEdit || loading} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              <div>
+                <FormLabel>Главное фото</FormLabel>
+                {organizationId && (
+                  <MediaUploader
+                    type="profile-image"
+                    organizationId={organizationId}
+                    onUploadComplete={(url) => {
+                      setMainImageUrl(url)
+                      if (gallery.length === 0) {
+                        setGallery([{ url, caption: 'Главное фото' }])
+                      } else {
+                        setGallery([{ url, caption: 'Главное фото' }, ...gallery.slice(1)])
+                      }
+                    }}
+                    maxFiles={1}
+                  />
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="galleryInput"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Галерея</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Каждая строка: https://image.jpg | Подпись"
-                        rows={4}
-                        disabled={!canEdit || loading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                {mainImageUrl && (
+                  <img src={mainImageUrl} alt="Main" className="mt-2 h-32 w-32 rounded object-cover" />
                 )}
-              />
+              </div>
+
+              <div>
+                <FormLabel>Галерея фотографий</FormLabel>
+                {organizationId && (
+                  <MediaUploader
+                    type="profile-gallery"
+                    organizationId={organizationId}
+                    onUploadComplete={(url) => {
+                      setGallery([...gallery, { url }])
+                    }}
+                    maxFiles={50}
+                  />
+                )}
+                {gallery.length > 0 && (
+                  <div className="mt-2 grid grid-cols-4 gap-2">
+                    {gallery.map((item, idx) => (
+                      <div key={idx} className="relative">
+                        <img src={item.url} alt={item.caption || `Photo ${idx + 1}`} className="h-20 w-full rounded object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -303,6 +334,90 @@ export const OrganizationProfilePage = () => {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="mb-4 text-lg font-semibold">Контакты</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="contact_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="contact@example.com" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contact_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Телефон</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+7 (999) 123-45-67" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contact_website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Сайт</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://example.com" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contact_address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Адрес</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Город, улица, дом" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contact_telegram"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telegram</FormLabel>
+                        <FormControl>
+                          <Input placeholder="@username" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contact_whatsapp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>WhatsApp</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+7 (999) 123-45-67" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
               {canEdit && (

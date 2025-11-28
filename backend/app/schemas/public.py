@@ -58,6 +58,14 @@ class PublicOrganizationDetails(BaseModel):
     quality_standards: str | None = None
     buy_links: List[BuyLinkItem] = Field(default_factory=list)
     products: List[PublicProduct] = Field(default_factory=list)
+    # Contacts
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    contact_website: str | None = None
+    contact_address: str | None = None
+    contact_telegram: str | None = None
+    contact_whatsapp: str | None = None
+    social_links: List[dict] = Field(default_factory=list)  # [{type, label, url}]
 
 
 class PublicOrganizationsResponse(BaseModel):
