@@ -65,13 +65,25 @@ export const LoginPage = () => {
     setErrorMessage(null)
     setRetryAfter(null)
     try {
+      console.log('Attempting login for:', values.email)
       const response = await login(values.email, values.password)
-      const { error } = await supabase.auth.setSession({
+      console.log('Login response received:', { 
+        hasAccessToken: !!response.access_token, 
+        hasRefreshToken: !!response.refresh_token,
+        platformRoles: response.platform_roles 
+      })
+      
+      const { data: sessionData, error } = await supabase.auth.setSession({
         access_token: response.access_token,
         refresh_token: response.refresh_token,
       })
-      if (error) throw new Error(error.message)
-
+      
+      if (error) {
+        console.error('Supabase setSession error:', error)
+        throw new Error(error.message)
+      }
+      
+      console.log('Session set successfully:', { hasSession: !!sessionData.session })
       setSessionData(response)
       const pendingInvite = localStorage.getItem('pendingInviteCode')
       if (pendingInvite) {
@@ -80,14 +92,19 @@ export const LoginPage = () => {
         navigate('/dashboard', { replace: true })
       }
     } catch (err) {
-      console.error(err)
+      console.error('Login error:', err)
       if (axios.isAxiosError(err)) {
+        console.error('Axios error details:', {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        })
         const detail = err.response?.data?.detail
         const message =
           typeof detail === 'string' ? detail : detail?.message ?? 'Не удалось выполнить вход. Проверьте данные.'
         setErrorMessage(message)
         if (detail?.retry_after_seconds) {
-          setRetryAfter(detail.retry_after_seconds)
+          setRetryAfter(detail?.retry_after_seconds)
         }
       } else {
         setErrorMessage(err instanceof Error ? err.message : 'Не удалось войти')
