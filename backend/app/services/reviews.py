@@ -13,7 +13,9 @@ from app.schemas.reviews import (
     PublicReview,
     ReviewStats,
 )
+from app.schemas.notifications import NotificationEmitRequest
 from app.services.organization_profiles import _require_role
+from app.services.notifications import emit_notification_in_transaction
 
 
 def _serialize_media(media: Any) -> list[Dict[str, Any]]:
@@ -185,6 +187,43 @@ def create_review(
                 ),
             )
             row = cur.fetchone()
+            review_id = str(row['id'])
+
+            # Отправка уведомлений членам организации с ролями owner/admin/manager
+            cur.execute(
+                '''
+                SELECT id FROM notification_types WHERE key = 'business.new_review'
+                ''',
+            )
+            notification_type = cur.fetchone()
+            if notification_type:
+                # Получаем членов организации с нужными ролями
+                cur.execute(
+                    '''
+                    SELECT user_id FROM organization_members
+                    WHERE organization_id = %s AND role IN ('owner', 'admin', 'manager')
+                    ''',
+                    (organization_id,),
+                )
+                members = cur.fetchall()
+                
+                # Отправляем уведомление каждому члену
+                notification_type_id = str(notification_type['id'])
+                for member in members:
+                    emit_request = NotificationEmitRequest(
+                        type_key='business.new_review',
+                        org_id=organization_id,
+                        recipient_user_id=str(member['user_id']),
+                        recipient_scope='user',
+                        payload={
+                            'review_id': review_id,
+                            'rating': payload.rating,
+                            'product_id': str(payload.product_id) if payload.product_id else None,
+                            'organization_id': organization_id,
+                        },
+                    )
+                    emit_notification_in_transaction(cur, emit_request, notification_type_id)
+
             conn.commit()
 
             return Review(
