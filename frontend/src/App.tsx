@@ -1,11 +1,58 @@
+import { useEffect } from 'react'
 import { AppRoutes } from '@/routes'
 import { LandingHeader } from '@/components/landing/LandingHeader'
 import { useUserStore } from '@/store/userStore'
 import { getSupabaseClient } from '@/lib/supabaseClient'
+import { fetchSession } from '@/api/authService'
 
 function App() {
-  const { user, reset, platformRoles } = useUserStore()
+  const { user, reset, platformRoles, setSessionData, setLoading } = useUserStore()
   const supabase = getSupabaseClient()
+
+  // Загружаем сессию при инициализации приложения
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session && !user) {
+          setLoading(true)
+          const sessionPayload = await fetchSession()
+          console.log('App - loaded session:', sessionPayload)
+          console.log('App - platform_roles:', sessionPayload.platform_roles)
+          setSessionData(sessionPayload)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Error loading session:', error)
+        setLoading(false)
+      }
+    }
+    void loadSession()
+
+    // Слушаем изменения сессии
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        try {
+          setLoading(true)
+          const sessionPayload = await fetchSession()
+          console.log('App - auth state changed, loaded session:', sessionPayload)
+          setSessionData(sessionPayload)
+          setLoading(false)
+        } catch (error) {
+          console.error('Error loading session on auth change:', error)
+          setLoading(false)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        reset()
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user, setSessionData, setLoading, reset, supabase])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
