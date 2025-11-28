@@ -31,7 +31,10 @@ def _fetch_session(cur, user_id: str) -> SessionResponse:
     )
     user_row = cur.fetchone()
     if user_row is None:
-        raise ValueError('User profile not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User profile not found. Please complete registration.',
+        )
 
     cur.execute(
         '''
@@ -134,5 +137,33 @@ def handle_after_signup(payload: AfterSignupRequest) -> SessionResponse:
 def get_session_data(user_id: str) -> SessionResponse:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
+            # Проверяем, существует ли пользователь в app_users
+            cur.execute(
+                '''
+                SELECT id FROM app_users WHERE id = %s
+                ''',
+                (user_id,),
+            )
+            if not cur.fetchone():
+                # Пользователь не найден, пытаемся получить email из Supabase
+                from app.core.supabase import supabase_admin
+                try:
+                    supabase_user = supabase_admin.get_user(user_id)
+                    email = supabase_user.get('email') or supabase_user.get('user_metadata', {}).get('email')
+                    if email:
+                        # Создаем запись пользователя
+                        cur.execute(
+                            '''
+                            INSERT INTO app_users (id, email, full_name)
+                            VALUES (%s, %s, %s)
+                            ON CONFLICT (id) DO NOTHING
+                            RETURNING id
+                            ''',
+                            (user_id, email, supabase_user.get('user_metadata', {}).get('full_name')),
+                        )
+                        conn.commit()
+                except Exception:
+                    # Если не удалось получить данные из Supabase, пропускаем
+                    pass
             return _fetch_session(cur, user_id)
 

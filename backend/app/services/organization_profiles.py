@@ -169,12 +169,12 @@ def search_public_organizations(
         where_clauses.append('o.country = %s')
         params.append(country)
     if category:
-        where_clauses.append('(COALESCE(o.primary_category, p.category) = %s OR p.category = %s)')
-        params.extend([category, category])
+        where_clauses.append('o.primary_category = %s')
+        params.append(category)
     if q:
         like = f'%{q}%'
         where_clauses.append(
-            '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(o.tags, \'\') ILIKE %s OR COALESCE(p.category, \'\') ILIKE %s)'
+            '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(o.tags, \'\') ILIKE %s OR COALESCE(p.tags, \'\') ILIKE %s)'
         )
         params.extend([like, like, like, like])
     where_sql = ' AND '.join(where_clauses)
@@ -188,7 +188,7 @@ def search_public_organizations(
 
         cur.execute(
             f'''
-            SELECT o.id, o.name, o.slug, o.country, o.city, COALESCE(o.primary_category, p.category) as primary_category,
+            SELECT o.id, o.name, o.slug, o.country, o.city, o.primary_category,
                    o.is_verified, o.verification_status, p.short_description, p.gallery
             {base_query}
             WHERE {where_sql}
