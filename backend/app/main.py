@@ -93,6 +93,10 @@ def create_app() -> FastAPI:
         logger.info(f"✅ Found frontend at: {frontend_dist_path}")
     else:
         logger.warning(f"❌ Frontend not found. Checked: {[str(p) for p in possible_paths]}")
+        # Проверяем что есть в /app
+        app_path = Path('/app')
+        if app_path.exists():
+            logger.info(f"/app contents: {[p.name for p in app_path.iterdir() if p.is_dir()][:10]}")
         # Проверяем что есть в корне
         root = Path('/')
         if root.exists():
