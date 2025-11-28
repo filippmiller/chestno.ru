@@ -1,9 +1,12 @@
 import os
+import logging
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+
+logging.basicConfig(level=logging.INFO)
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.admin_ai import router as admin_ai_router
@@ -68,6 +71,16 @@ def create_app() -> FastAPI:
     # Учитываем, что Root Directory = /backend, поэтому путь к frontend = ../frontend
     backend_path = Path(__file__).parent.parent.parent
     frontend_dist_path = backend_path.parent / 'frontend' / 'dist'
+    
+    # Отладочное логирование
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Backend path: {backend_path}")
+    logger.info(f"Frontend dist path: {frontend_dist_path}")
+    logger.info(f"Frontend dist exists: {frontend_dist_path.exists()}")
+    if frontend_dist_path.exists():
+        logger.info(f"Index.html exists: {(frontend_dist_path / 'index.html').exists()}")
+        logger.info(f"Contents: {list(frontend_dist_path.iterdir())}")
     
     if frontend_dist_path.exists() and (frontend_dist_path / 'index.html').exists():
         # Раздаем статические файлы (JS, CSS, изображения и т.д.)
