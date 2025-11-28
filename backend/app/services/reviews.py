@@ -63,6 +63,7 @@ def list_organization_reviews(
             query = '''
                 SELECT id, organization_id, product_id, author_user_id, rating, title, body,
                        media, status, moderated_by, moderated_at, moderation_comment,
+                       response, response_by, response_at,
                        created_at, updated_at
                 FROM reviews
                 WHERE organization_id = %s
@@ -98,6 +99,9 @@ def list_organization_reviews(
                     moderated_by=str(row['moderated_by']) if row['moderated_by'] else None,
                     moderated_at=row['moderated_at'],
                     moderation_comment=row['moderation_comment'],
+                    response=row.get('response'),
+                    response_by=str(row['response_by']) if row.get('response_by') else None,
+                    response_at=row.get('response_at'),
                     created_at=row['created_at'],
                     updated_at=row['updated_at'],
                 ))
@@ -275,6 +279,7 @@ def moderate_review(
                 WHERE id = %s AND organization_id = %s
                 RETURNING id, organization_id, product_id, author_user_id, rating, title, body,
                           media, status, moderated_by, moderated_at, moderation_comment,
+                          response, response_by, response_at,
                           created_at, updated_at
                 ''',
                 (
@@ -301,6 +306,74 @@ def moderate_review(
                 moderated_by=str(row['moderated_by']) if row['moderated_by'] else None,
                 moderated_at=row['moderated_at'],
                 moderation_comment=row['moderation_comment'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at'],
+            )
+
+
+def respond_to_review(
+    organization_id: str,
+    review_id: str,
+    user_id: str,
+    response_text: str,
+) -> Review:
+    """Ответить на отзыв от имени организации."""
+    _require_role(None, organization_id, user_id, {'owner', 'admin', 'manager'})
+
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Проверка существования отзыва
+            cur.execute(
+                'SELECT id, status FROM reviews WHERE id = %s AND organization_id = %s',
+                (review_id, organization_id),
+            )
+            review = cur.fetchone()
+            if not review:
+                raise ValueError('Review not found')
+            
+            if review['status'] != 'approved':
+                raise ValueError('Can only respond to approved reviews')
+
+            # Обновление
+            cur.execute(
+                '''
+                UPDATE reviews
+                SET response = %s,
+                    response_by = %s,
+                    response_at = now(),
+                    updated_at = now()
+                WHERE id = %s AND organization_id = %s
+                RETURNING id, organization_id, product_id, author_user_id, rating, title, body,
+                          media, status, moderated_by, moderated_at, moderation_comment,
+                          response, response_by, response_at,
+                          created_at, updated_at
+                ''',
+                (
+                    response_text,
+                    user_id,
+                    review_id,
+                    organization_id,
+                ),
+            )
+            row = cur.fetchone()
+            conn.commit()
+
+            return Review(
+                id=str(row['id']),
+                organization_id=str(row['organization_id']),
+                product_id=str(row['product_id']) if row['product_id'] else None,
+                author_user_id=str(row['author_user_id']),
+                rating=row['rating'],
+                title=row['title'],
+                body=row['body'],
+                media=_serialize_media(row['media']),
+                status=row['status'],
+                moderated_by=str(row['moderated_by']) if row['moderated_by'] else None,
+                moderated_at=row['moderated_at'],
+                moderation_comment=row['moderation_comment'],
+                response=row.get('response'),
+                response_by=str(row['response_by']) if row.get('response_by') else None,
+                response_at=row.get('response_at'),
                 created_at=row['created_at'],
                 updated_at=row['updated_at'],
             )
@@ -347,7 +420,8 @@ def list_public_organization_reviews_by_id(
 
             # Получение отзывов
             query = '''
-                SELECT id, product_id, author_user_id, rating, title, body, media, created_at
+                SELECT id, product_id, author_user_id, rating, title, body, media, 
+                       response, response_at, created_at
                 FROM reviews
                 WHERE organization_id = %s AND status = 'approved'
             '''
@@ -379,6 +453,8 @@ def list_public_organization_reviews_by_id(
                     title=row['title'],
                     body=row['body'],
                     media=_serialize_media(row['media']),
+                    response=row.get('response'),
+                    response_at=row.get('response_at'),
                     created_at=row['created_at'],
                 ))
 
@@ -441,7 +517,8 @@ def list_public_organization_reviews(
 
             # Получение отзывов
             query = '''
-                SELECT id, product_id, author_user_id, rating, title, body, media, created_at
+                SELECT id, product_id, author_user_id, rating, title, body, media, 
+                       response, response_at, created_at
                 FROM reviews
                 WHERE organization_id = %s AND status = 'approved'
             '''
@@ -473,6 +550,8 @@ def list_public_organization_reviews(
                     title=row['title'],
                     body=row['body'],
                     media=_serialize_media(row['media']),
+                    response=row.get('response'),
+                    response_at=row.get('response_at'),
                     created_at=row['created_at'],
                 ))
 

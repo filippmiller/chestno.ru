@@ -5,6 +5,7 @@ from app.schemas.reviews import (
     Review,
     ReviewCreate,
     ReviewModeration,
+    ReviewResponse,
     ReviewsResponse,
     PublicReviewsResponse,
     ReviewStats,
@@ -15,6 +16,7 @@ from app.services.reviews import (
     list_public_organization_reviews,
     moderate_review,
     get_review_stats,
+    respond_to_review,
 )
 
 from .auth import get_current_user_id
@@ -72,6 +74,26 @@ async def moderate(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post('/{organization_id}/reviews/{review_id}/respond', response_model=Review)
+async def respond(
+    organization_id: str,
+    review_id: str,
+    payload: ReviewResponse,
+    current_user_id: str = Depends(get_current_user_id),
+) -> Review:
+    """Ответить на отзыв от имени организации."""
+    try:
+        return await run_in_threadpool(
+            respond_to_review,
+            organization_id,
+            review_id,
+            current_user_id,
+            payload.response,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============================================

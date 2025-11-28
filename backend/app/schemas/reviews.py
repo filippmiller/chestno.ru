@@ -40,6 +40,10 @@ class ReviewModeration(BaseModel):
     moderation_comment: str | None = None
 
 
+class ReviewResponse(BaseModel):
+    response: str = Field(..., min_length=1, description='Response text to the review')
+
+
 class Review(ReviewBase):
     id: str
     organization_id: str
@@ -49,6 +53,9 @@ class Review(ReviewBase):
     moderated_by: str | None = None
     moderated_at: datetime | None = None
     moderation_comment: str | None = None
+    response: str | None = None
+    response_by: str | None = None
+    response_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -64,6 +71,8 @@ class PublicReview(BaseModel):
     title: str | None = None
     body: str
     media: list[ReviewMediaItem] = Field(default_factory=list)
+    response: str | None = None
+    response_at: datetime | None = None
     created_at: datetime
 
 
