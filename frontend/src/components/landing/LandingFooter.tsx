@@ -1,5 +1,7 @@
 import { Factory, Mail, MapPin, Phone } from 'lucide-react'
 
+import { RussianFlag } from '@/components/ui/RussianFlag'
+
 const footerLinks = {
   platform: [
     { label: 'Каталог производителей', href: '#catalog' },
@@ -31,7 +33,7 @@ export const LandingFooter = () => (
               <Factory className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-display text-xl font-semibold flex items-center gap-2">
-              <span className="text-2xl">🇷🇺</span>
+              <RussianFlag className="w-6 h-4" />
               Сделано в России! Честно!
             </span>
           </a>

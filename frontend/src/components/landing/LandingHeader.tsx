@@ -3,6 +3,7 @@ import { Factory, Menu, X, Bell, LogOut } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
+import { RussianFlag } from '@/components/ui/RussianFlag'
 import { listNotifications, getUnreadNotificationsCount } from '@/api/authService'
 import type { NotificationDelivery } from '@/types/auth'
 
@@ -48,7 +49,7 @@ export const LandingHeader = ({ userEmail, onLogout, isAdmin = false }: LandingH
             <Factory className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-display text-lg font-semibold text-foreground lg:text-xl flex items-center gap-2 relative">
-            <span className="text-3xl lg:text-4xl leading-none" role="img" aria-label="Флаг России">🇷🇺</span>
+            <RussianFlag className="w-6 h-4 lg:w-7 lg:h-5" />
             <span>Сделано в России! Честно!</span>
             {/* Made in Russia stamp - почтовая марка */}
             <span className="absolute -top-1 -right-1 flex items-center justify-center w-14 h-14 bg-white shadow-lg rotate-12 hover:rotate-6 transition-transform rounded-full border-2 border-dashed border-primary">
