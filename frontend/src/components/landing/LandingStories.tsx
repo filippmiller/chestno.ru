@@ -31,7 +31,7 @@ export const LandingStories = () => (
     <div className="container">
       <div className="mb-12 text-center">
         <h2 className="font-display text-3xl font-bold text-foreground lg:text-4xl">
-          Истории героев производства
+          Истории производств
         </h2>
         <p className="mt-4 text-lg text-muted-foreground">
           Реальные истории людей, которые создают качественные товары в России
@@ -75,7 +75,7 @@ export const LandingStories = () => (
 
       <div className="mt-12 text-center">
         <Button variant="outline" size="lg">
-          Все истории героев
+          Все истории производств
         </Button>
       </div>
     </div>

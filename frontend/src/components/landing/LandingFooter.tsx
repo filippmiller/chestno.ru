@@ -4,7 +4,7 @@ const footerLinks = {
   platform: [
     { label: 'Каталог производителей', href: '#catalog' },
     { label: 'Каталог товаров', href: '#products' },
-    { label: 'Истории героев', href: '#stories' },
+    { label: 'Истории производств', href: '#stories' },
     { label: 'О проекте', href: '#about' },
   ],
   producers: [

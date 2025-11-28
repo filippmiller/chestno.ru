@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 const navLinks = [
   { label: 'Каталог производителей', href: '/orgs' },
   { label: 'Каталог товаров', href: '/products' },
-  { label: 'Истории героев', href: '/stories' },
+  { label: 'Истории производств', href: '/stories' },
   { label: 'О проекте', href: '/about' },
   { label: 'Тарифы для производителей', href: '/pricing' },
 ]
@@ -21,9 +21,15 @@ export const LandingHeader = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary transition-transform group-hover:scale-105">
             <Factory className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-display text-lg font-semibold text-foreground lg:text-xl flex items-center gap-2">
+          <span className="font-display text-lg font-semibold text-foreground lg:text-xl flex items-center gap-2 relative">
             <span className="text-2xl">🇷🇺</span>
-            Сделано в России! Честно!
+            <span>Сделано в России! Честно!</span>
+            {/* Made in Russia stamp - почтовая марка */}
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-14 h-14 rounded-full border-2 border-dashed border-primary bg-white shadow-lg rotate-12 hover:rotate-6 transition-transform">
+              <span className="text-[7px] font-extrabold text-primary leading-tight text-center px-0.5">
+                MADE<br />IN<br />RUSSIA
+              </span>
+            </span>
           </span>
         </a>
 

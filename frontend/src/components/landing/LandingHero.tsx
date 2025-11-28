@@ -35,9 +35,15 @@ export const LandingHero = () => (
       <div className="grid gap-12 lg:grid-cols-5 lg:gap-16">
         <div className="space-y-8 lg:col-span-3">
           <div className="space-y-6 animate-slide-up">
-            <h1 className="font-display text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl flex items-center gap-3">
+            <h1 className="font-display text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl flex items-center gap-3 relative">
               <span className="text-4xl sm:text-5xl lg:text-6xl">🇷🇺</span>
               <span>Сделано в России! <span className="text-primary">Честно!</span></span>
+              {/* Made in Russia stamp - почтовая марка */}
+              <span className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 lg:-top-6 lg:-right-6 flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full border-2 border-dashed border-primary bg-white shadow-xl rotate-12 hover:rotate-6 transition-transform">
+                <span className="text-[9px] sm:text-[10px] lg:text-xs font-extrabold text-primary leading-tight text-center px-1">
+                  MADE<br />IN<br />RUSSIA
+                </span>
+              </span>
             </h1>
             <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground lg:text-xl">
               Мы собираем доверенный каталог российских производителей, которые делают товары в России, создают рабочие
