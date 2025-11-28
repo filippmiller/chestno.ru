@@ -2,6 +2,7 @@ import { ArrowRight, Clock, MapPin, Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { RussianFlag } from '@/components/ui/RussianFlag'
+import { MadeInRussiaStamp } from '@/components/ui/MadeInRussiaStamp'
 
 const categories = [
   'Еда и фермерские продукты',
@@ -40,11 +41,9 @@ export const LandingHero = () => (
               <RussianFlag className="w-10 h-7 sm:w-12 sm:h-8 lg:w-14 lg:h-10" />
               <span>Сделано в России! <span className="text-primary">Честно!</span></span>
               {/* Made in Russia stamp - почтовая марка */}
-              <span className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 lg:-top-6 lg:-right-6 flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 bg-white shadow-xl rotate-12 hover:rotate-6 transition-transform rounded-full border-2 border-dashed border-primary">
-                <span className="text-[9px] sm:text-[10px] lg:text-xs font-extrabold text-primary leading-tight text-center px-1">
-                  MADE<br />IN<br />RUSSIA
-                </span>
-              </span>
+              <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 lg:-top-8 lg:-right-8">
+                <MadeInRussiaStamp size="lg" />
+              </div>
             </h1>
             <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground lg:text-xl">
               Мы собираем доверенный каталог российских производителей, которые делают товары в России, создают рабочие
