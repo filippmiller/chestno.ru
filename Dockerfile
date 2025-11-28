@@ -23,5 +23,7 @@ EXPOSE 8080
 
 WORKDIR /app/backend
 
-CMD python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}
+ENV PORT=8080
+
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
 
