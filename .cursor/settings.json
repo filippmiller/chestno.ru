@@ -1,0 +1,34 @@
+{
+  "mcpServers": {
+    "docs": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp", "--api-key", "REPLACE_WITH_CONTEXT7_KEY"],
+      "autoStart": true
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "autoStart": false
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "autoStart": false
+    }
+  },
+  "composer": {
+    "defaultInstructions": [
+      "Всегда начинай с плана. План → маленькие итерации → diff → тесты.",
+      "Chestno.ru — production-критичный проект. Всегда проверяй совместимость с существующей архитектурой (backend/app, frontend/src, Supabase migrations, Railway deployment).",
+      "Для чтения и записи файлов проекта используй MCP-сервер filesystem. Не проси копировать вручную.",
+      "Для документации по библиотекам и API (FastAPI, Supabase, React, TypeScript) используй MCP docs.",
+      "Используй MCP memory для хранения важных архитектурных решений: структура таблиц, формат OAuth flows, миграции, API endpoints.",
+      "Не показывай содержимое .env, токены Supabase, Railway, секреты. Оперируй описаниями, а не реальными значениями.",
+      "Перед изменением более чем одного файла — покажи список файлов, предложи diff и жди подтверждения.",
+      "После изменений бэкенда — обнови миграции Supabase (если нужны), предложи тесты.",
+      "После изменений фронтенда — предложи запуск npm build/lint.",
+      "Строго соблюдай структуру monorepo (backend/, frontend/) и не создавай новые папки без необходимости."
+    ]
+  }
+}
+
