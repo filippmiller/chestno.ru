@@ -69,12 +69,12 @@ def create_app() -> FastAPI:
     
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей
-    backend_path = Path(__file__).parent.parent.parent
+    backend_path = Path(__file__).parent.parent.parent  # /app/backend или /app (зависит от Root Directory)
     possible_paths = [
-        backend_path.parent / 'frontend' / 'dist',  # ../frontend/dist (если Root Directory = /backend)
-        Path('/frontend/dist'),  # /frontend/dist (если в корне)
+        backend_path.parent / 'frontend' / 'dist',  # /app/frontend/dist (если Root Directory = /backend)
+        backend_path / 'frontend' / 'dist',  # /app/frontend/dist (если Root Directory = /)
         Path('/app/frontend/dist'),  # /app/frontend/dist
-        backend_path / 'frontend' / 'dist',  # backend/frontend/dist
+        Path('/frontend/dist'),  # /frontend/dist
     ]
     
     frontend_dist_path = None
@@ -118,12 +118,12 @@ def create_app() -> FastAPI:
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
     async def root():
         # Используем тот же поиск путей
-        backend_path = Path(__file__).parent.parent.parent
+        backend_path = Path(__file__).parent.parent.parent  # /app/backend
         possible_paths = [
-            backend_path.parent / 'frontend' / 'dist',
-            Path('/frontend/dist'),
-            Path('/app/frontend/dist'),
-            backend_path / 'frontend' / 'dist',
+            backend_path.parent / 'frontend' / 'dist',  # /app/frontend/dist
+            Path('/app/frontend/dist'),  # /app/frontend/dist
+            Path('/frontend/dist'),  # /frontend/dist
+            backend_path / 'frontend' / 'dist',  # /app/backend/frontend/dist
         ]
         
         frontend_dist_path = None
