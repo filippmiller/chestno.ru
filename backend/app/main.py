@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.admin_ai import router as admin_ai_router
