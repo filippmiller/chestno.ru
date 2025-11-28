@@ -186,7 +186,7 @@ def create_organization_post(
                     payload.body,
                     payload.status,
                     payload.main_image_url,
-                    payload.gallery.model_dump() if payload.gallery else [],
+                    [item.model_dump() for item in payload.gallery] if payload.gallery else [],
                     payload.video_url,
                     published_at,
                     payload.is_pinned,
@@ -270,7 +270,7 @@ def update_organization_post(
                 params.append(payload.main_image_url)
             if payload.gallery is not None:
                 updates.append('gallery = %s')
-                params.append(payload.gallery.model_dump() if payload.gallery else [])
+                params.append([item.model_dump() for item in payload.gallery] if payload.gallery else [])
             if payload.video_url is not None:
                 updates.append('video_url = %s')
                 params.append(payload.video_url)
