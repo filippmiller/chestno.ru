@@ -60,7 +60,7 @@ export const AppRoutes = () => (
     <Route path="/admin" element={<AdminPanelPage />} />
     <Route path="/admin/db" element={<DatabaseExplorerPage />} />
     <Route path="/invite/:code" element={<InviteLandingPage />} />
-    <Route path="/org/:slug" element={<PublicOrganizationPage />} />
+    <Route path="/org/:id" element={<PublicOrganizationPage />} />
     <Route path="/orgs" element={<PublicOrganizationsCatalogPage />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>

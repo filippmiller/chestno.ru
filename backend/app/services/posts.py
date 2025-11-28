@@ -320,6 +320,69 @@ def update_organization_post(
             )
 
 
+def list_public_organization_posts_by_id(
+    organization_id: str,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[PublicOrganizationPost], int]:
+    """Список опубликованных постов организации по ID (публичный API)."""
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Проверка, что организация публична
+            cur.execute(
+                '''
+                SELECT id FROM organizations
+                WHERE id = %s AND public_visible = true AND verification_status = 'verified'
+                ''',
+                (organization_id,),
+            )
+            org = cur.fetchone()
+            if not org:
+                return [], 0
+
+            # Подсчет
+            cur.execute(
+                '''
+                SELECT COUNT(*) as total
+                FROM organization_posts
+                WHERE organization_id = %s AND status = 'published'
+                ''',
+                (organization_id,),
+            )
+            total = cur.fetchone()['total']
+
+            # Получение постов
+            cur.execute(
+                '''
+                SELECT id, slug, title, excerpt, body, main_image_url, gallery,
+                       video_url, published_at, is_pinned
+                FROM organization_posts
+                WHERE organization_id = %s AND status = 'published'
+                ORDER BY is_pinned DESC, published_at DESC
+                LIMIT %s OFFSET %s
+                ''',
+                (organization_id, limit, offset),
+            )
+            rows = cur.fetchall()
+
+            posts = []
+            for row in rows:
+                posts.append(PublicOrganizationPost(
+                    id=str(row['id']),
+                    slug=row['slug'],
+                    title=row['title'],
+                    excerpt=row['excerpt'],
+                    body=row['body'],
+                    main_image_url=row['main_image_url'],
+                    gallery=_serialize_gallery(row['gallery']),
+                    video_url=row['video_url'],
+                    published_at=row['published_at'],
+                    is_pinned=row['is_pinned'],
+                ))
+
+            return posts, total
+
+
 def list_public_organization_posts(
     organization_slug: str,
     limit: int = 20,

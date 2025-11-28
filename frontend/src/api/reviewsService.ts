@@ -54,8 +54,28 @@ export async function listPublicOrganizationReviews(
   return response.data
 }
 
+export async function listPublicOrganizationReviewsById(
+  organizationId: string,
+  params?: {
+    productId?: string
+    limit?: number
+    offset?: number
+    order?: 'newest' | 'highest_rating'
+  },
+): Promise<PublicReviewsResponse> {
+  const response = await httpClient.get<PublicReviewsResponse>(`/api/public/organizations/${organizationId}/reviews`, {
+    params: params ? { product_id: params.productId, limit: params.limit, offset: params.offset, order: params.order } : undefined,
+  })
+  return response.data
+}
+
 export async function createPublicReview(slug: string, payload: ReviewCreate): Promise<Review> {
   const response = await httpClient.post<Review>(`/api/public/organizations/by-slug/${slug}/reviews`, payload)
+  return response.data
+}
+
+export async function createPublicReviewById(organizationId: string, payload: ReviewCreate): Promise<Review> {
+  const response = await httpClient.post<Review>(`/api/public/organizations/${organizationId}/reviews`, payload)
   return response.data
 }
 

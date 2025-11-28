@@ -382,6 +382,7 @@ export interface NotificationSettingUpdate {
 }
 
 export interface PublicOrganizationSummary {
+  id: string
   name: string
   slug: string
   country?: string | null

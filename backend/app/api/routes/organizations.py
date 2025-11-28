@@ -48,6 +48,13 @@ async def public_details(slug: str) -> PublicOrganizationDetails:
     return await run_in_threadpool(get_public_organization_details_by_slug, slug)
 
 
+@public_router.get('/{organization_id}', response_model=PublicOrganizationDetails)
+async def public_details_by_id(organization_id: str) -> PublicOrganizationDetails:
+    """Получить детали организации по ID (публичный API)."""
+    from app.services.organization_profiles import get_public_organization_details_by_id
+    return await run_in_threadpool(get_public_organization_details_by_id, organization_id)
+
+
 @public_router.get('/search', response_model=PublicOrganizationsResponse)
 async def public_search(
     q: str | None = Query(default=None),

@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { Link } from 'react-router-dom'
-import { fetchPublicOrganizationDetails } from '@/api/authService'
-import { listPublicOrganizationPosts } from '@/api/postsService'
-import { listPublicOrganizationReviews } from '@/api/reviewsService'
+import { fetchPublicOrganizationDetailsById } from '@/api/authService'
+import { listPublicOrganizationPostsById } from '@/api/postsService'
+import { listPublicOrganizationReviewsById } from '@/api/reviewsService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,7 +13,7 @@ import type { PublicOrganizationPost } from '@/types/posts'
 import type { PublicReview } from '@/types/reviews'
 
 export const PublicOrganizationPage = () => {
-  const { slug } = useParams<{ slug: string }>()
+  const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<PublicOrganizationDetails | null>(null)
   const [posts, setPosts] = useState<PublicOrganizationPost[]>([])
   const [reviews, setReviews] = useState<PublicReview[]>([])
@@ -22,16 +22,16 @@ export const PublicOrganizationPage = () => {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!slug) return
+    if (!id) return
     let isMounted = true
     const load = async () => {
       setLoading(true)
       setError(null)
       try {
         const [orgData, postsData, reviewsData] = await Promise.all([
-          fetchPublicOrganizationDetails(slug),
-          listPublicOrganizationPosts(slug, { limit: 5, offset: 0 }),
-          listPublicOrganizationReviews(slug, { limit: 5, offset: 0 }),
+          fetchPublicOrganizationDetailsById(id),
+          listPublicOrganizationPostsById(id, { limit: 5, offset: 0 }),
+          listPublicOrganizationReviewsById(id, { limit: 5, offset: 0 }),
         ])
         if (isMounted) {
           setData(orgData)
@@ -54,9 +54,9 @@ export const PublicOrganizationPage = () => {
     return () => {
       isMounted = false
     }
-  }, [slug])
+  }, [id])
 
-  if (!slug) {
+  if (!id) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-10">
         <Alert variant="destructive">
@@ -316,7 +316,7 @@ export const PublicOrganizationPage = () => {
             <div className="flex items-center justify-between">
               <CardTitle>Новости</CardTitle>
               <Button asChild variant="outline" size="sm">
-                <Link to={`/org/${slug}/posts`}>Все новости</Link>
+                <Link to={`/org/${id}/posts`}>Все новости</Link>
               </Button>
             </div>
           </CardHeader>

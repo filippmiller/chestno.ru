@@ -127,7 +127,7 @@ export const PublicOrganizationsCatalogPage = () => {
                 )}
               </div>
               <Button asChild size="sm" className="mt-2">
-                <a href={`/org/${org.slug}`}>Посмотреть</a>
+                <a href={`/org/${org.id}`}>Посмотреть</a>
               </Button>
             </CardContent>
           </Card>

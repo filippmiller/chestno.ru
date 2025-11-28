@@ -209,6 +209,7 @@ def search_public_organizations(
                 main_image = item.get('url')
         summaries.append(
             PublicOrganizationSummary(
+                id=str(row['id']),
                 name=row['name'],
                 slug=row['slug'],
                 country=row['country'],
@@ -223,12 +224,90 @@ def search_public_organizations(
     return summaries, total
 
 
+def get_public_organization_details_by_id(organization_id: str) -> PublicOrganizationDetails:
+    """Получить детали организации по ID (публичный API)."""
+    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            '''
+            SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
+                   o.verification_status, o.tags,
+                   p.short_description, p.long_description, p.production_description,
+                   p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
+                   p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
+                   p.quality_standards, p.buy_links,
+                   p.contact_email, p.contact_phone, p.contact_website, p.contact_address,
+                   p.contact_telegram, p.contact_whatsapp, p.social_links
+            FROM organizations o
+            LEFT JOIN organization_profiles p ON p.organization_id = o.id
+            WHERE o.id = %s
+              AND o.public_visible = true
+              AND o.verification_status = 'verified'
+            ''',
+            (organization_id,),
+        )
+        org = cur.fetchone()
+        if not org:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Производитель не найден или не опубликован')
+
+        org_id = org['id']
+        gallery = [GalleryItem(**item) for item in _deserialize_list(org.get('gallery'))]
+        certifications = [CertificationItem(**item) for item in _deserialize_list(org.get('certifications'))]
+        buy_links = [BuyLinkItem(**item) for item in _deserialize_list(org.get('buy_links'))]
+        social_links = _deserialize_list(org.get('social_links'))
+
+        cur.execute(
+            '''
+            SELECT id, organization_id, slug, name, short_description, price_cents, currency,
+                   main_image_url, external_url
+            FROM products
+            WHERE organization_id = %s AND status = 'published'
+            ORDER BY is_featured DESC, created_at DESC
+            ''',
+            (org_id,),
+        )
+        products = [PublicProduct(**row) for row in cur.fetchall()]
+
+    return PublicOrganizationDetails(
+        name=org['name'],
+        slug=org['slug'],
+        country=org['country'],
+        city=org['city'],
+        website_url=org['website_url'],
+        is_verified=org['is_verified'],
+        verification_status=org['verification_status'],
+        short_description=org.get('short_description'),
+        long_description=org.get('long_description'),
+        production_description=org.get('production_description'),
+        safety_and_quality=org.get('safety_and_quality'),
+        video_url=org.get('video_url'),
+        gallery=gallery,
+        tags=org.get('tags'),
+        primary_category=org.get('category'),  # Используем category из профиля
+        founded_year=org.get('founded_year'),
+        employee_count=org.get('employee_count'),
+        factory_size=org.get('factory_size'),
+        category=org.get('category'),
+        certifications=certifications,
+        sustainability_practices=org.get('sustainability_practices'),
+        quality_standards=org.get('quality_standards'),
+        buy_links=buy_links,
+        products=products,
+        contact_email=org.get('contact_email'),
+        contact_phone=org.get('contact_phone'),
+        contact_website=org.get('contact_website'),
+        contact_address=org.get('contact_address'),
+        contact_telegram=org.get('contact_telegram'),
+        contact_whatsapp=org.get('contact_whatsapp'),
+        social_links=social_links,
+    )
+
+
 def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDetails:
     with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             '''
             SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
-                   o.verification_status, o.primary_category, o.tags,
+                   o.verification_status, o.tags,
                    p.short_description, p.long_description, p.production_description,
                    p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
                    p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
@@ -280,7 +359,7 @@ def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDeta
         video_url=org.get('video_url'),
         gallery=gallery,
         tags=org.get('tags'),
-        primary_category=org.get('primary_category'),
+        primary_category=org.get('category'),  # Используем category из профиля
         founded_year=org.get('founded_year'),
         employee_count=org.get('employee_count'),
         factory_size=org.get('factory_size'),

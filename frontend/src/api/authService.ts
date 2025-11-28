@@ -74,6 +74,11 @@ export const fetchPublicOrganizationDetails = async (slug: string) => {
   return data
 }
 
+export const fetchPublicOrganizationDetailsById = async (organizationId: string) => {
+  const { data } = await httpClient.get<PublicOrganizationDetails>(`/api/public/organizations/${organizationId}`)
+  return data
+}
+
 export const searchPublicOrganizations = async (params: {
   q?: string
   country?: string

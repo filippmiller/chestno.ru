@@ -118,6 +118,23 @@ async def public_list_posts(
     return PublicOrganizationPostsResponse(items=items, total=total)
 
 
+@public_router.get('/{organization_id}/posts', response_model=PublicOrganizationPostsResponse)
+async def public_list_posts_by_id(
+    organization_id: str,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> PublicOrganizationPostsResponse:
+    """Список опубликованных постов организации по ID (публичный API)."""
+    from app.services.posts import list_public_organization_posts_by_id
+    items, total = await run_in_threadpool(
+        list_public_organization_posts_by_id,
+        organization_id,
+        limit,
+        offset,
+    )
+    return PublicOrganizationPostsResponse(items=items, total=total)
+
+
 @public_router.get('/by-slug/{slug}/posts/{post_slug}', response_model=PublicOrganizationPost)
 async def public_get_post(
     slug: str,

@@ -99,6 +99,27 @@ async def public_list_reviews(
     return PublicReviewsResponse(items=items, total=total, average_rating=avg_rating)
 
 
+@public_router.get('/{organization_id}/reviews', response_model=PublicReviewsResponse)
+async def public_list_reviews_by_id(
+    organization_id: str,
+    product_id: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    order: str = Query(default='newest', pattern='^(newest|highest_rating)$'),
+) -> PublicReviewsResponse:
+    """Список опубликованных отзывов организации по ID (публичный API)."""
+    from app.services.reviews import list_public_organization_reviews_by_id
+    items, total, avg_rating = await run_in_threadpool(
+        list_public_organization_reviews_by_id,
+        organization_id,
+        product_id,
+        limit,
+        offset,
+        order,
+    )
+    return PublicReviewsResponse(items=items, total=total, average_rating=avg_rating)
+
+
 @public_router.post('/by-slug/{slug}/reviews', response_model=Review, status_code=201)
 async def public_create_review(
     slug: str,
@@ -119,6 +140,24 @@ async def public_create_review(
 
             organization_id = str(org['id'])
 
+    try:
+        return await run_in_threadpool(
+            create_review,
+            organization_id,
+            current_user_id,
+            payload,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@public_router.post('/{organization_id}/reviews', response_model=Review, status_code=201)
+async def public_create_review_by_id(
+    organization_id: str,
+    payload: ReviewCreate,
+    current_user_id: str = Depends(get_current_user_id),
+) -> Review:
+    """Создать отзыв по ID организации (публичный API, требует авторизации)."""
     try:
         return await run_in_threadpool(
             create_review,

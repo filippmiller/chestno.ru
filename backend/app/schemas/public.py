@@ -22,6 +22,7 @@ class BuyLinkItem(BaseModel):
 
 
 class PublicOrganizationSummary(BaseModel):
+    id: str
     name: str
     slug: str
     country: str | None = None

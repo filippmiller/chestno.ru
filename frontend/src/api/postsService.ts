@@ -60,6 +60,16 @@ export async function listPublicOrganizationPosts(
   return response.data
 }
 
+export async function listPublicOrganizationPostsById(
+  organizationId: string,
+  params?: { limit?: number; offset?: number },
+): Promise<PublicOrganizationPostsResponse> {
+  const response = await httpClient.get<PublicOrganizationPostsResponse>(`/api/public/organizations/${organizationId}/posts`, {
+    params,
+  })
+  return response.data
+}
+
 export async function getPublicOrganizationPost(slug: string, postSlug: string): Promise<PublicOrganizationPost> {
   const response = await httpClient.get<PublicOrganizationPost>(
     `/api/public/organizations/by-slug/${slug}/posts/${postSlug}`,

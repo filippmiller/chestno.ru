@@ -200,7 +200,7 @@ export const ModerationDashboardPage = () => {
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button variant="outline" asChild>
-                        <a href={`/org/${org.slug}`} target="_blank" rel="noreferrer">
+                        <a href={`/org/${org.id}`} target="_blank" rel="noreferrer">
                           Открыть профиль
                         </a>
                       </Button>

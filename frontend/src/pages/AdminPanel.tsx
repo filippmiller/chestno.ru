@@ -171,7 +171,7 @@ const PendingRegistrationsSection = () => {
                 )}
                 <div className="mt-2 flex gap-2">
                   <Button variant="outline" asChild size="sm">
-                    <a href={`/org/${org.slug}`} target="_blank" rel="noreferrer">
+                    <a href={`/org/${org.id}`} target="_blank" rel="noreferrer">
                       Открыть профиль
                     </a>
                   </Button>

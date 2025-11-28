@@ -306,6 +306,85 @@ def moderate_review(
             )
 
 
+def list_public_organization_reviews_by_id(
+    organization_id: str,
+    product_id: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    order: str = 'newest',
+) -> tuple[list[PublicReview], int, float | None]:
+    """Список опубликованных отзывов организации по ID (публичный API)."""
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Проверка организации
+            cur.execute(
+                '''
+                SELECT id FROM organizations
+                WHERE id = %s AND public_visible = true AND verification_status = 'verified'
+                ''',
+                (organization_id,),
+            )
+            org = cur.fetchone()
+            if not org:
+                return [], 0, None
+
+            # Подсчет и средний рейтинг
+            count_query = '''
+                SELECT COUNT(*) as total, AVG(rating)::numeric(3,2) as avg_rating
+                FROM reviews
+                WHERE organization_id = %s AND status = 'approved'
+            '''
+            count_params = [organization_id]
+
+            if product_id:
+                count_query += ' AND product_id = %s'
+                count_params.append(product_id)
+
+            cur.execute(count_query, count_params)
+            count_row = cur.fetchone()
+            total = count_row['total'] or 0
+            avg_rating = float(count_row['avg_rating']) if count_row['avg_rating'] else None
+
+            # Получение отзывов
+            query = '''
+                SELECT id, product_id, author_user_id, rating, title, body, media, created_at
+                FROM reviews
+                WHERE organization_id = %s AND status = 'approved'
+            '''
+            params = [organization_id]
+
+            if product_id:
+                query += ' AND product_id = %s'
+                params.append(product_id)
+
+            # Сортировка
+            if order == 'highest_rating':
+                query += ' ORDER BY rating DESC, created_at DESC'
+            else:  # newest
+                query += ' ORDER BY created_at DESC'
+
+            query += ' LIMIT %s OFFSET %s'
+            params.extend([limit, offset])
+
+            cur.execute(query, params)
+            rows = cur.fetchall()
+
+            reviews = []
+            for row in rows:
+                reviews.append(PublicReview(
+                    id=str(row['id']),
+                    product_id=str(row['product_id']) if row['product_id'] else None,
+                    author_user_id=str(row['author_user_id']),
+                    rating=row['rating'],
+                    title=row['title'],
+                    body=row['body'],
+                    media=_serialize_media(row['media']),
+                    created_at=row['created_at'],
+                ))
+
+            return reviews, total, avg_rating
+
+
 def list_public_organization_reviews(
     organization_slug: str,
     product_slug: str | None = None,
