@@ -73,11 +73,18 @@ def create_app() -> FastAPI:
     # Убираем дубликаты и проверяем реальные пути
     possible_paths = [
         Path('/app/frontend/dist'),  # /app/frontend/dist (стандартный путь Railway)
-        backend_path.parent / 'frontend' / 'dist' if backend_path != Path('/') else Path('/frontend/dist'),  # ../frontend/dist
+        backend_path.parent / 'frontend' / 'dist',  # ../frontend/dist (если backend_path = /app/backend)
         Path('/frontend/dist'),  # /frontend/dist
     ]
-    # Убираем дубликаты
-    possible_paths = list(dict.fromkeys(possible_paths))
+    # Убираем дубликаты, сохраняя порядок
+    seen = set()
+    unique_paths = []
+    for p in possible_paths:
+        p_str = str(p)
+        if p_str not in seen:
+            seen.add(p_str)
+            unique_paths.append(p)
+    possible_paths = unique_paths
     
     frontend_dist_path = None
     for path in possible_paths:
