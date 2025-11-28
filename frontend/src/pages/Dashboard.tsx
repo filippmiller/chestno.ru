@@ -301,20 +301,42 @@ export const DashboardPage = () => {
       )}
 
       {isPlatformAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Админ-дашборд</CardTitle>
-            <CardDescription>Ключевые метрики по организациям и активности.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link to="/dashboard/admin">
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Перейти к метрикам
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Админ-дашборд</CardTitle>
+              <CardDescription>Ключевые метрики по организациям и активности.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild>
+                <Link to="/dashboard/admin">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Перейти к метрикам
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Админ-панель</CardTitle>
+              <CardDescription>Управление платформой, модерация регистраций и настройки.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-3">
+              <Button asChild>
+                <Link to="/admin">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Админ-панель
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/dashboard/moderation/organizations">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Модерация регистраций
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   )
