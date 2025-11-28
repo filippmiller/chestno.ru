@@ -132,16 +132,14 @@ def create_app() -> FastAPI:
                 frontend_dist_path = path
                 break
         
-        if not frontend_dist_path:
-            # Fallback заглушка
-            logger.warning("Frontend not found, showing fallback")
-            index_path = None
-        else:
+        if frontend_dist_path:
             index_path = frontend_dist_path / 'index.html'
+            if index_path.exists():
+                with open(index_path, 'r', encoding='utf-8') as f:
+                    return HTMLResponse(content=f.read())
         
-        if index_path.exists():
-            with open(index_path, 'r', encoding='utf-8') as f:
-                return HTMLResponse(content=f.read())
+        # Fallback заглушка
+        logger.warning("Frontend not found, showing fallback")
         
         # Fallback заглушка
         return HTMLResponse(content="""
