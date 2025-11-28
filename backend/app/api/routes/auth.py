@@ -80,6 +80,7 @@ async def login(payload: LoginRequest) -> LoginResponse:
         user=session.user,
         organizations=session.organizations,
         memberships=session.memberships,
+        platform_roles=session.platform_roles,
     )
 
 
