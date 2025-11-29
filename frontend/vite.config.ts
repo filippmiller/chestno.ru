@@ -18,4 +18,12 @@ export default defineConfig({
   },
   // Base path для production (если нужно)
   base: '/',
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

@@ -128,6 +128,7 @@ class LoginResponse(SessionResponse):
     refresh_token: str
     expires_in: int | None = None
     token_type: str = 'bearer'
+    supabase_user: dict | None = None
 
 
 class OrganizationInvite(BaseModel):

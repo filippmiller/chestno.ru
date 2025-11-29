@@ -46,58 +46,82 @@ async def session(current_user_id: str = Depends(get_current_user_id)) -> Sessio
 @router.post('/login', response_model=LoginResponse)
 async def login(payload: LoginRequest) -> LoginResponse:
     logger.info('Login attempt for %s', payload.email)
-    state = login_throttle.get_state(payload.email)
-    if state and state.retry_after > 0:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={'message': 'Слишком много попыток. Попробуйте позже.', 'retry_after_seconds': state.retry_after},
-        )
-
     try:
-        auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
-    except HTTPException as exc:
-        if exc.status_code in {status.HTTP_400_BAD_REQUEST, status.HTTP_401_UNAUTHORIZED}:
-            delay = login_throttle.register_failure(payload.email)
+        state = login_throttle.get_state(payload.email)
+        if state and state.retry_after > 0:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={'message': 'Неверный email или пароль', 'retry_after_seconds': delay},
-            ) from exc
-        raise
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={'message': 'Слишком много попыток. Попробуйте позже.', 'retry_after_seconds': state.retry_after},
+            )
 
-    login_throttle.reset(payload.email)
-    user = auth_response.get('user') or {}
-    user_id = user.get('id')
-    if not user_id:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Supabase user id not found')
+        try:
+            logger.info('Calling supabase_admin.password_sign_in')
+            auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
+            logger.info('supabase_admin.password_sign_in success')
+        except HTTPException as exc:
+            if exc.status_code in {status.HTTP_400_BAD_REQUEST, status.HTTP_401_UNAUTHORIZED}:
+                delay = login_throttle.register_failure(payload.email)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={'message': 'Неверный email или пароль', 'retry_after_seconds': delay},
+                ) from exc
+            raise
+        except Exception as e:
+            logger.error(f'supabase_admin.password_sign_in failed with unexpected error: {e}')
+            raise
 
-    session = await run_in_threadpool(get_session_data, user_id)
-    access_token = auth_response.get('access_token')
-    refresh_token = auth_response.get('refresh_token')
-    
-    # Log token details for debugging
-    logger.info('Tokens received from Supabase: access_token=%s, refresh_token=%s', 
-                'present' if access_token else 'missing',
-                'present' if refresh_token else 'missing')
-    if refresh_token:
-        logger.info('Refresh token length: %d, preview: %s...', 
-                   len(refresh_token), refresh_token[:20])
-    
-    if not access_token or not refresh_token:
-        logger.error('Missing tokens: access_token=%s, refresh_token=%s', 
+        logger.info('Resetting throttle')
+        login_throttle.reset(payload.email)
+        user = auth_response.get('user') or {}
+        user_id = user.get('id')
+        if not user_id:
+            logger.error('Supabase user id not found in response')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Supabase user id not found')
+
+        logger.info(f'Getting session data for user_id: {user_id}')
+        try:
+            session = await run_in_threadpool(get_session_data, user_id)
+            logger.info('Session data retrieved successfully')
+        except Exception as e:
+            logger.error(f'get_session_data failed: {e}')
+            import traceback
+            traceback.print_exc()
+            raise
+
+        access_token = auth_response.get('access_token')
+        refresh_token = auth_response.get('refresh_token')
+        
+        # Log token details for debugging
+        logger.info('Tokens received from Supabase: access_token=%s, refresh_token=%s', 
                     'present' if access_token else 'missing',
                     'present' if refresh_token else 'missing')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Supabase tokens not received')
+        if refresh_token:
+            logger.info('Refresh token length: %d, preview: %s...', 
+                       len(refresh_token), refresh_token[:20])
+        
+        if not access_token or not refresh_token:
+            logger.error('Missing tokens: access_token=%s, refresh_token=%s', 
+                        'present' if access_token else 'missing',
+                        'present' if refresh_token else 'missing')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Supabase tokens not received')
 
-    return LoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        expires_in=auth_response.get('expires_in'),
-        token_type=auth_response.get('token_type', 'bearer'),
-        user=session.user,
-        organizations=session.organizations,
-        memberships=session.memberships,
-        platform_roles=session.platform_roles,
-    )
+        logger.info('Constructing LoginResponse')
+        return LoginResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=auth_response.get('expires_in'),
+            token_type=auth_response.get('token_type', 'bearer'),
+            user=session.user,
+            organizations=session.organizations,
+            memberships=session.memberships,
+            platform_roles=session.platform_roles,
+            supabase_user=auth_response.get('user'),
+        )
+    except Exception as e:
+        logger.error(f'Login endpoint failed: {e}')
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 @router.get('/linked-accounts')

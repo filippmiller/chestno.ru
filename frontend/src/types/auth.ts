@@ -434,15 +434,15 @@ export interface PublicOrganizationDetails extends PublicOrganizationProfile {
 
 export interface OnboardingStep {
   key:
-    | 'profile_basic'
-    | 'contacts'
-    | 'story_and_photos'
-    | 'video_presentation'
-    | 'products'
-    | 'qr_codes'
-    | 'verification'
-    | 'invites'
-    | 'first_post'
+  | 'profile_basic'
+  | 'contacts'
+  | 'story_and_photos'
+  | 'video_presentation'
+  | 'products'
+  | 'qr_codes'
+  | 'verification'
+  | 'invites'
+  | 'first_post'
   label: string
   completed: boolean
   description?: string | null
@@ -500,5 +500,6 @@ export interface LoginResponse extends SessionPayload {
   refresh_token: string
   expires_in?: number
   token_type: string
+  supabase_user?: any
 }
 

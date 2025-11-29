@@ -9,7 +9,11 @@ import { getSupabaseClient } from '@/lib/supabaseClient'
 const rawBaseUrl = import.meta.env.VITE_BACKEND_URL?.trim()
 let baseURL = ''
 
-if (rawBaseUrl && !rawBaseUrl.startsWith('http://localhost') && !rawBaseUrl.startsWith('https://localhost')) {
+if (import.meta.env.DEV) {
+  // В режиме разработки используем прокси (пустой baseURL или origin),
+  // чтобы избежать CORS и использовать настройки vite.config.ts
+  baseURL = window.location.origin
+} else if (rawBaseUrl) {
   // Используем явно указанный URL
   baseURL = rawBaseUrl
 } else if (typeof window !== 'undefined') {
@@ -47,7 +51,7 @@ httpClient.interceptors.request.use(
         fullUrl = `${window.location.origin}${config.url}`
       }
     }
-    
+
     console.log('[httpClient] Request interceptor called:', {
       method: config.method,
       url: config.url,
@@ -55,7 +59,7 @@ httpClient.interceptors.request.use(
       fullUrl: fullUrl || '(could not determine)',
       headers: Object.keys(config.headers || {}),
     })
-    
+
     // Убеждаемся, что baseURL установлен
     if (!config.baseURL && typeof window !== 'undefined' && config.url && !config.url.startsWith('http')) {
       console.log('[httpClient] Setting baseURL to window.location.origin as fallback')
@@ -66,7 +70,7 @@ httpClient.interceptors.request.use(
     // Skip adding auth token for public auth endpoints (they don't need it)
     const publicAuthEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/yandex/start']
     const isPublicAuthEndpoint = publicAuthEndpoints.some((endpoint) => config.url?.includes(endpoint))
-    
+
     if (isPublicAuthEndpoint) {
       console.log('[httpClient] Public auth endpoint detected, skipping auth token')
       console.log('[httpClient] Final request config:', {
@@ -97,7 +101,7 @@ httpClient.interceptors.request.use(
       // If getSession fails, don't block the request - just log and continue
       console.warn('[httpClient] Failed to get session for request interceptor:', error)
     }
-    
+
     console.log('[httpClient] Request interceptor completed, final URL:', fullUrl)
     return config
   },

@@ -65,31 +65,31 @@ export const LoginPage = () => {
     console.log('[Login.onSubmit] ===== FORM SUBMISSION STARTED =====')
     console.log('[Login.onSubmit] Form values:', { email: values.email, passwordLength: values.password.length })
     console.log('[Login.onSubmit] Form state:', { isSubmitting: form.formState.isSubmitting, isValid: form.formState.isValid })
-    
+
     setErrorMessage(null)
     setRetryAfter(null)
     setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Нажата кнопка входа`, ...prev])
-    
+
     try {
       console.log('[Login.onSubmit] Calling login function...')
       console.log('[Login.onSubmit] Attempting login for:', values.email)
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Attempting login for ${values.email}`, ...prev])
-      
+
       const loginPromise = login(values.email, values.password)
       console.log('[Login.onSubmit] Login promise created, awaiting...')
-      
+
       const response = await loginPromise
       console.log('[Login.onSubmit] Login promise resolved, got response')
-      console.log('Login response received:', { 
-        hasAccessToken: !!response.access_token, 
+      console.log('Login response received:', {
+        hasAccessToken: !!response.access_token,
         hasRefreshToken: !!response.refresh_token,
-        platformRoles: response.platform_roles 
+        platformRoles: response.platform_roles
       })
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Login response received (tokens OK)`, ...prev])
-      
+
       // Set session with timeout to prevent hanging
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Setting Supabase session...`, ...prev])
-      
+
       // Log token details for debugging
       console.log('[Login] Token details:', {
         hasAccessToken: !!response.access_token,
@@ -99,14 +99,14 @@ export const LoginPage = () => {
         refreshTokenPreview: response.refresh_token ? `${response.refresh_token.substring(0, 20)}...` : 'none',
         expiresIn: response.expires_in,
       })
-      
+
       if (!response.refresh_token) {
         console.error('[Login] CRITICAL: No refresh_token in response!')
         throw new Error('No refresh_token received from server')
       }
-      
+
       let sessionSetSuccessfully = false
-      
+
       // Try setSession with shorter timeout (3 seconds) - if it hangs, use direct storage
       try {
         console.log('[Login] Attempting supabase.auth.setSession (3s timeout)...')
@@ -114,14 +114,14 @@ export const LoginPage = () => {
           access_token: response.access_token,
           refresh_token: response.refresh_token,
         }
-        
+
         const setSessionPromise = supabase.auth.setSession(sessionData)
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('setSession timeout after 3 seconds')), 3000)
+          setTimeout(() => reject(new Error('setSession timeout after 10 seconds')), 10000)
         })
-        
+
         const result = await Promise.race([setSessionPromise, timeoutPromise])
-        
+
         if (result.error) {
           console.warn('[Login] setSession returned error:', result.error.message)
         } else if (result.data?.session) {
@@ -131,7 +131,7 @@ export const LoginPage = () => {
       } catch (sessionError) {
         console.warn('[Login] setSession timed out or failed, using direct storage method:', sessionError)
       }
-      
+
       // If setSession failed or timed out, save tokens directly to localStorage
       // Supabase stores session in localStorage with key: `sb-${projectRef}-auth-token`
       if (!sessionSetSuccessfully) {
@@ -140,10 +140,10 @@ export const LoginPage = () => {
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
           const projectRef = supabaseUrl?.split('//')[1]?.split('.')[0] || 'unknown'
           const storageKey = `sb-${projectRef}-auth-token`
-          
+
           // Calculate expires_at (current time + expires_in seconds)
           const expiresAt = Math.floor(Date.now() / 1000) + (response.expires_in || 3600)
-          
+
           // Create session object in Supabase format
           const sessionObject = {
             access_token: response.access_token,
@@ -151,9 +151,9 @@ export const LoginPage = () => {
             expires_at: expiresAt,
             expires_in: response.expires_in || 3600,
             token_type: response.token_type || 'bearer',
-            user: response.user,
+            user: response.supabase_user || response.user,
           }
-          
+
           // Save to localStorage
           localStorage.setItem(storageKey, JSON.stringify(sessionObject))
           console.log('[Login] Tokens saved to localStorage with key:', storageKey)
@@ -163,16 +163,16 @@ export const LoginPage = () => {
             expiresAt: sessionObject.expires_at,
             userId: sessionObject.user?.id,
           })
-          
+
           // Small delay to let Supabase SDK pick up the change
           await new Promise(resolve => setTimeout(resolve, 100))
-          
+
           // Verify by getting session
           const { data: verifyData, error: verifyError } = await supabase.auth.getSession()
           if (verifyError) {
             console.error('[Login] Error verifying session after direct save:', verifyError)
           } else if (verifyData.session) {
-            console.log('[Login] Session verified after direct save:', { 
+            console.log('[Login] Session verified after direct save:', {
               userId: verifyData.session.user.id,
               hasRefreshToken: !!verifyData.session.refresh_token,
             })
@@ -192,7 +192,7 @@ export const LoginPage = () => {
           console.error('[Login] Error verifying session:', verifyError)
           sessionSetSuccessfully = false
         } else if (verifyData.session) {
-          console.log('[Login] Session verified:', { 
+          console.log('[Login] Session verified:', {
             userId: verifyData.session.user.id,
             hasRefreshToken: !!verifyData.session.refresh_token,
           })
@@ -200,16 +200,16 @@ export const LoginPage = () => {
           setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session set via setSession API`, ...prev])
         }
       }
-      
+
       if (!sessionSetSuccessfully) {
         console.warn('[Login] WARNING: Session setup may be incomplete, but continuing with redirect')
         setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] WARNING: Session setup incomplete`, ...prev])
       }
-      
+
       // Store session data and redirect
       setSessionData(response)
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session data stored, redirecting...`, ...prev])
-      
+
       const pendingInvite = localStorage.getItem('pendingInviteCode')
       if (pendingInvite) {
         setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Redirect to invite/${pendingInvite}`, ...prev])
@@ -268,16 +268,16 @@ export const LoginPage = () => {
             </Alert>
           )}
           <Form {...form}>
-            <form 
+            <form
               onSubmit={(e) => {
                 console.log('[Login] Form onSubmit event fired')
                 console.log('[Login] Event:', e)
                 console.log('[Login] Form validity before handleSubmit:', form.formState.isValid)
                 console.log('[Login] Form errors:', form.formState.errors)
-                
+
                 // Call react-hook-form's handleSubmit
                 form.handleSubmit(onSubmit)(e)
-              }} 
+              }}
               className="space-y-4"
             >
               <FormField

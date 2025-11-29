@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     database_url: str
     backend_host: str = '0.0.0.0'
     backend_port: int = 8000
-    allowed_origins: str | List[str] = 'http://localhost:5173'
+    allowed_origins: str | List[str] = 'http://localhost:5173,http://localhost:5174'
     frontend_url: str = 'http://localhost:5173'
     qr_ip_hash_salt: str
     social_login_salt: str
