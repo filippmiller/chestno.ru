@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 import type {
   AfterSignupPayload,
   AiIntegration,
@@ -50,8 +52,24 @@ export const fetchSession = async () => {
 }
 
 export const login = async (email: string, password: string) => {
-  const { data } = await httpClient.post<LoginResponse>('/api/auth/login', { email, password })
-  return data
+  console.log('authService.login: baseURL =', httpClient.defaults.baseURL)
+  console.log('authService.login: URL = /api/auth/login')
+  try {
+    const { data } = await httpClient.post<LoginResponse>('/api/auth/login', { email, password })
+    console.log('authService.login: response OK')
+    return data
+  } catch (error) {
+    console.error('authService.login: HTTP error', error)
+    if (axios.isAxiosError(error)) {
+      console.error('authService.login: Axios details', {
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method,
+      })
+    }
+    throw error
+  }
 }
 
 export const getOrganizationProfile = async (organizationId: string) => {

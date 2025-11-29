@@ -3,9 +3,11 @@ import axios from 'axios'
 import { getSupabaseClient } from '@/lib/supabaseClient'
 
 // В production используем тот же origin, если VITE_BACKEND_URL не указан
+// или явно указывает на localhost (Railway не должен ходить на локальный backend)
+const rawBaseUrl = import.meta.env.VITE_BACKEND_URL?.trim()
 const baseURL =
-  import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.trim().length > 0
-    ? import.meta.env.VITE_BACKEND_URL
+  rawBaseUrl && !rawBaseUrl.startsWith('http://localhost') && !rawBaseUrl.startsWith('https://localhost')
+    ? rawBaseUrl
     : ''
 
 export const httpClient = axios.create({
