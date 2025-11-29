@@ -1,23 +1,29 @@
-import { AuthProvider } from '@/auth/AuthProvider'
-import { useAuth } from '@/auth/AuthProvider'
+import { AuthProviderV2 } from '@/auth/AuthProviderV2'
+import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { AppRoutes } from '@/routes'
 import { LandingHeader } from '@/components/landing/LandingHeader'
 
 function App() {
   return (
-    <AuthProvider>
+    <AuthProviderV2>
       <AppContent />
-    </AuthProvider>
+    </AuthProviderV2>
   )
 }
 
 function AppContent() {
-  const { user, platformRoles, logout } = useAuth()
-  const isAdmin = platformRoles.some((role) => role === 'platform_owner' || role === 'platform_admin')
+  const { user, role, status, logout } = useAuthV2()
+  const isAdmin = role === 'admin'
+  const isAuthenticated = status === 'authenticated'
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <LandingHeader userEmail={user?.email ?? undefined} onLogout={logout} isAdmin={isAdmin} />
+      <LandingHeader 
+        userEmail={isAuthenticated ? user?.email ?? undefined : undefined} 
+        onLogout={logout} 
+        isAdmin={isAdmin}
+        isAuthenticated={isAuthenticated}
+      />
       <main className="flex-1">
         <AppRoutes />
       </main>
