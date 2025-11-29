@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { useForm } from 'react-hook-form'
@@ -23,7 +23,6 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export const LoginPage = () => {
   const supabase = getSupabaseClient()
-  const navigate = useNavigate()
   const setSessionData = useUserStore((state) => state.setSessionData)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [retryAfter, setRetryAfter] = useState<number | null>(null)
