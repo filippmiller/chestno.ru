@@ -2,7 +2,11 @@ import axios from 'axios'
 
 import { getSupabaseClient } from '@/lib/supabaseClient'
 
-const baseURL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000'
+// В production используем тот же origin, если VITE_BACKEND_URL не указан
+const baseURL =
+  import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.trim().length > 0
+    ? import.meta.env.VITE_BACKEND_URL
+    : ''
 
 export const httpClient = axios.create({
   baseURL,
