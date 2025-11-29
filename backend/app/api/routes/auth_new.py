@@ -7,14 +7,50 @@ Backend only validates tokens and provides application data.
 """
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.concurrency import run_in_threadpool
+from jose import jwt
 
 from app.core.auth_deps import get_current_user_id
+from app.core.config import get_settings
 from app.schemas.auth import SessionResponse
 from app.services.accounts import get_session_data
 
 router = APIRouter(prefix='/api/auth', tags=['auth'])
 logger = logging.getLogger(__name__)
+security = HTTPBearer()
+
+
+@router.get('/debug-token')
+async def debug_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Debug endpoint to check why JWT validation is failing.
+    """
+    token = credentials.credentials
+    settings = get_settings()
+    
+    results = {
+        "token_snippet": token[:10] + "...",
+        "settings_jwt_secret_len": len(settings.supabase_jwt_secret),
+        "settings_service_role_key_len": len(settings.supabase_service_role_key),
+        "attempts": []
+    }
+    
+    # Attempt 1: Using configured JWT Secret
+    try:
+        jwt.decode(token, settings.supabase_jwt_secret, algorithms=["HS256"], audience="authenticated")
+        results["attempts"].append({"key": "supabase_jwt_secret", "success": True})
+    except Exception as e:
+        results["attempts"].append({"key": "supabase_jwt_secret", "success": False, "error": str(e)})
+        
+    # Attempt 2: Using Service Role Key
+    try:
+        jwt.decode(token, settings.supabase_service_role_key, algorithms=["HS256"], audience="authenticated")
+        results["attempts"].append({"key": "supabase_service_role_key", "success": True})
+    except Exception as e:
+        results["attempts"].append({"key": "supabase_service_role_key", "success": False, "error": str(e)})
+
+    return results
 
 
 @router.get('/me', response_model=SessionResponse)

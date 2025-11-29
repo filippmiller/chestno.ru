@@ -70,7 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[AuthProvider] App user data loaded:', data.user.email)
         } catch (error: any) {
             console.error('[AuthProvider] Failed to fetch app user data:', error)
-            alert(`Backend Error: ${error.message || 'Unknown error'}`)
+
+            // DEBUG: Try to hit the debug endpoint to see why
+            try {
+                const { data: debugData } = await httpClient.get('/api/auth/debug-token', {
+                    headers: {
+                        Authorization: `Bearer ${supabaseSession.access_token}`
+                    }
+                })
+                alert(`Auth Debug: ${JSON.stringify(debugData, null, 2)}`)
+            } catch (debugError: any) {
+                alert(`Backend Error: ${error.message}. Debug endpoint also failed: ${debugError.message}`)
+            }
 
             // If backend fails but Supabase session is valid, still consider authenticated
             // but with limited data
