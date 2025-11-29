@@ -76,19 +76,39 @@ export const LoginPage = () => {
       })
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Login response received (tokens OK)`, ...prev])
       
-      const { data: sessionData, error } = await supabase.auth.setSession({
-        access_token: response.access_token,
-        refresh_token: response.refresh_token,
-      })
-      
-      if (error) {
-        console.error('Supabase setSession error:', error)
-        throw new Error(error.message)
+      // Set session with timeout to prevent hanging
+      setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Setting Supabase session...`, ...prev])
+      try {
+        const setSessionPromise = supabase.auth.setSession({
+          access_token: response.access_token,
+          refresh_token: response.refresh_token,
+        })
+        
+        // Add timeout wrapper (5 seconds max)
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('setSession timeout after 5 seconds')), 5000)
+        })
+        
+        const result = await Promise.race([setSessionPromise, timeoutPromise])
+        
+        if (result.error) {
+          console.error('Supabase setSession error:', result.error)
+          setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] setSession error: ${result.error.message}`, ...prev])
+          // Continue anyway - we have the tokens and can proceed
+        } else {
+          console.log('Session set successfully:', { hasSession: !!result.data?.session })
+          setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session set in Supabase`, ...prev])
+        }
+      } catch (sessionError) {
+        console.warn('setSession failed or timed out, continuing anyway:', sessionError)
+        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] setSession warning: ${String(sessionError)}`, ...prev])
+        // Continue anyway - we have valid tokens from the backend
       }
       
-      console.log('Session set successfully:', { hasSession: !!sessionData.session })
-      setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session set in Supabase`, ...prev])
+      // Store session data and redirect regardless of setSession result
       setSessionData(response)
+      setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session data stored, redirecting...`, ...prev])
+      
       const pendingInvite = localStorage.getItem('pendingInviteCode')
       if (pendingInvite) {
         setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Redirect to invite/${pendingInvite}`, ...prev])
