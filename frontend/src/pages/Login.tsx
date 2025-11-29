@@ -270,6 +270,7 @@ export const LoginPage = () => {
           <Form {...form}>
             <form
               onSubmit={(e) => {
+                e.preventDefault()
                 console.log('[Login] Form onSubmit event fired')
                 console.log('[Login] Event:', e)
                 console.log('[Login] Form validity before handleSubmit:', form.formState.isValid)
