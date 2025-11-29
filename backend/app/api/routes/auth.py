@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 
@@ -9,6 +11,7 @@ from app.services.accounts import get_session_data, handle_after_signup
 from psycopg.rows import dict_row
 
 router = APIRouter(prefix='/api/auth', tags=['auth'])
+logger = logging.getLogger(__name__)
 
 
 def _parse_bearer_token(authorization: str | None) -> str:
@@ -42,6 +45,7 @@ async def session(current_user_id: str = Depends(get_current_user_id)) -> Sessio
 
 @router.post('/login', response_model=LoginResponse)
 async def login(payload: LoginRequest) -> LoginResponse:
+    logger.info('Login attempt for %s', payload.email)
     state = login_throttle.get_state(payload.email)
     if state and state.retry_after > 0:
         raise HTTPException(

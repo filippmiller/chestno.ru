@@ -27,6 +27,7 @@ export const LoginPage = () => {
   const setSessionData = useUserStore((state) => state.setSessionData)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [retryAfter, setRetryAfter] = useState<number | null>(null)
+  const [debugMessages, setDebugMessages] = useState<string[]>([])
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -64,14 +65,17 @@ export const LoginPage = () => {
   const onSubmit = async (values: LoginFormValues) => {
     setErrorMessage(null)
     setRetryAfter(null)
+    setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Нажата кнопка входа`, ...prev])
     try {
       console.log('Attempting login for:', values.email)
+      setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Attempting login for ${values.email}`, ...prev])
       const response = await login(values.email, values.password)
       console.log('Login response received:', { 
         hasAccessToken: !!response.access_token, 
         hasRefreshToken: !!response.refresh_token,
         platformRoles: response.platform_roles 
       })
+      setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Login response received (tokens OK)`, ...prev])
       
       const { data: sessionData, error } = await supabase.auth.setSession({
         access_token: response.access_token,
@@ -84,6 +88,7 @@ export const LoginPage = () => {
       }
       
       console.log('Session set successfully:', { hasSession: !!sessionData.session })
+      setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session set in Supabase`, ...prev])
       setSessionData(response)
       const pendingInvite = localStorage.getItem('pendingInviteCode')
       if (pendingInvite) {
@@ -93,12 +98,17 @@ export const LoginPage = () => {
       }
     } catch (err) {
       console.error('Login error:', err)
+      setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Login error: ${String(err)}`, ...prev])
       if (axios.isAxiosError(err)) {
         console.error('Axios error details:', {
           status: err.response?.status,
           data: err.response?.data,
           message: err.message,
         })
+        setDebugMessages((prev) => [
+          `[${new Date().toLocaleTimeString()}] Axios error: status=${err.response?.status} url=${err.config?.url}`,
+          ...prev,
+        ])
         const detail = err.response?.data?.detail
         const message =
           typeof detail === 'string' ? detail : detail?.message ?? 'Не удалось выполнить вход. Проверьте данные.'
@@ -175,6 +185,17 @@ export const LoginPage = () => {
               </Button>
             </form>
           </Form>
+
+          {debugMessages.length > 0 && (
+            <div className="mt-4 rounded-md border border-dashed border-amber-500 bg-amber-50 p-3 text-xs text-amber-900">
+              <div className="mb-1 font-semibold">Отладочная информация (видна только вам):</div>
+              <ul className="space-y-0.5 max-h-40 overflow-auto">
+                {debugMessages.map((msg, idx) => (
+                  <li key={idx}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <Button variant="link" className="mt-4 px-0 text-sm" asChild>
             <a href="#" aria-disabled>
               Забыли пароль? (скоро)
