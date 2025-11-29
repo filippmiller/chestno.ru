@@ -97,7 +97,7 @@ export const LoginPage = () => {
       } else {
         setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Redirect to /dashboard`, ...prev])
         // Полная перезагрузка страницы, чтобы гарантированно подтянуть сессию и роли
-        window.location.href = '/dashboard`
+        window.location.href = '/dashboard'
       }
     } catch (err) {
       console.error('Login error:', err)
