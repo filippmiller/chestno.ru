@@ -32,11 +32,10 @@ async def get_current_user_id(
     
     try:
         # Decode JWT using Supabase's JWT secret
-        # The JWT secret is the same as the service role key for self-hosted,
-        # or can be found in Supabase dashboard under Settings > API
+        # This is the secret shown in Supabase Dashboard → Settings → API → JWT Secret
         payload = jwt.decode(
             token,
-            settings.supabase_service_role_key,  # This acts as JWT secret
+            settings.supabase_jwt_secret,  # Use the dedicated JWT secret
             algorithms=["HS256"],
             audience="authenticated"
         )

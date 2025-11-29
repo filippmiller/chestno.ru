@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_service_role_key: str
     supabase_anon_key: str
+    supabase_jwt_secret: str  # Secret used to verify JWT tokens
     database_url: str
     backend_host: str = '0.0.0.0'
     backend_port: int = 8000
