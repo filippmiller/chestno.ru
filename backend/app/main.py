@@ -118,16 +118,20 @@ def create_app() -> FastAPI:
             app.mount('/assets', StaticFiles(directory=str(static_assets_path)), name='assets')
         
         # Для всех остальных путей (кроме API) отдаем index.html (SPA routing)
-        @app.get('/{full_path:path}', include_in_schema=False)
-        async def serve_frontend(full_path: str):
-            # Игнорируем API пути и системные пути
-            if full_path.startswith('api/') or full_path in ['docs', 'redoc', 'openapi.json']:
-                return None
-            
-            index_path = frontend_dist_path / 'index.html'
-            if index_path.exists():
-                with open(index_path, 'r', encoding='utf-8') as f:
-                    return HTMLResponse(content=f.read())
+        # @app.get('/{full_path:path}', include_in_schema=False)
+        # async def serve_frontend(full_path: str):
+        #     # Игнорируем API пути и системные пути
+        #     if full_path.startswith('api/') or full_path in ['docs', 'redoc', 'openapi.json']:
+        #         return None
+        #     
+        #     index_path = frontend_dist_path / 'index.html'
+        #     if index_path.exists():
+        #         with open(index_path, 'r', encoding='utf-8') as f:
+        #             return HTMLResponse(content=f.read())
+
+    @app.get('/api/health-check-direct')
+    async def health_check_direct():
+        return {"status": "ok", "message": "Direct health check working"}
     
     # Если нет собранного фронтенда, показываем заглушку на корневом пути
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
