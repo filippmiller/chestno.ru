@@ -92,9 +92,12 @@ export const LoginPage = () => {
       setSessionData(response)
       const pendingInvite = localStorage.getItem('pendingInviteCode')
       if (pendingInvite) {
-        navigate(`/invite/${pendingInvite}`, { replace: true })
+        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Redirect to invite/${pendingInvite}`, ...prev])
+        window.location.href = `/invite/${pendingInvite}`
       } else {
-        navigate('/dashboard', { replace: true })
+        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Redirect to /dashboard`, ...prev])
+        // Полная перезагрузка страницы, чтобы гарантированно подтянуть сессию и роли
+        window.location.href = '/dashboard`
       }
     } catch (err) {
       console.error('Login error:', err)
