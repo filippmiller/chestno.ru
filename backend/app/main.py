@@ -162,6 +162,10 @@ def create_app() -> FastAPI:
 
         return results
     
+    @app.get('/api/echo')
+    async def echo(msg: str):
+        return {"message": msg}
+        
     # Если нет собранного фронтенда, показываем заглушку на корневом пути
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
     async def root():

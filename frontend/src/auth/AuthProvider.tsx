@@ -73,12 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // DEBUG: Try to hit the debug endpoint to see why
             try {
-                // Use query param instead of header to bypass potential header stripping/blocking
-                // Use direct endpoint in main.py to bypass router issues
-                const { data: debugData } = await httpClient.get(`/api/debug-token-direct?token=${supabaseSession.access_token}`)
-                alert(`Auth Debug: ${JSON.stringify(debugData, null, 2)}`)
+                // Use echo endpoint to test basic connectivity
+                const { data: debugData } = await httpClient.get(`/api/echo?msg=test_connectivity`)
+                alert(`Echo Success: ${JSON.stringify(debugData, null, 2)}`)
             } catch (debugError: any) {
-                alert(`Backend Error: ${error.message}. Debug endpoint also failed: ${debugError.message}`)
+                alert(`Backend Error: ${error.message}. Echo endpoint also failed: ${debugError.message}`)
             }
 
             // If backend fails but Supabase session is valid, still consider authenticated
