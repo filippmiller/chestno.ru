@@ -29,12 +29,12 @@ function App() {
           } catch (fetchError) {
             console.error('Error fetching session data:', fetchError)
             // Try to use basic Supabase session data as fallback
-            if (session.user) {
+            if (session.user && session.user.email) {
               console.warn('Using Supabase session data as fallback')
               setSessionData({
                 user: {
                   id: session.user.id,
-                  email: session.user.email || null,
+                  email: session.user.email,
                   full_name: session.user.user_metadata?.full_name || null,
                   locale: session.user.user_metadata?.locale || null,
                 },

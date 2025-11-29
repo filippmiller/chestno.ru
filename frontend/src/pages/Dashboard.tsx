@@ -61,12 +61,12 @@ export const DashboardPage = () => {
           .catch((error) => {
             console.error('Error fetching session from backend:', error)
             // If fetchSession fails, try to get basic info from Supabase session
-            if (session.user) {
+            if (session.user && session.user.email) {
               console.warn('Using Supabase session data as fallback')
               setSessionData({
                 user: {
                   id: session.user.id,
-                  email: session.user.email || null,
+                  email: session.user.email,
                   full_name: session.user.user_metadata?.full_name || null,
                   locale: session.user.user_metadata?.locale || null,
                 },
