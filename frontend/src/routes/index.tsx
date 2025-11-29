@@ -1,11 +1,17 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
+// New Auth Components
+import { AuthPage } from '@/auth/AuthPage'
+import { AuthCallbackPage } from '@/auth/AuthCallbackPage'
+import { ForgotPasswordPage } from '@/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/auth/ResetPasswordPage'
+import { ProtectedRoute } from '@/auth/ProtectedRoute'
+
+// Existing Pages
 import { AdminPanelPage } from '@/pages/AdminPanel'
-import { AuthCallbackPage } from '@/pages/AuthCallback'
 import { DashboardPage } from '@/pages/Dashboard'
 import { DatabaseExplorerPage } from '@/pages/DatabaseExplorer'
 import { InviteLandingPage } from '@/pages/InviteLanding'
-import { LoginPage } from '@/pages/Login'
 import { ModerationDashboardPage } from '@/pages/ModerationDashboard'
 import { NotificationSettingsPage } from '@/pages/NotificationSettings'
 import { NotificationsPage } from '@/pages/Notifications'
@@ -24,7 +30,6 @@ import { ProducersLandingPage } from '@/pages/ProducersLanding'
 import { PublicOrganizationPage } from '@/pages/PublicOrganization'
 import { PublicOrganizationsCatalogPage } from '@/pages/PublicOrganizationsCatalog'
 import { CreateReviewPage } from '@/pages/CreateReview'
-import { RegisterPage } from '@/pages/Register'
 import { AdminDashboardPage } from '@/pages/AdminDashboard'
 import { LinkedAccountsPage } from '@/pages/LinkedAccounts'
 import { ProductsCatalogPage } from '@/pages/ProductsCatalog'
@@ -34,39 +39,192 @@ import { PricingPage } from '@/pages/PricingPage'
 
 export const AppRoutes = () => (
   <Routes>
+    {/* Public routes */}
     <Route path="/" element={<ProducersLandingPage />} />
-    <Route path="/register" element={<RegisterPage />} />
-    <Route path="/login" element={<LoginPage />} />
     <Route path="/products" element={<ProductsCatalogPage />} />
     <Route path="/stories" element={<StoriesPage />} />
     <Route path="/about" element={<AboutPage />} />
     <Route path="/pricing" element={<PricingPage />} />
-    <Route path="/auth/callback" element={<AuthCallbackPage />} />
-    <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/dashboard/organization/profile" element={<OrganizationProfilePage />} />
-            <Route path="/dashboard/organization/posts" element={<OrganizationPostsPage />} />
-            <Route path="/dashboard/organization/posts/new" element={<OrganizationPostEditPage />} />
-            <Route path="/dashboard/organization/posts/:postId" element={<OrganizationPostEditPage />} />
-            <Route path="/dashboard/organization/reviews" element={<OrganizationReviewsPage />} />
-    <Route path="/dashboard/organization/products" element={<OrganizationProductsPage />} />
-    <Route path="/dashboard/organization/plan" element={<OrganizationPlanPage />} />
-    <Route path="/dashboard/organization/invites" element={<OrganizationInvitesPage />} />
-    <Route path="/dashboard/organization/onboarding" element={<OrganizationOnboardingPage />} />
-    <Route path="/dashboard/organization/analytics" element={<OrganizationAnalyticsPage />} />
-            <Route path="/dashboard/organization/qr" element={<OrganizationQrPage />} />
-            <Route path="/dashboard/organization/marketing/qr-poster" element={<OrganizationQrPosterPage />} />
-    <Route path="/dashboard/notifications" element={<NotificationsPage />} />
-    <Route path="/dashboard/settings/notifications" element={<NotificationSettingsPage />} />
-    <Route path="/settings/linked-accounts" element={<LinkedAccountsPage />} />
-    <Route path="/dashboard/moderation/organizations" element={<ModerationDashboardPage />} />
-    <Route path="/dashboard/admin" element={<AdminDashboardPage />} />
-    <Route path="/admin" element={<AdminPanelPage />} />
-    <Route path="/admin/db" element={<DatabaseExplorerPage />} />
-    <Route path="/invite/:code" element={<InviteLandingPage />} />
     <Route path="/org/:id" element={<PublicOrganizationPage />} />
     <Route path="/org/:id/review" element={<CreateReviewPage />} />
     <Route path="/orgs" element={<PublicOrganizationsCatalogPage />} />
+
+    {/* New Auth routes */}
+    <Route path="/auth" element={<AuthPage />} />
+    <Route path="/auth/callback" element={<AuthCallbackPage />} />
+    <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
+    <Route path="/auth/reset" element={<ResetPasswordPage />} />
+
+    {/* Legacy auth routes - redirect to new /auth */}
+    <Route path="/login" element={<Navigate to="/auth" replace />} />
+    <Route path="/register" element={<Navigate to="/auth" replace />} />
+
+    {/* Protected Dashboard routes */}
+    <Route
+      path="/dashboard"
+      element={
+        <ProtectedRoute>
+          <DashboardPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/profile"
+      element={
+        <ProtectedRoute>
+          <OrganizationProfilePage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/posts"
+      element={
+        <ProtectedRoute>
+          <OrganizationPostsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/posts/new"
+      element={
+        <ProtectedRoute>
+          <OrganizationPostEditPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/posts/:postId"
+      element={
+        <ProtectedRoute>
+          <OrganizationPostEditPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/reviews"
+      element={
+        <ProtectedRoute>
+          <OrganizationReviewsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/products"
+      element={
+        <ProtectedRoute>
+          <OrganizationProductsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/plan"
+      element={
+        <ProtectedRoute>
+          <OrganizationPlanPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/invites"
+      element={
+        <ProtectedRoute>
+          <OrganizationInvitesPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/onboarding"
+      element={
+        <ProtectedRoute>
+          <OrganizationOnboardingPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/analytics"
+      element={
+        <ProtectedRoute>
+          <OrganizationAnalyticsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/qr"
+      element={
+        <ProtectedRoute>
+          <OrganizationQrPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/marketing/qr-poster"
+      element={
+        <ProtectedRoute>
+          <OrganizationQrPosterPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/notifications"
+      element={
+        <ProtectedRoute>
+          <NotificationsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/settings/notifications"
+      element={
+        <ProtectedRoute>
+          <NotificationSettingsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/settings/linked-accounts"
+      element={
+        <ProtectedRoute>
+          <LinkedAccountsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/moderation/organizations"
+      element={
+        <ProtectedRoute>
+          <ModerationDashboardPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/admin"
+      element={
+        <ProtectedRoute>
+          <AdminDashboardPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin"
+      element={
+        <ProtectedRoute>
+          <AdminPanelPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin/db"
+      element={
+        <ProtectedRoute>
+          <DatabaseExplorerPage />
+        </ProtectedRoute>
+      }
+    />
+
+    {/* Invite landing (public) */}
+    <Route path="/invite/:code" element={<InviteLandingPage />} />
+
+    {/* Catch-all */}
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 )
-
