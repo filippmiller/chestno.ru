@@ -3,7 +3,7 @@
  * 
  * Request password reset email.
  */
-import { useState, FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
 import { Button } from '@/components/ui/button'

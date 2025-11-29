@@ -4,8 +4,8 @@
  * Provides authentication state and methods throughout the app.
  * Relies on Supabase Auth as the single source of truth.
  */
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { Session, User as SupabaseUser } from '@supabase/supabase-js'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabaseClient'
 import { httpClient } from '@/api/httpClient'
 import type { AppUser, Organization, OrganizationMembership, PlatformRole, SessionPayload } from '@/types/auth'
@@ -176,11 +176,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const loginWithYandex = async () => {
-        const redirectTo = `${window.location.origin}/auth/callback`
-        await supabase.auth.signInWithOAuth({
-            provider: 'yandex',
-            options: { redirectTo }
-        })
+        // Note: Yandex OAuth not currently supported by Supabase client
+        // Fallback to manual implementation or disable
+        console.warn('Yandex OAuth not implemented yet')
+        throw new Error('Yandex login temporarily unavailable')
     }
 
     const logout = async () => {

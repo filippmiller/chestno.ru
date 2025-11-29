@@ -3,7 +3,7 @@
  * 
  * Set new password after clicking the reset link in email.
  */
-import { useState, FormEvent, useEffect } from 'react'
+import { useState, type FormEvent, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getSupabaseClient } from '@/lib/supabaseClient'
 import { PasswordInput } from './components/PasswordInput'

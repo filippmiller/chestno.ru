@@ -4,7 +4,7 @@
  * Combined login and registration page with tabs.
  * Supports email+password and OAuth (Google, Yandex).
  */
-import { useState, FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
 import { PasswordInput } from './components/PasswordInput'
