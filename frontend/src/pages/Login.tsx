@@ -89,12 +89,32 @@ export const LoginPage = () => {
       
       // Set session with timeout to prevent hanging
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Setting Supabase session...`, ...prev])
+      
+      // Log token details for debugging
+      console.log('[Login] Token details:', {
+        hasAccessToken: !!response.access_token,
+        accessTokenLength: response.access_token?.length || 0,
+        hasRefreshToken: !!response.refresh_token,
+        refreshTokenLength: response.refresh_token?.length || 0,
+        refreshTokenPreview: response.refresh_token ? `${response.refresh_token.substring(0, 20)}...` : 'none',
+        expiresIn: response.expires_in,
+      })
+      
+      if (!response.refresh_token) {
+        console.error('[Login] CRITICAL: No refresh_token in response!')
+        throw new Error('No refresh_token received from server')
+      }
+      
       let sessionSetSuccessfully = false
       try {
-        const setSessionPromise = supabase.auth.setSession({
+        console.log('[Login] Calling supabase.auth.setSession with tokens...')
+        const sessionData = {
           access_token: response.access_token,
           refresh_token: response.refresh_token,
-        })
+        }
+        console.log('[Login] Session data keys:', Object.keys(sessionData))
+        
+        const setSessionPromise = supabase.auth.setSession(sessionData)
         
         // Add timeout wrapper (10 seconds max - increased for reliability)
         const timeoutPromise = new Promise<never>((_, reject) => {
@@ -103,23 +123,49 @@ export const LoginPage = () => {
         
         const result = await Promise.race([setSessionPromise, timeoutPromise])
         
+        console.log('[Login] setSession result:', {
+          hasError: !!result.error,
+          hasData: !!result.data,
+          hasSession: !!result.data?.session,
+          errorMessage: result.error?.message,
+        })
+        
         if (result.error) {
-          console.error('Supabase setSession error:', result.error)
+          console.error('[Login] Supabase setSession error:', result.error)
+          console.error('[Login] Error details:', {
+            message: result.error.message,
+            status: result.error.status,
+            name: result.error.name,
+          })
           setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] setSession error: ${result.error.message}`, ...prev])
         } else if (result.data?.session) {
-          console.log('Session set successfully:', { hasSession: !!result.data.session })
+          console.log('[Login] Session set successfully:', { 
+            hasSession: !!result.data.session,
+            userId: result.data.session.user?.id,
+            expiresAt: result.data.session.expires_at,
+          })
           setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session set in Supabase`, ...prev])
           sessionSetSuccessfully = true
           
-          // Verify session is actually set
-          const { data: verifyData } = await supabase.auth.getSession()
-          if (verifyData.session) {
-            console.log('Session verified:', { userId: verifyData.session.user.id })
+          // Verify session is actually set and check refresh token
+          const { data: verifyData, error: verifyError } = await supabase.auth.getSession()
+          if (verifyError) {
+            console.error('[Login] Error verifying session:', verifyError)
+            sessionSetSuccessfully = false
+          } else if (verifyData.session) {
+            console.log('[Login] Session verified:', { 
+              userId: verifyData.session.user.id,
+              hasRefreshToken: !!verifyData.session.refresh_token,
+              refreshTokenLength: verifyData.session.refresh_token?.length || 0,
+            })
             sessionSetSuccessfully = true
           } else {
-            console.warn('Session set but verification failed')
+            console.warn('[Login] Session set but verification failed - no session in verifyData')
             sessionSetSuccessfully = false
           }
+        } else {
+          console.warn('[Login] setSession completed but no session in result.data')
+          sessionSetSuccessfully = false
         }
       } catch (sessionError) {
         console.error('setSession failed or timed out:', sessionError)

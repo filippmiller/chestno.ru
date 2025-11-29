@@ -73,7 +73,19 @@ async def login(payload: LoginRequest) -> LoginResponse:
     session = await run_in_threadpool(get_session_data, user_id)
     access_token = auth_response.get('access_token')
     refresh_token = auth_response.get('refresh_token')
+    
+    # Log token details for debugging
+    logger.info('Tokens received from Supabase: access_token=%s, refresh_token=%s', 
+                'present' if access_token else 'missing',
+                'present' if refresh_token else 'missing')
+    if refresh_token:
+        logger.info('Refresh token length: %d, preview: %s...', 
+                   len(refresh_token), refresh_token[:20])
+    
     if not access_token or not refresh_token:
+        logger.error('Missing tokens: access_token=%s, refresh_token=%s', 
+                    'present' if access_token else 'missing',
+                    'present' if refresh_token else 'missing')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Supabase tokens not received')
 
     return LoginResponse(
