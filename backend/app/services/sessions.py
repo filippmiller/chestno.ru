@@ -16,7 +16,7 @@ from app.core.config import get_settings
 settings = get_settings()
 
 # Session cookie name
-SESSION_COOKIE_NAME = settings.session_cookie_name
+SESSION_COOKIE_NAME = getattr(settings, 'session_cookie_name', 'session_id')
 SESSION_EXPIRY_HOURS = 24
 
 
