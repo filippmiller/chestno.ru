@@ -106,75 +106,104 @@ export const LoginPage = () => {
       }
       
       let sessionSetSuccessfully = false
+      
+      // Try setSession with shorter timeout (3 seconds) - if it hangs, use direct storage
       try {
-        console.log('[Login] Calling supabase.auth.setSession with tokens...')
+        console.log('[Login] Attempting supabase.auth.setSession (3s timeout)...')
         const sessionData = {
           access_token: response.access_token,
           refresh_token: response.refresh_token,
         }
-        console.log('[Login] Session data keys:', Object.keys(sessionData))
         
         const setSessionPromise = supabase.auth.setSession(sessionData)
-        
-        // Add timeout wrapper (10 seconds max - increased for reliability)
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('setSession timeout after 10 seconds')), 10000)
+          setTimeout(() => reject(new Error('setSession timeout after 3 seconds')), 3000)
         })
         
         const result = await Promise.race([setSessionPromise, timeoutPromise])
         
-        console.log('[Login] setSession result:', {
-          hasError: !!result.error,
-          hasData: !!result.data,
-          hasSession: !!result.data?.session,
-          errorMessage: result.error?.message,
-        })
-        
         if (result.error) {
-          console.error('[Login] Supabase setSession error:', result.error)
-          console.error('[Login] Error details:', {
-            message: result.error.message,
-            status: result.error.status,
-            name: result.error.name,
-          })
-          setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] setSession error: ${result.error.message}`, ...prev])
+          console.warn('[Login] setSession returned error:', result.error.message)
         } else if (result.data?.session) {
-          console.log('[Login] Session set successfully:', { 
-            hasSession: !!result.data.session,
-            userId: result.data.session.user?.id,
-            expiresAt: result.data.session.expires_at,
-          })
-          setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session set in Supabase`, ...prev])
+          console.log('[Login] setSession succeeded via API')
           sessionSetSuccessfully = true
-          
-          // Verify session is actually set and check refresh token
-          const { data: verifyData, error: verifyError } = await supabase.auth.getSession()
-          if (verifyError) {
-            console.error('[Login] Error verifying session:', verifyError)
-            sessionSetSuccessfully = false
-          } else if (verifyData.session) {
-            console.log('[Login] Session verified:', { 
-              userId: verifyData.session.user.id,
-              hasRefreshToken: !!verifyData.session.refresh_token,
-              refreshTokenLength: verifyData.session.refresh_token?.length || 0,
-            })
-            sessionSetSuccessfully = true
-          } else {
-            console.warn('[Login] Session set but verification failed - no session in verifyData')
-            sessionSetSuccessfully = false
-          }
-        } else {
-          console.warn('[Login] setSession completed but no session in result.data')
-          sessionSetSuccessfully = false
         }
       } catch (sessionError) {
-        console.error('setSession failed or timed out:', sessionError)
-        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] setSession error: ${String(sessionError)}`, ...prev])
+        console.warn('[Login] setSession timed out or failed, using direct storage method:', sessionError)
+      }
+      
+      // If setSession failed or timed out, save tokens directly to localStorage
+      // Supabase stores session in localStorage with key: `sb-${projectRef}-auth-token`
+      if (!sessionSetSuccessfully) {
+        try {
+          console.log('[Login] Saving tokens directly to localStorage (fallback method)...')
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+          const projectRef = supabaseUrl?.split('//')[1]?.split('.')[0] || 'unknown'
+          const storageKey = `sb-${projectRef}-auth-token`
+          
+          // Calculate expires_at (current time + expires_in seconds)
+          const expiresAt = Math.floor(Date.now() / 1000) + (response.expires_in || 3600)
+          
+          // Create session object in Supabase format
+          const sessionObject = {
+            access_token: response.access_token,
+            refresh_token: response.refresh_token,
+            expires_at: expiresAt,
+            expires_in: response.expires_in || 3600,
+            token_type: response.token_type || 'bearer',
+            user: response.user,
+          }
+          
+          // Save to localStorage
+          localStorage.setItem(storageKey, JSON.stringify(sessionObject))
+          console.log('[Login] Tokens saved to localStorage with key:', storageKey)
+          console.log('[Login] Session object saved:', {
+            hasAccessToken: !!sessionObject.access_token,
+            hasRefreshToken: !!sessionObject.refresh_token,
+            expiresAt: sessionObject.expires_at,
+            userId: sessionObject.user?.id,
+          })
+          
+          // Small delay to let Supabase SDK pick up the change
+          await new Promise(resolve => setTimeout(resolve, 100))
+          
+          // Verify by getting session
+          const { data: verifyData, error: verifyError } = await supabase.auth.getSession()
+          if (verifyError) {
+            console.error('[Login] Error verifying session after direct save:', verifyError)
+          } else if (verifyData.session) {
+            console.log('[Login] Session verified after direct save:', { 
+              userId: verifyData.session.user.id,
+              hasRefreshToken: !!verifyData.session.refresh_token,
+            })
+            sessionSetSuccessfully = true
+            setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session saved via direct storage`, ...prev])
+          } else {
+            console.warn('[Login] Direct save completed but session not found in getSession')
+          }
+        } catch (directSaveError) {
+          console.error('[Login] Direct save failed:', directSaveError)
+          setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Direct save error: ${String(directSaveError)}`, ...prev])
+        }
+      } else {
+        // Verify session if setSession succeeded
+        const { data: verifyData, error: verifyError } = await supabase.auth.getSession()
+        if (verifyError) {
+          console.error('[Login] Error verifying session:', verifyError)
+          sessionSetSuccessfully = false
+        } else if (verifyData.session) {
+          console.log('[Login] Session verified:', { 
+            userId: verifyData.session.user.id,
+            hasRefreshToken: !!verifyData.session.refresh_token,
+          })
+          sessionSetSuccessfully = true
+          setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session set via setSession API`, ...prev])
+        }
       }
       
       if (!sessionSetSuccessfully) {
-        console.error('CRITICAL: setSession did not complete successfully. Session may not be available after redirect.')
-        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] WARNING: Session may not be available`, ...prev])
+        console.warn('[Login] WARNING: Session setup may be incomplete, but continuing with redirect')
+        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] WARNING: Session setup incomplete`, ...prev])
       }
       
       // Store session data and redirect
