@@ -132,6 +132,35 @@ def create_app() -> FastAPI:
     @app.get('/api/health-check-direct')
     async def health_check_direct():
         return {"status": "ok", "message": "Direct health check working"}
+
+    @app.get('/api/debug-token-direct')
+    async def debug_token_direct(token: str):
+        from jose import jwt
+        from app.core.config import get_settings
+        settings = get_settings()
+        
+        results = {
+            "token_snippet": token[:10] + "...",
+            "settings_jwt_secret_len": len(settings.supabase_jwt_secret),
+            "settings_service_role_key_len": len(settings.supabase_service_role_key),
+            "attempts": []
+        }
+        
+        # Attempt 1: Using configured JWT Secret
+        try:
+            jwt.decode(token, settings.supabase_jwt_secret, algorithms=["HS256"], audience="authenticated")
+            results["attempts"].append({"key": "supabase_jwt_secret", "success": True})
+        except Exception as e:
+            results["attempts"].append({"key": "supabase_jwt_secret", "success": False, "error": str(e)})
+            
+        # Attempt 2: Using Service Role Key
+        try:
+            jwt.decode(token, settings.supabase_service_role_key, algorithms=["HS256"], audience="authenticated")
+            results["attempts"].append({"key": "supabase_service_role_key", "success": True})
+        except Exception as e:
+            results["attempts"].append({"key": "supabase_service_role_key", "success": False, "error": str(e)})
+
+        return results
     
     # Если нет собранного фронтенда, показываем заглушку на корневом пути
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
