@@ -52,21 +52,44 @@ export const fetchSession = async () => {
 }
 
 export const login = async (email: string, password: string) => {
-  console.log('authService.login: baseURL =', httpClient.defaults.baseURL)
-  console.log('authService.login: URL = /api/auth/login')
+  console.log('[authService.login] Starting login request')
+  console.log('[authService.login] baseURL =', httpClient.defaults.baseURL || '(empty - same origin)')
+  console.log('[authService.login] URL = /api/auth/login')
+  console.log('[authService.login] Full URL will be:', httpClient.defaults.baseURL ? `${httpClient.defaults.baseURL}/api/auth/login` : '/api/auth/login')
+  console.log('[authService.login] Email:', email)
+  
   try {
-    const { data } = await httpClient.post<LoginResponse>('/api/auth/login', { email, password })
-    console.log('authService.login: response OK')
+    console.log('[authService.login] Calling httpClient.post...')
+    const requestPromise = httpClient.post<LoginResponse>('/api/auth/login', { email, password })
+    console.log('[authService.login] Request promise created, awaiting response...')
+    
+    const { data } = await requestPromise
+    console.log('[authService.login] Response received successfully')
+    console.log('[authService.login] Response data keys:', Object.keys(data))
     return data
   } catch (error) {
-    console.error('authService.login: HTTP error', error)
+    console.error('[authService.login] HTTP error occurred')
+    console.error('[authService.login] Error type:', error?.constructor?.name)
+    console.error('[authService.login] Error message:', error instanceof Error ? error.message : String(error))
+    
     if (axios.isAxiosError(error)) {
-      console.error('authService.login: Axios details', {
+      console.error('[authService.login] Axios error details:', {
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data,
         url: error.config?.url,
+        baseURL: error.config?.baseURL,
         method: error.config?.method,
+        headers: error.config?.headers,
+        request: error.request ? 'Request object exists' : 'No request object',
       })
+      
+      if (error.request && !error.response) {
+        console.error('[authService.login] Request was made but no response received!')
+        console.error('[authService.login] This usually means: network error, CORS issue, or server not reachable')
+      }
+    } else {
+      console.error('[authService.login] Non-Axios error:', error)
     }
     throw error
   }

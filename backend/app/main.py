@@ -14,6 +14,7 @@ from app.api.routes.admin_database import router as admin_db_router
 from app.api.routes.admin_notifications import router as admin_notifications_router
 from app.api.routes.admin_dashboard import router as admin_dashboard_router
 from app.api.routes.dev_tasks import router as dev_tasks_router
+from app.api.routes.health import router as health_router
 from app.api.routes.invites import router as invites_router
 from app.api.routes.moderation import router as moderation_router
 from app.api.routes.notifications import router as notifications_router
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
     )
     
     # Регистрируем все API роутеры ПЕРЕД фронтендом
+    app.include_router(health_router)  # Health check should be first for monitoring
     app.include_router(auth_router)
     app.include_router(invites_router)
     app.include_router(moderation_router)

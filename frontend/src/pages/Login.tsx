@@ -62,13 +62,24 @@ export const LoginPage = () => {
   }, [retryAfter])
 
   const onSubmit = async (values: LoginFormValues) => {
+    console.log('[Login.onSubmit] ===== FORM SUBMISSION STARTED =====')
+    console.log('[Login.onSubmit] Form values:', { email: values.email, passwordLength: values.password.length })
+    console.log('[Login.onSubmit] Form state:', { isSubmitting: form.formState.isSubmitting, isValid: form.formState.isValid })
+    
     setErrorMessage(null)
     setRetryAfter(null)
     setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Нажата кнопка входа`, ...prev])
+    
     try {
-      console.log('Attempting login for:', values.email)
+      console.log('[Login.onSubmit] Calling login function...')
+      console.log('[Login.onSubmit] Attempting login for:', values.email)
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Attempting login for ${values.email}`, ...prev])
-      const response = await login(values.email, values.password)
+      
+      const loginPromise = login(values.email, values.password)
+      console.log('[Login.onSubmit] Login promise created, awaiting...')
+      
+      const response = await loginPromise
+      console.log('[Login.onSubmit] Login promise resolved, got response')
       console.log('Login response received:', { 
         hasAccessToken: !!response.access_token, 
         hasRefreshToken: !!response.refresh_token,
@@ -182,7 +193,18 @@ export const LoginPage = () => {
             </Alert>
           )}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form 
+              onSubmit={(e) => {
+                console.log('[Login] Form onSubmit event fired')
+                console.log('[Login] Event:', e)
+                console.log('[Login] Form validity before handleSubmit:', form.formState.isValid)
+                console.log('[Login] Form errors:', form.formState.errors)
+                
+                // Call react-hook-form's handleSubmit
+                form.handleSubmit(onSubmit)(e)
+              }} 
+              className="space-y-4"
+            >
               <FormField
                 control={form.control}
                 name="email"
@@ -213,6 +235,15 @@ export const LoginPage = () => {
                 type="submit"
                 className="w-full min-h-[44px]"
                 disabled={form.formState.isSubmitting || Boolean(retryAfter)}
+                onClick={() => {
+                  console.log('[Login] Submit button clicked')
+                  console.log('[Login] Form state:', {
+                    isSubmitting: form.formState.isSubmitting,
+                    isValid: form.formState.isValid,
+                    errors: form.formState.errors,
+                  })
+                  console.log('[Login] Form values:', form.getValues())
+                }}
               >
                 {form.formState.isSubmitting
                   ? 'Входим...'
