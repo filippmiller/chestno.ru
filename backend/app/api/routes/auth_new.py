@@ -22,11 +22,11 @@ security = HTTPBearer()
 
 
 @router.get('/debug-token')
-async def debug_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def debug_token(token: str):
     """
     Debug endpoint to check why JWT validation is failing.
     """
-    token = credentials.credentials
+    # token = credentials.credentials (Removed dependency)
     settings = get_settings()
     
     results = {
