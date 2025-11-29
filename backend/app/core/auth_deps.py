@@ -4,7 +4,7 @@ Authentication dependencies for FastAPI.
 This module provides JWT validation for Supabase tokens.
 """
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 
 from .config import get_settings
@@ -13,7 +13,7 @@ security = HTTPBearer()
 
 
 async def get_current_user_id(
-    credentials: HTTPAuthCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> str:
     """
     Validate Supabase JWT and extract user_id.
