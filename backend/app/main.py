@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 logging.basicConfig(level=logging.INFO)
 
 from app.api.routes.auth_new import router as auth_router
+from app.api.routes.auth_v2 import router as auth_v2_router
 from app.api.routes.admin_ai import router as admin_ai_router
 from app.api.routes.admin_database import router as admin_db_router
 from app.api.routes.admin_notifications import router as admin_notifications_router
@@ -23,6 +24,7 @@ from app.api.routes.organizations import public_router as public_org_router, rou
 from app.api.routes.products import public_router as public_products_router, router as products_router
 from app.api.routes.qr import redirect_router as qr_redirect_router, router as qr_router
 from app.api.routes.social import router as social_router
+from app.api.routes.social_v2 import router as social_v2_router
 from app.api.routes.subscriptions import admin_router as admin_subscriptions_router, router as subscriptions_router
 from app.api.routes.posts import router as posts_router, public_router as public_posts_router
 from app.api.routes.reviews import router as reviews_router, public_router as public_reviews_router
@@ -45,7 +47,8 @@ def create_app() -> FastAPI:
     
     # Регистрируем все API роутеры ПЕРЕД фронтендом
     app.include_router(health_router)  # Health check should be first for monitoring
-    app.include_router(auth_router)
+    app.include_router(auth_router)  # Legacy auth (will be deprecated)
+    app.include_router(auth_v2_router)  # New cookie-based auth
     app.include_router(invites_router)
     app.include_router(moderation_router)
     app.include_router(admin_ai_router)
@@ -63,7 +66,8 @@ def create_app() -> FastAPI:
     app.include_router(analytics_router)
     app.include_router(subscriptions_router)
     app.include_router(qr_redirect_router)
-    app.include_router(social_router)
+    app.include_router(social_router)  # Legacy
+    app.include_router(social_v2_router)  # New cookie-based
     app.include_router(posts_router)
     app.include_router(public_posts_router)
     app.include_router(reviews_router)
