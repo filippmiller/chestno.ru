@@ -59,8 +59,22 @@ export const login = async (email: string, password: string) => {
   console.log('[authService.login] Email:', email)
   
   try {
+    const loginUrl = '/api/auth/login'
+    const loginPayload = { email, password }
+    
     console.log('[authService.login] Calling httpClient.post...')
-    const requestPromise = httpClient.post<LoginResponse>('/api/auth/login', { email, password })
+    console.log('[authService.login] URL:', loginUrl)
+    console.log('[authService.login] baseURL:', httpClient.defaults.baseURL || '(empty)')
+    console.log('[authService.login] Full URL will be:', 
+      httpClient.defaults.baseURL 
+        ? `${httpClient.defaults.baseURL}${loginUrl}`
+        : typeof window !== 'undefined'
+          ? `${window.location.origin}${loginUrl}`
+          : loginUrl
+    )
+    console.log('[authService.login] Payload:', { email, passwordLength: password.length })
+    
+    const requestPromise = httpClient.post<LoginResponse>(loginUrl, loginPayload)
     console.log('[authService.login] Request promise created, awaiting response...')
     
     const { data } = await requestPromise

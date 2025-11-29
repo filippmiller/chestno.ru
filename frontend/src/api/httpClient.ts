@@ -2,17 +2,29 @@ import axios from 'axios'
 
 import { getSupabaseClient } from '@/lib/supabaseClient'
 
-// В production используем тот же origin, если VITE_BACKEND_URL не указан
-// или явно указывает на localhost (Railway не должен ходить на локальный backend)
+// Определяем baseURL для API запросов
+// В production на Railway frontend и backend на одном домене, поэтому используем тот же origin
+// Если VITE_BACKEND_URL указан и не localhost, используем его
+// Иначе используем window.location.origin (текущий домен)
 const rawBaseUrl = import.meta.env.VITE_BACKEND_URL?.trim()
-const baseURL =
-  rawBaseUrl && !rawBaseUrl.startsWith('http://localhost') && !rawBaseUrl.startsWith('https://localhost')
-    ? rawBaseUrl
-    : ''
+let baseURL = ''
+
+if (rawBaseUrl && !rawBaseUrl.startsWith('http://localhost') && !rawBaseUrl.startsWith('https://localhost')) {
+  // Используем явно указанный URL
+  baseURL = rawBaseUrl
+} else if (typeof window !== 'undefined') {
+  // В браузере используем текущий origin (для production на Railway)
+  baseURL = window.location.origin
+} else {
+  // В SSR или других случаях - пустая строка (относительные URL)
+  baseURL = ''
+}
 
 // Log baseURL configuration for debugging
-console.log('[httpClient] Initializing with baseURL:', baseURL || '(empty - using same origin)')
+console.log('[httpClient] Initializing httpClient')
 console.log('[httpClient] VITE_BACKEND_URL from env:', import.meta.env.VITE_BACKEND_URL)
+console.log('[httpClient] window.location.origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A (SSR)')
+console.log('[httpClient] Final baseURL:', baseURL)
 
 export const httpClient = axios.create({
   baseURL,
@@ -23,14 +35,33 @@ export const httpClient = axios.create({
 
 httpClient.interceptors.request.use(
   async (config) => {
-    const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url
+    // Формируем полный URL для логирования
+    let fullUrl = config.url || ''
+    if (config.baseURL) {
+      fullUrl = config.baseURL.endsWith('/') && config.url?.startsWith('/')
+        ? `${config.baseURL}${config.url.slice(1)}`
+        : `${config.baseURL}${config.url}`
+    } else if (config.url && !config.url.startsWith('http')) {
+      // Если baseURL пустой, но URL относительный, используем текущий origin
+      if (typeof window !== 'undefined') {
+        fullUrl = `${window.location.origin}${config.url}`
+      }
+    }
+    
     console.log('[httpClient] Request interceptor called:', {
       method: config.method,
       url: config.url,
-      baseURL: config.baseURL,
-      fullUrl,
+      baseURL: config.baseURL || '(empty)',
+      fullUrl: fullUrl || '(could not determine)',
       headers: Object.keys(config.headers || {}),
     })
+    
+    // Убеждаемся, что baseURL установлен
+    if (!config.baseURL && typeof window !== 'undefined' && config.url && !config.url.startsWith('http')) {
+      console.log('[httpClient] Setting baseURL to window.location.origin as fallback')
+      config.baseURL = window.location.origin
+      fullUrl = `${window.location.origin}${config.url}`
+    }
 
     // Skip adding auth token for public auth endpoints (they don't need it)
     const publicAuthEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/yandex/start']
