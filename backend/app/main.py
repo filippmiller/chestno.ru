@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(level=logging.INFO)
 
-from app.api.routes.auth import router as auth_router
+from app.api.routes.auth_new import router as auth_router
 from app.api.routes.admin_ai import router as admin_ai_router
 from app.api.routes.admin_database import router as admin_db_router
 from app.api.routes.admin_notifications import router as admin_notifications_router
