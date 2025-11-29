@@ -6,6 +6,7 @@ import { fetchSession } from '@/api/authService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getSupabaseClient } from '@/lib/supabaseClient'
 import { useUserStore } from '@/store/userStore'
 
 const roleLabels: Record<string, string> = {
@@ -37,14 +38,46 @@ export const DashboardPage = () => {
   useEffect(() => {
     if (!user) {
       setLoading(true)
-      fetchSession()
-        .then((session) => {
-          console.log('Session data:', session)
-          console.log('Platform roles:', session.platform_roles)
-          setSessionData(session)
-        })
-        .finally(() => setLoading(false))
-        .catch((error) => console.error('Error fetching session:', error))
+      // First check if we have a Supabase session
+      const supabase = getSupabaseClient()
+      supabase.auth.getSession().then(({ data: { session }, error: sessionError }) => {
+        if (sessionError) {
+          console.error('Error getting Supabase session:', sessionError)
+          setLoading(false)
+          return
+        }
+        if (!session) {
+          console.warn('No Supabase session found. User may need to log in again.')
+          setLoading(false)
+          return
+        }
+        // We have a session, now fetch full session data from backend
+        fetchSession()
+          .then((sessionData) => {
+            console.log('Session data loaded:', sessionData)
+            console.log('Platform roles:', sessionData.platform_roles)
+            setSessionData(sessionData)
+          })
+          .catch((error) => {
+            console.error('Error fetching session from backend:', error)
+            // If fetchSession fails, try to get basic info from Supabase session
+            if (session.user) {
+              console.warn('Using Supabase session data as fallback')
+              setSessionData({
+                user: {
+                  id: session.user.id,
+                  email: session.user.email || null,
+                  full_name: session.user.user_metadata?.full_name || null,
+                  locale: session.user.user_metadata?.locale || null,
+                },
+                organizations: [],
+                memberships: [],
+                platform_roles: [],
+              })
+            }
+          })
+          .finally(() => setLoading(false))
+      })
     }
   }, [user, setLoading, setSessionData])
 

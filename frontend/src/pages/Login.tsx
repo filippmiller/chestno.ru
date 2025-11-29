@@ -78,15 +78,16 @@ export const LoginPage = () => {
       
       // Set session with timeout to prevent hanging
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Setting Supabase session...`, ...prev])
+      let sessionSetSuccessfully = false
       try {
         const setSessionPromise = supabase.auth.setSession({
           access_token: response.access_token,
           refresh_token: response.refresh_token,
         })
         
-        // Add timeout wrapper (5 seconds max)
+        // Add timeout wrapper (10 seconds max - increased for reliability)
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('setSession timeout after 5 seconds')), 5000)
+          setTimeout(() => reject(new Error('setSession timeout after 10 seconds')), 10000)
         })
         
         const result = await Promise.race([setSessionPromise, timeoutPromise])
@@ -94,18 +95,32 @@ export const LoginPage = () => {
         if (result.error) {
           console.error('Supabase setSession error:', result.error)
           setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] setSession error: ${result.error.message}`, ...prev])
-          // Continue anyway - we have the tokens and can proceed
-        } else {
-          console.log('Session set successfully:', { hasSession: !!result.data?.session })
+        } else if (result.data?.session) {
+          console.log('Session set successfully:', { hasSession: !!result.data.session })
           setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session set in Supabase`, ...prev])
+          sessionSetSuccessfully = true
+          
+          // Verify session is actually set
+          const { data: verifyData } = await supabase.auth.getSession()
+          if (verifyData.session) {
+            console.log('Session verified:', { userId: verifyData.session.user.id })
+            sessionSetSuccessfully = true
+          } else {
+            console.warn('Session set but verification failed')
+            sessionSetSuccessfully = false
+          }
         }
       } catch (sessionError) {
-        console.warn('setSession failed or timed out, continuing anyway:', sessionError)
-        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] setSession warning: ${String(sessionError)}`, ...prev])
-        // Continue anyway - we have valid tokens from the backend
+        console.error('setSession failed or timed out:', sessionError)
+        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] setSession error: ${String(sessionError)}`, ...prev])
       }
       
-      // Store session data and redirect regardless of setSession result
+      if (!sessionSetSuccessfully) {
+        console.error('CRITICAL: setSession did not complete successfully. Session may not be available after redirect.')
+        setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] WARNING: Session may not be available`, ...prev])
+      }
+      
+      // Store session data and redirect
       setSessionData(response)
       setDebugMessages((prev) => [`[${new Date().toLocaleTimeString()}] Session data stored, redirecting...`, ...prev])
       
@@ -208,7 +223,8 @@ export const LoginPage = () => {
             </form>
           </Form>
 
-          {debugMessages.length > 0 && (
+          {/* Debug messages disabled */}
+          {false && debugMessages.length > 0 && (
             <div className="mt-4 rounded-md border border-dashed border-amber-500 bg-amber-50 p-3 text-xs text-amber-900">
               <div className="mb-1 font-semibold">Отладочная информация (видна только вам):</div>
               <ul className="space-y-0.5 max-h-40 overflow-auto">

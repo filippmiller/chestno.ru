@@ -13,13 +13,41 @@ function App() {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) {
+          console.error('Error getting Supabase session:', sessionError)
+          setLoading(false)
+          return
+        }
         if (session && !user) {
           setLoading(true)
-          const sessionPayload = await fetchSession()
-          console.log('App - loaded session:', sessionPayload)
-          console.log('App - platform_roles:', sessionPayload.platform_roles)
-          setSessionData(sessionPayload)
+          try {
+            const sessionPayload = await fetchSession()
+            console.log('App - loaded session:', sessionPayload)
+            console.log('App - platform_roles:', sessionPayload.platform_roles)
+            setSessionData(sessionPayload)
+          } catch (fetchError) {
+            console.error('Error fetching session data:', fetchError)
+            // Try to use basic Supabase session data as fallback
+            if (session.user) {
+              console.warn('Using Supabase session data as fallback')
+              setSessionData({
+                user: {
+                  id: session.user.id,
+                  email: session.user.email || null,
+                  full_name: session.user.user_metadata?.full_name || null,
+                  locale: session.user.user_metadata?.locale || null,
+                },
+                organizations: [],
+                memberships: [],
+                platform_roles: [],
+              })
+            }
+          } finally {
+            setLoading(false)
+          }
+        } else if (!session) {
+          console.log('No session found, user needs to log in')
           setLoading(false)
         }
       } catch (error) {
