@@ -124,16 +124,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const loginWithEmail = async (email: string, password: string) => {
         setStatus('loading')
         try {
+            console.log('Attempting login with:', email)
             const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-            if (error) throw error
+            if (error) {
+                console.error('Supabase login error:', error)
+                alert(`Login Error: ${error.message}`) // DEBUG: Show error to user
+                throw error
+            }
 
             if (data.session) {
+                console.log('Supabase login success, fetching app data...')
                 setSession(data.session)
                 await fetchAppUserData(data.session)
+            } else {
+                console.warn('Login success but no session returned')
+                alert('Login failed: No session returned from Supabase')
             }
         } catch (error: any) {
+            console.error('Login exception:', error)
             setStatus('unauthenticated')
+            // Don't alert if we already alerted above
+            if (!error.message?.includes('Login Error')) {
+                alert(`Unexpected Login Error: ${error.message || error}`)
+            }
             throw error
         }
     }
