@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     yandex_client_secret: str | None = None
     yandex_redirect_uri: str | None = None
     environment: str = 'development'
+    session_cookie_name: str = 'session_id'
+    session_max_age: int = 86400  # 24 hours
     # Email (SMTP) settings
     smtp_host: str | None = None
     smtp_port: int = 587
