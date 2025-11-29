@@ -51,6 +51,7 @@ export const LandingHeader = ({ userEmail, onLogout, isAdmin = false }: LandingH
           <span className="font-display text-lg font-semibold text-foreground lg:text-xl flex items-center gap-2">
             <RussianFlag className="w-6 h-4 lg:w-7 lg:h-5" />
             <span>Сделано в России! Честно!</span>
+            <span className="text-[10px] bg-yellow-300 text-black px-1 rounded">v29.11-14:45</span>
           </span>
         </Link>
 
@@ -60,8 +61,7 @@ export const LandingHeader = ({ userEmail, onLogout, isAdmin = false }: LandingH
               key={link.href}
               to={link.href}
               className={({ isActive }) =>
-                `rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground ${
-                  isActive ? 'text-foreground' : 'text-muted-foreground'
+                `rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground ${isActive ? 'text-foreground' : 'text-muted-foreground'
                 }`
               }
             >

@@ -45,11 +45,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchAppUserData = async (supabaseSession: Session) => {
         try {
             console.log('[AuthProvider] Fetching app user data...')
-            const { data } = await httpClient.get<SessionPayload>('/api/auth/me', {
-                headers: {
-                    Authorization: `Bearer ${supabaseSession.access_token}`
-                }
-            })
+
+            // Create a timeout promise
+            const timeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Request to backend timed out after 10s')), 10000)
+            )
+
+            // Race the request against the timeout
+            const { data } = await Promise.race([
+                httpClient.get<SessionPayload>('/api/auth/me', {
+                    headers: {
+                        Authorization: `Bearer ${supabaseSession.access_token}`
+                    }
+                }),
+                timeout
+            ]) as { data: SessionPayload }
 
             setUser(data.user)
             setOrganizations(data.organizations)
@@ -58,8 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setStatus('authenticated')
 
             console.log('[AuthProvider] App user data loaded:', data.user.email)
-        } catch (error) {
+        } catch (error: any) {
             console.error('[AuthProvider] Failed to fetch app user data:', error)
+            alert(`Backend Error: ${error.message || 'Unknown error'}`)
+
             // If backend fails but Supabase session is valid, still consider authenticated
             // but with limited data
             setStatus('authenticated')
