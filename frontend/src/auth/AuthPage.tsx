@@ -4,7 +4,7 @@
  * Combined login and registration page with tabs.
  * Supports email+password and OAuth (Google, Yandex).
  */
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
 import { PasswordInput } from './components/PasswordInput'
@@ -33,6 +33,13 @@ export function AuthPage() {
 
     // Redirect after successful auth
     const from = (location.state as any)?.from?.pathname || '/dashboard'
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (status === 'authenticated') {
+            navigate(from, { replace: true })
+        }
+    }, [status, navigate, from])
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
