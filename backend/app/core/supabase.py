@@ -5,11 +5,10 @@ from fastapi import HTTPException, status
 
 from .config import get_settings
 
-settings = get_settings()
-
 
 class SupabaseAdminClient:
     def __init__(self) -> None:
+        settings = get_settings()
         self.base_auth_url = settings.supabase_auth_url
         self.admin_headers = {
             'apikey': settings.supabase_service_role_key,
@@ -62,6 +61,7 @@ class SupabaseAdminClient:
         return response.json()
 
     def get_user_by_access_token(self, token: str) -> Dict[str, Any]:
+        settings = get_settings()
         headers = {
             'Authorization': f'Bearer {token}',
             'apikey': settings.supabase_anon_key,
