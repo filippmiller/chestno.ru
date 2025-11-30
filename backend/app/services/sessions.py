@@ -3,7 +3,7 @@ Session Management Service
 Handles cookie-based sessions with 24-hour expiry.
 """
 import hashlib
-import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -34,9 +34,10 @@ def create_session(user_id: str, refresh_token: str) -> str:
         refresh_token: Supabase refresh token
         
     Returns:
-        Session ID (to be stored in cookie)
+        Session ID (UUID string to be stored in cookie)
     """
-    session_id = secrets.token_urlsafe(32)
+    # Generate UUID for session ID (matches sessions.id column type)
+    session_id = str(uuid.uuid4())
     refresh_token_hash = hash_refresh_token(refresh_token)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=SESSION_EXPIRY_HOURS)
     
