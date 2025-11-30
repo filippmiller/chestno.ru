@@ -77,22 +77,42 @@ export function AuthProviderV2({ children }: { children: ReactNode }) {
     // Auth methods
     const loginWithEmail = async (email: string, password: string) => {
         try {
-            const { data } = await httpClient.post('/api/auth/v2/login', {
+            console.log('[AuthProviderV2] Starting login request to /api/auth/v2/login')
+            console.log('[AuthProviderV2] httpClient baseURL:', httpClient.defaults.baseURL)
+            console.log('[AuthProviderV2] httpClient withCredentials:', httpClient.defaults.withCredentials)
+            
+            const response = await httpClient.post('/api/auth/v2/login', {
                 email,
                 password,
             })
+            
+            console.log('[AuthProviderV2] Login response received:', {
+                status: response.status,
+                hasData: !!response.data,
+                redirectUrl: response.data?.redirect_url,
+            })
+            
+            const { data } = response
             
             setUser(data.user)
             setRole(data.role)
             setStatus('authenticated')
             
             // Fetch full session data
+            console.log('[AuthProviderV2] Fetching app user data...')
             await fetchAppUserData()
+            console.log('[AuthProviderV2] App user data fetched successfully')
             
             // Redirect handled by caller
             return data.redirect_url
         } catch (error: any) {
             console.error('[AuthProviderV2] Login failed:', error)
+            console.error('[AuthProviderV2] Error details:', {
+                message: error.message,
+                response: error.response,
+                code: error.code,
+                config: error.config,
+            })
             throw error
         }
     }

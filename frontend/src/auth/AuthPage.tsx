@@ -47,9 +47,13 @@ export function AuthPage() {
         setSuccessMessage(null)
         setIsSubmitting(true)
 
+        console.log('[AuthPage] Form submitted', { mode, email, passwordLength: password.length })
+
         try {
             if (mode === 'login') {
+                console.log('[AuthPage] Calling loginWithEmail...')
                 const redirectUrl = await loginWithEmail(email, password)
+                console.log('[AuthPage] Login successful, redirectUrl:', redirectUrl)
                 // Use redirect_url from response, or fallback to 'from' location
                 navigate(redirectUrl || from, { replace: true })
             } else {
@@ -66,7 +70,13 @@ export function AuthPage() {
                 }
             }
         } catch (err: any) {
-            console.error('Auth error:', err)
+            console.error('[AuthPage] Auth error:', err)
+            console.error('[AuthPage] Error details:', {
+                message: err.message,
+                response: err.response,
+                code: err.code,
+                config: err.config,
+            })
 
             // Parse error messages from Auth V2 API
             const errorMessage = err.response?.data?.detail || err.message || ''
@@ -92,8 +102,13 @@ export function AuthPage() {
             } else {
                 setError('Произошла ошибка. Попробуйте позже.')
             }
+        } catch (finalErr) {
+            // Catch any errors in error handling itself
+            console.error('[AuthPage] Error in error handler:', finalErr)
+            setError('Произошла непредвиденная ошибка.')
         } finally {
             setIsSubmitting(false)
+            console.log('[AuthPage] Form submission finished, isSubmitting set to false')
         }
     }
 

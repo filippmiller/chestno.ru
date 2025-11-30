@@ -69,7 +69,16 @@ httpClient.interceptors.request.use(
     }
 
     // Skip adding auth token for public auth endpoints (they don't need it)
-    const publicAuthEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/yandex/start']
+    const publicAuthEndpoints = [
+      '/api/auth/login', 
+      '/api/auth/register', 
+      '/api/auth/yandex/start',
+      '/api/auth/v2/login',  // Auth V2 login endpoint
+      '/api/auth/v2/logout',  // Auth V2 logout endpoint
+      '/api/auth/v2/oauth-callback',  // Auth V2 OAuth callback
+      '/api/auth/v2/yandex/start',  // Auth V2 Yandex OAuth start
+      '/api/auth/v2/google/start',  // Auth V2 Google OAuth start
+    ]
     const isPublicAuthEndpoint = publicAuthEndpoints.some((endpoint) => config.url?.includes(endpoint))
 
     if (isPublicAuthEndpoint) {
