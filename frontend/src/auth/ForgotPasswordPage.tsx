@@ -5,7 +5,7 @@
  */
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from './AuthProvider'
+import { useAuthV2 } from './AuthProviderV2'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +15,7 @@ import { ArrowLeft } from 'lucide-react'
 
 export function ForgotPasswordPage() {
     const navigate = useNavigate()
-    const { resetPassword } = useAuth()
+    const { resetPassword } = useAuthV2()
 
     const [email, setEmail] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)

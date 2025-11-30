@@ -6,6 +6,7 @@
  */
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { httpClient } from '@/api/httpClient'
+import { getSupabaseClient } from '@/lib/supabaseClient'
 import type { AppUser, Organization, OrganizationMembership, SessionPayload } from '@/types/auth'
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
@@ -19,7 +20,7 @@ interface AuthContextType {
     platformRoles: string[]
 
     // Auth methods
-    loginWithEmail: (email: string, password: string) => Promise<void>
+    loginWithEmail: (email: string, password: string) => Promise<string | void>
     signupWithEmail: (email: string, password: string, fullName?: string) => Promise<void>
     loginWithGoogle: () => Promise<void>
     loginWithYandex: () => Promise<void>
@@ -131,9 +132,14 @@ export function AuthProviderV2({ children }: { children: ReactNode }) {
         }
     }
 
-    const resetPassword = async (_email: string) => {
-        // Implement password reset via Supabase
-        throw new Error('Password reset not implemented in V2 yet')
+    const resetPassword = async (email: string) => {
+        // Password reset uses Supabase directly (no backend endpoint needed)
+        const supabase = getSupabaseClient()
+        const redirectTo = `${window.location.origin}/auth/reset`
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+        if (error) {
+            throw error
+        }
     }
 
     const value: AuthContextType = {

@@ -7,11 +7,11 @@
  */
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from './AuthProvider'
+import { useAuthV2 } from './AuthProviderV2'
 
 export function AuthCallbackPage() {
     const navigate = useNavigate()
-    const { status } = useAuth()
+    const { status } = useAuthV2()
 
     useEffect(() => {
         console.log('[AuthCallbackPage] status:', status)

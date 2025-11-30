@@ -6,7 +6,7 @@
  */
 import { useState, type FormEvent, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from './AuthProvider'
+import { useAuthV2 } from './AuthProviderV2'
 import { PasswordInput } from './components/PasswordInput'
 import { SocialLoginButtons } from './components/SocialLoginButtons'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,7 @@ type AuthMode = 'login' | 'register'
 export function AuthPage() {
     const navigate = useNavigate()
     const location = useLocation()
-    const { loginWithEmail, signupWithEmail, loginWithGoogle, loginWithYandex, status } = useAuth()
+    const { loginWithEmail, signupWithEmail, loginWithGoogle, loginWithYandex, status } = useAuthV2()
 
     const [mode, setMode] = useState<AuthMode>('login')
     const [email, setEmail] = useState('')
@@ -49,8 +49,9 @@ export function AuthPage() {
 
         try {
             if (mode === 'login') {
-                await loginWithEmail(email, password)
-                navigate(from, { replace: true })
+                const redirectUrl = await loginWithEmail(email, password)
+                // Use redirect_url from response, or fallback to 'from' location
+                navigate(redirectUrl || from, { replace: true })
             } else {
                 await signupWithEmail(email, password, fullName || undefined)
 
@@ -67,17 +68,27 @@ export function AuthPage() {
         } catch (err: any) {
             console.error('Auth error:', err)
 
-            // Parse Supabase error messages
-            if (err.message?.includes('Invalid login credentials')) {
-                setError('Неверный e-mail или пароль')
-            } else if (err.message?.includes('User already registered')) {
-                setError('Этот e-mail уже зарегистрирован')
-            } else if (err.message?.includes('Password should be at least')) {
-                setError('Пароль слишком короткий (минимум 6 символов)')
-            } else if (err.message?.includes('Invalid email')) {
-                setError('Неверный формат e-mail')
-            } else if (err.message?.includes('Network')) {
-                setError('Не удалось подключиться. Проверьте интернет.')
+            // Parse error messages from Auth V2 API
+            const errorMessage = err.response?.data?.detail || err.message || ''
+            
+            if (typeof errorMessage === 'string') {
+                if (errorMessage.includes('Неверный email или пароль') || errorMessage.includes('Invalid login credentials')) {
+                    setError('Неверный e-mail или пароль')
+                } else if (errorMessage.includes('Слишком много попыток')) {
+                    setError(errorMessage)
+                } else if (errorMessage.includes('User already registered')) {
+                    setError('Этот e-mail уже зарегистрирован')
+                } else if (errorMessage.includes('Password should be at least')) {
+                    setError('Пароль слишком короткий (минимум 6 символов)')
+                } else if (errorMessage.includes('Invalid email')) {
+                    setError('Неверный формат e-mail')
+                } else if (errorMessage.includes('Network') || err.code === 'ERR_NETWORK') {
+                    setError('Не удалось подключиться. Проверьте интернет.')
+                } else {
+                    setError(errorMessage || 'Произошла ошибка. Попробуйте позже.')
+                }
+            } else if (errorMessage?.message) {
+                setError(errorMessage.message)
             } else {
                 setError('Произошла ошибка. Попробуйте позже.')
             }

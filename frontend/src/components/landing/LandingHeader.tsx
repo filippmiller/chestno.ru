@@ -124,17 +124,17 @@ export const LandingHeader = ({ userEmail, onLogout, isAdmin = false, isAuthenti
             </>
           ) : (
             <>
-              <a
-                href="/login"
+              <Link
+                to="/auth"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 Войти
-              </a>
-              <a href="/register">
+              </Link>
+              <Link to="/auth">
                 <Button variant="outline" size="sm">
                   Регистрация
                 </Button>
-              </a>
+              </Link>
               <Button variant="producer" size="sm">
                 Я производитель
               </Button>
@@ -186,14 +186,14 @@ export const LandingHeader = ({ userEmail, onLogout, isAdmin = false, isAuthenti
                 </>
               ) : (
                 <>
-                  <a href="/login" className="px-4 py-2 text-sm font-medium text-muted-foreground">
+                  <Link to="/auth" className="px-4 py-2 text-sm font-medium text-muted-foreground">
                     Войти
-                  </a>
-                  <a href="/register" className="w-full">
+                  </Link>
+                  <Link to="/auth" className="w-full">
                     <Button variant="outline" className="w-full">
                       Регистрация
                     </Button>
-                  </a>
+                  </Link>
                   <Button variant="producer" className="w-full">
                     Я производитель
                   </Button>

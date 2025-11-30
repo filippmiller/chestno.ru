@@ -35,6 +35,7 @@ export const httpClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Required for cookie-based auth (Auth V2)
 })
 
 httpClient.interceptors.request.use(

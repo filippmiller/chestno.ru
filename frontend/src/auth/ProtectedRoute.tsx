@@ -6,14 +6,14 @@
  */
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from './AuthProvider'
+import { useAuthV2 } from './AuthProviderV2'
 
 interface ProtectedRouteProps {
     children: ReactNode
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-    const { status } = useAuth()
+    const { status } = useAuthV2()
     const location = useLocation()
 
     if (status === 'loading') {
