@@ -96,7 +96,7 @@ export function AuthProviderV2({ children }: { children: ReactNode }) {
         }
     }
 
-    const signupWithEmail = async (email: string, password: string, fullName?: string) => {
+    const signupWithEmail = async (_email: string, _password: string, _fullName?: string) => {
         // For now, redirect to Supabase signup
         // In production, you'd call /api/auth/v2/signup if implemented
         throw new Error('Signup not implemented in V2 yet')
@@ -131,7 +131,7 @@ export function AuthProviderV2({ children }: { children: ReactNode }) {
         }
     }
 
-    const resetPassword = async (email: string) => {
+    const resetPassword = async (_email: string) => {
         // Implement password reset via Supabase
         throw new Error('Password reset not implemented in V2 yet')
     }
