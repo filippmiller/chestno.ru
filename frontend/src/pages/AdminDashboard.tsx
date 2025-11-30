@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 
 import { getAdminDashboardSummary } from '@/api/authService'
+import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AdminDashboardSummary } from '@/types/auth'
-import { useUserStore } from '@/store/userStore'
 
 export const AdminDashboardPage = () => {
-  const { platformRoles } = useUserStore()
+  const { platformRoles } = useAuthV2()
   const [data, setData] = useState<AdminDashboardSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

@@ -9,12 +9,12 @@ import {
   getDbTableRows,
   listDbTables,
 } from '@/api/authService'
+import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { useUserStore } from '@/store/userStore'
 import type { DbColumnInfo, DbTableInfo, DbRowsResponse } from '@/types/auth'
 
 const ADD_COLUMN_SCHEMA = z.object({
@@ -26,7 +26,7 @@ const ADD_COLUMN_SCHEMA = z.object({
 })
 
 export const DatabaseExplorerPage = () => {
-  const platformRoles = useUserStore((state) => state.platformRoles)
+  const { platformRoles } = useAuthV2()
   const isAdmin = useMemo(() => platformRoles.some((role) => role === 'platform_owner' || role === 'platform_admin'), [platformRoles])
   const [tables, setTables] = useState<DbTableInfo[]>([])
   const [selectedTable, setSelectedTable] = useState<string | null>(null)

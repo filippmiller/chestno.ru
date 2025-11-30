@@ -7,10 +7,10 @@ import {
   setOrganizationSubscription,
   verifyOrganizationStatus,
 } from '@/api/authService'
+import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useUserStore } from '@/store/userStore'
 import type { ModerationOrganization, SubscriptionPlan } from '@/types/auth'
 
 const MODERATOR_ROLES = new Set(['platform_admin', 'moderator'])
@@ -18,7 +18,7 @@ const MODERATOR_ROLES = new Set(['platform_admin', 'moderator'])
 type OrgSubscriptionMap = Record<string, { planName: string; planCode: string }>
 
 export const ModerationDashboardPage = () => {
-  const { platformRoles } = useUserStore()
+  const { platformRoles } = useAuthV2()
   const [organizations, setOrganizations] = useState<ModerationOrganization[]>([])
   const [status, setStatus] = useState<'pending' | 'verified' | 'rejected'>('pending')
   const [loading, setLoading] = useState(false)

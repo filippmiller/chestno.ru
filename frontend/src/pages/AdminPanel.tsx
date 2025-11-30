@@ -16,12 +16,12 @@ import {
   updateDevTask,
   verifyOrganizationStatus,
 } from '@/api/authService'
+import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { useUserStore } from '@/store/userStore'
 import type { AiIntegration, DevTask, ModerationOrganization } from '@/types/auth'
 
 const AI_FORM_SCHEMA = z.object({
@@ -45,7 +45,7 @@ const ADMIN_TABS = [
 ]
 
 export const AdminPanelPage = () => {
-  const platformRoles = useUserStore((state) => state.platformRoles)
+  const { platformRoles } = useAuthV2()
   const [activeTab, setActiveTab] = useState(ADMIN_TABS[0].id)
   const isAdmin = useMemo(() => platformRoles.some((role) => role === 'platform_owner' || role === 'platform_admin'), [platformRoles])
 
