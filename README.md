@@ -225,6 +225,40 @@ npx -y @railway/cli@latest run --service chestno.ru -- python -m compileall app
 - Frontend: `cd frontend && npm run lint`
 - Backend: `cd backend && python -m compileall app`
 
+### E2E тесты (бизнес-регистрация и отзывы)
+
+E2E тесты проверяют полный жизненный цикл бизнеса в production:
+
+1. Регистрация нового бизнеса (ожидает одобрения)
+2. Админ видит бизнес в админ-панели и одобряет его
+3. Обычный пользователь регистрируется, находит бизнес и оставляет отзыв
+4. Владелец бизнеса видит отзыв в своем дашборде
+5. Отзыв виден на публичной странице компании
+
+**Документация**: См. [`docs/e2e_business_flow.md`](docs/e2e_business_flow.md)
+
+**Запуск тестов:**
+
+```bash
+cd frontend
+E2E_BASE_URL=https://chestnoru-production.up.railway.app \
+E2E_ADMIN_EMAIL=admin@example.com \
+E2E_ADMIN_PASSWORD=SecurePassword123! \
+npm run test:e2e
+```
+
+**Требуемые переменные окружения:**
+- `E2E_BASE_URL` - базовый URL production сайта (по умолчанию: `https://chestnoru-production.up.railway.app`)
+- `E2E_ADMIN_EMAIL` - email админа для одобрения бизнеса
+- `E2E_ADMIN_PASSWORD` - пароль админа
+- `VITE_SUPABASE_URL` - URL Supabase (опционально, для API регистрации)
+- `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key (опционально)
+
+**Команды:**
+- `npm run test:e2e` - запустить тесты
+- `npm run test:e2e:ui` - запустить с UI режимом (интерактивно)
+- `npm run test:e2e:headed` - запустить с видимым браузером
+
 ## Примеры запросов
 
 ```bash

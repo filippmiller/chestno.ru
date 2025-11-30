@@ -154,3 +154,4 @@ async def supabase_health():
             detail=f'Supabase connection failed: {str(e)}',
         )
 
+

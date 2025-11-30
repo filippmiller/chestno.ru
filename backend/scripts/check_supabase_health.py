@@ -191,3 +191,4 @@ else:
         print("   - Supabase Auth API: недоступен")
     sys.exit(1)
 
+
