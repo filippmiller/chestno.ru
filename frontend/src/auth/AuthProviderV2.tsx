@@ -1,0 +1,165 @@
+/**
+ * Authentication Context Provider V2
+ * 
+ * Cookie-based authentication using backend sessions.
+ * Uses httpOnly cookies instead of localStorage tokens.
+ */
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { httpClient } from '@/api/httpClient'
+import type { AppUser, Organization, OrganizationMembership, SessionPayload } from '@/types/auth'
+
+type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
+
+interface AuthContextType {
+    status: AuthStatus
+    user: AppUser | null
+    role: string | null
+    organizations: Organization[]
+    memberships: OrganizationMembership[]
+    platformRoles: string[]
+
+    // Auth methods
+    loginWithEmail: (email: string, password: string) => Promise<void>
+    signupWithEmail: (email: string, password: string, fullName?: string) => Promise<void>
+    loginWithGoogle: () => Promise<void>
+    loginWithYandex: () => Promise<void>
+    logout: () => Promise<void>
+    resetPassword: (email: string) => Promise<void>
+    fetchAppUserData: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProviderV2({ children }: { children: ReactNode }) {
+    const [status, setStatus] = useState<AuthStatus>('loading')
+    const [user, setUser] = useState<AppUser | null>(null)
+    const [role, setRole] = useState<string | null>(null)
+    const [organizations, setOrganizations] = useState<Organization[]>([])
+    const [memberships, setMemberships] = useState<OrganizationMembership[]>([])
+    const [platformRoles, setPlatformRoles] = useState<string[]>([])
+
+    // Fetch application data from backend
+    const fetchAppUserData = async () => {
+        try {
+            console.log('[AuthProviderV2] Fetching app user data...')
+            const { data } = await httpClient.get<SessionPayload>('/api/auth/v2/me')
+            
+            setUser(data.user)
+            setOrganizations(data.organizations)
+            setMemberships(data.memberships)
+            setPlatformRoles(data.platform_roles)
+            
+            // Extract role from user or platform_roles
+            const userRole = (data.user as any).role || 
+                           (data.platform_roles.includes('platform_admin') ? 'admin' : 'user')
+            setRole(userRole)
+            
+            setStatus('authenticated')
+            console.log('[AuthProviderV2] App user data loaded:', data.user.email)
+        } catch (error: any) {
+            console.error('[AuthProviderV2] Failed to fetch app user data:', error)
+            setStatus('unauthenticated')
+            setUser(null)
+            setRole(null)
+            setOrganizations([])
+            setMemberships([])
+            setPlatformRoles([])
+        }
+    }
+
+    // Initialize: check for existing session
+    useEffect(() => {
+        console.log('[AuthProviderV2] Initializing...')
+        fetchAppUserData()
+    }, [])
+
+    // Auth methods
+    const loginWithEmail = async (email: string, password: string) => {
+        try {
+            const { data } = await httpClient.post('/api/auth/v2/login', {
+                email,
+                password,
+            })
+            
+            setUser(data.user)
+            setRole(data.role)
+            setStatus('authenticated')
+            
+            // Fetch full session data
+            await fetchAppUserData()
+            
+            // Redirect handled by caller
+            return data.redirect_url
+        } catch (error: any) {
+            console.error('[AuthProviderV2] Login failed:', error)
+            throw error
+        }
+    }
+
+    const signupWithEmail = async (email: string, password: string, fullName?: string) => {
+        // For now, redirect to Supabase signup
+        // In production, you'd call /api/auth/v2/signup if implemented
+        throw new Error('Signup not implemented in V2 yet')
+    }
+
+    const loginWithGoogle = async () => {
+        // Redirect to backend OAuth endpoint
+        window.location.href = '/api/auth/v2/google/start'
+    }
+
+    const loginWithYandex = async () => {
+        // Redirect to backend OAuth endpoint
+        const { data } = await httpClient.get('/api/auth/v2/yandex/start')
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url
+        }
+    }
+
+    const logout = async () => {
+        try {
+            await httpClient.post('/api/auth/v2/logout')
+        } catch (error) {
+            console.error('[AuthProviderV2] Logout error:', error)
+        } finally {
+            setStatus('unauthenticated')
+            setUser(null)
+            setRole(null)
+            setOrganizations([])
+            setMemberships([])
+            setPlatformRoles([])
+            window.location.href = '/'
+        }
+    }
+
+    const resetPassword = async (email: string) => {
+        // Implement password reset via Supabase
+        throw new Error('Password reset not implemented in V2 yet')
+    }
+
+    const value: AuthContextType = {
+        status,
+        user,
+        role,
+        organizations,
+        memberships,
+        platformRoles,
+        loginWithEmail,
+        signupWithEmail,
+        loginWithGoogle,
+        loginWithYandex,
+        logout,
+        resetPassword,
+        fetchAppUserData,
+    }
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuthV2() {
+    const context = useContext(AuthContext)
+    if (context === undefined) {
+        throw new Error('useAuthV2 must be used within AuthProviderV2')
+    }
+    return context
+}
+

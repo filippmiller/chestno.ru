@@ -19,9 +19,10 @@ type LandingHeaderProps = {
   userEmail?: string
   onLogout?: () => void
   isAdmin?: boolean
+  isAuthenticated?: boolean
 }
 
-export const LandingHeader = ({ userEmail, onLogout, isAdmin = false }: LandingHeaderProps) => {
+export const LandingHeader = ({ userEmail, onLogout, isAdmin = false, isAuthenticated = false }: LandingHeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
@@ -71,7 +72,7 @@ export const LandingHeader = ({ userEmail, onLogout, isAdmin = false }: LandingH
         </nav>
 
         <div className="hidden lg:flex lg:items-center lg:gap-3">
-          {userEmail ? (
+          {isAuthenticated && userEmail ? (
             <>
               <NavLink to="/dashboard" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                 Кабинет
@@ -164,7 +165,7 @@ export const LandingHeader = ({ userEmail, onLogout, isAdmin = false }: LandingH
               </Link>
             ))}
             <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
-              {userEmail ? (
+              {isAuthenticated && userEmail ? (
                 <>
                   <Link to="/dashboard" className="px-4 py-2 text-sm font-medium text-foreground">
                     Кабинет
