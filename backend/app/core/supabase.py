@@ -25,7 +25,20 @@ class SupabaseAdminClient:
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            detail = exc.response.json() if exc.response.content else {'message': exc.response.text}
+            # Try to extract error message from response
+            try:
+                if exc.response.content:
+                    error_data = exc.response.json()
+                    # Supabase returns error messages in different formats
+                    if isinstance(error_data, dict):
+                        detail = error_data.get('error_description') or error_data.get('error') or error_data.get('message') or str(error_data)
+                    else:
+                        detail = str(error_data)
+                else:
+                    detail = exc.response.text or 'Unknown error'
+            except Exception:
+                detail = exc.response.text or 'Unknown error'
+            
             raise HTTPException(
                 status_code=exc.response.status_code,
                 detail=detail,

@@ -65,14 +65,31 @@ async def login_v2(
     
     try:
         # Authenticate with Supabase
-        auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
+        logger.info('Attempting Supabase password sign-in for %s', payload.email)
+        try:
+            auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
+            logger.info('Supabase password sign-in successful')
+        except HTTPException as supabase_exc:
+            logger.error('Supabase authentication failed: status=%d, detail=%s', 
+                       supabase_exc.status_code, supabase_exc.detail)
+            # Re-raise with proper error message
+            auth_events.log_auth_event('login_failure', email=payload.email, request=request)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Неверный email или пароль',
+            ) from supabase_exc
         
         # Extract user info
         supabase_user = auth_response.get('user') or {}
         user_id = supabase_user.get('id')
         refresh_token = auth_response.get('refresh_token')
         
+        logger.info('Auth response: has_user=%s, has_refresh_token=%s', 
+                   bool(supabase_user), bool(refresh_token))
+        
         if not user_id or not refresh_token:
+            logger.error('Missing user_id or refresh_token: user_id=%s, refresh_token=%s',
+                        user_id, 'present' if refresh_token else 'missing')
             auth_events.log_auth_event('login_failure', email=payload.email, request=request)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -119,11 +136,21 @@ async def login_v2(
             'redirect_url': get_role_based_redirect_url(profile['role']),
         }
         
-    except HTTPException:
+    except HTTPException as http_exc:
+        # If it's already an HTTPException from Supabase, log and re-raise
+        logger.error('Login HTTPException: status=%d, detail=%s', 
+                    http_exc.status_code, http_exc.detail)
         auth_events.log_auth_event('login_failure', email=payload.email, request=request)
+        # If it's a 401 from Supabase, return our error message
+        if http_exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Неверный email или пароль',
+            )
         raise
     except Exception as e:
-        logger.error(f'Login failed: {e}', exc_info=True)
+        logger.error(f'Login failed with exception: {e}', exc_info=True)
+        logger.error(f'Exception type: {type(e).__name__}')
         auth_events.log_auth_event('login_failure', email=payload.email, request=request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
