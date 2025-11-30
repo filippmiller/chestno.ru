@@ -102,10 +102,6 @@ export function AuthPage() {
             } else {
                 setError('Произошла ошибка. Попробуйте позже.')
             }
-        } catch (finalErr) {
-            // Catch any errors in error handling itself
-            console.error('[AuthPage] Error in error handler:', finalErr)
-            setError('Произошла непредвиденная ошибка.')
         } finally {
             setIsSubmitting(false)
             console.log('[AuthPage] Form submission finished, isSubmitting set to false')
