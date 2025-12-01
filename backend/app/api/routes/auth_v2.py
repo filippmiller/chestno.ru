@@ -187,42 +187,69 @@ async def signup_v2(
     auth_events.log_auth_event('registration', email=payload.email, request=request)
     
     try:
-        # Check if user already exists (but don't fail if get_user_by_email throws)
+        # Check if user already exists
+        existing_user = None
+        user_id = None
         try:
             existing_user = supabase_admin.get_user_by_email(payload.email)
             if existing_user:
-                logger.warning('User already exists: %s', payload.email)
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail='User already registered',
-                )
+                user_id = existing_user.get('id')
+                # Check if user has a password set
+                has_password = existing_user.get('encrypted_password') is not None
+                logger.info('User already exists: %s, has_password=%s', payload.email, has_password)
+                
+                if has_password:
+                    # User exists with password - they should login instead
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail='User already registered. Please login instead.',
+                    )
+                else:
+                    # User exists but has no password (likely OAuth user) - set password
+                    logger.info('User exists without password, setting password for: %s', payload.email)
+                    user_metadata = existing_user.get('user_metadata', {})
+                    if payload.full_name:
+                        user_metadata['full_name'] = payload.full_name
+                    
+                    # Update user with password
+                    update_response = supabase_admin._client.put(
+                        f'{supabase_admin.base_auth_url}/admin/users/{user_id}',
+                        headers=supabase_admin.admin_headers,
+                        json={
+                            'password': payload.password,
+                            'user_metadata': user_metadata,
+                        }
+                    )
+                    supabase_admin._raise_for_status(update_response)
+                    logger.info('Password set for existing user: %s', user_id)
         except HTTPException:
             raise  # Re-raise HTTP exceptions
-        except Exception:
+        except Exception as e:
             # If get_user_by_email fails for other reasons, continue with signup
-            logger.info('Could not check existing user, proceeding with signup')
+            logger.info('Could not check existing user, proceeding with signup: %s', e)
         
-        # Create user in Supabase
-        logger.info('Creating Supabase user for %s', payload.email)
-        user_metadata = {}
-        if payload.full_name:
-            user_metadata['full_name'] = payload.full_name
-        
-        supabase_user = supabase_admin.create_user(
-            email=payload.email,
-            password=payload.password,
-            user_metadata=user_metadata,
-        )
-        
-        user_id = supabase_user.get('id')
+        # Create new user if doesn't exist
         if not user_id:
-            logger.error('Failed to create user: no user_id returned')
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='Failed to create user',
+            logger.info('Creating new Supabase user for %s', payload.email)
+            user_metadata = {}
+            if payload.full_name:
+                user_metadata['full_name'] = payload.full_name
+            
+            supabase_user = supabase_admin.create_user(
+                email=payload.email,
+                password=payload.password,
+                user_metadata=user_metadata,
             )
-        
-        logger.info('Supabase user created: %s', user_id)
+            
+            user_id = supabase_user.get('id')
+            if not user_id:
+                logger.error('Failed to create user: no user_id returned')
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail='Failed to create user',
+                )
+            
+            logger.info('Supabase user created: %s', user_id)
         
         # Ensure app_profiles exists
         profile = app_profiles.ensure_app_profile(
