@@ -62,11 +62,20 @@ class SupabaseAdminClient:
             return users[0]
         return None
 
-    def create_user(self, email: str, password: str, user_metadata: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    def create_user(self, email: str, password: str, user_metadata: Dict[str, Any] | None = None, email_confirm: bool = False) -> Dict[str, Any]:
+        """
+        Create a new user in Supabase Auth.
+        
+        Args:
+            email: User email
+            password: User password
+            user_metadata: Optional user metadata
+            email_confirm: Whether to auto-confirm email (default: False - requires email confirmation)
+        """
         payload = {
             'email': email,
             'password': password,
-            'email_confirm': True,
+            'email_confirm': email_confirm,
             'user_metadata': user_metadata or {},
         }
         response = self._client.post(f'{self.base_auth_url}/admin/users', headers=self.admin_headers, json=payload)

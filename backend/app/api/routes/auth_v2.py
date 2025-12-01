@@ -251,14 +251,11 @@ async def signup_v2(
                     if payload.full_name:
                         user_metadata['full_name'] = payload.full_name
                     
-                    # Update user with password and ensure email is confirmed
+                    # Update user with password (don't auto-confirm email - user needs to confirm)
                     update_payload = {
                         'password': payload.password,
                         'user_metadata': user_metadata,
                     }
-                    # Ensure email is confirmed (required for password login)
-                    if not existing_user.get('email_confirmed_at'):
-                        update_payload['email_confirm'] = True
                     
                     update_response = supabase_admin._client.put(
                         f'{supabase_admin.base_auth_url}/admin/users/{user_id}',
@@ -266,8 +263,7 @@ async def signup_v2(
                         json=update_payload
                     )
                     supabase_admin._raise_for_status(update_response)
-                    logger.info('Password set for existing user: %s (email_confirmed=%s)', 
-                              user_id, update_payload.get('email_confirm', False))
+                    logger.info('Password set for existing user: %s', user_id)
         except HTTPException:
             raise  # Re-raise HTTP exceptions
         except Exception as e:
@@ -281,10 +277,12 @@ async def signup_v2(
             if payload.full_name:
                 user_metadata['full_name'] = payload.full_name
             
+            # Create user WITHOUT auto-confirming email (user needs to confirm via email)
             supabase_user = supabase_admin.create_user(
                 email=payload.email,
                 password=payload.password,
                 user_metadata=user_metadata,
+                email_confirm=False,  # Require email confirmation
             )
             
             user_id = supabase_user.get('id')
@@ -304,8 +302,28 @@ async def signup_v2(
             display_name=payload.full_name,
         )
         
-        # Sign in the user immediately after signup
-        logger.info('Signing in newly created/updated user...')
+        # Check if email is confirmed
+        # Get fresh user data to check confirmation status
+        try:
+            fresh_user = supabase_admin.get_user(user_id)
+            email_confirmed = fresh_user.get('email_confirmed_at') is not None
+            logger.info('Email confirmation status: %s', email_confirmed)
+        except Exception as e:
+            logger.warning('Could not check email confirmation status: %s', e)
+            email_confirmed = False
+        
+        # If email is not confirmed, don't sign in - user needs to confirm email first
+        if not email_confirmed:
+            logger.info('User registered but email not confirmed. Returning confirmation message.')
+            return {
+                'success': True,
+                'requires_email_confirmation': True,
+                'message': 'Пожалуйста, подтвердите e-mail для того чтобы начать пользоваться системой. Вам было отправлено письмо на электронный адрес, указанный при регистрации.',
+                'email': payload.email,
+            }
+        
+        # Email is confirmed - sign in the user
+        logger.info('Email confirmed, signing in newly created/updated user...')
         try:
             auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
             refresh_token = auth_response.get('refresh_token')

@@ -57,9 +57,24 @@ export function AuthPage() {
                 // Use redirect_url from response, or fallback to 'from' location
                 navigate(redirectUrl || from, { replace: true })
             } else {
-                const redirectUrl = await signupWithEmail(email, password, fullName || undefined)
-                // User is automatically logged in after signup
-                navigate(redirectUrl || from, { replace: true })
+                try {
+                    const redirectUrl = await signupWithEmail(email, password, fullName || undefined)
+                    // User is automatically logged in after signup
+                    navigate(redirectUrl || from, { replace: true })
+                } catch (signupErr: any) {
+                    // Check if this is an email confirmation error
+                    if (signupErr.message && signupErr.message.startsWith('EMAIL_CONFIRMATION_REQUIRED:')) {
+                        const message = signupErr.message.replace('EMAIL_CONFIRMATION_REQUIRED:', '')
+                        setSuccessMessage(message)
+                        setError(null)
+                        // Clear form but keep email
+                        setPassword('')
+                        setFullName('')
+                        return
+                    }
+                    // Re-throw other errors to be handled by the main catch block
+                    throw signupErr
+                }
             }
         } catch (err: any) {
             console.error('[AuthPage] Auth error:', err)

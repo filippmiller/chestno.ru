@@ -135,6 +135,15 @@ export function AuthProviderV2({ children }: { children: ReactNode }) {
             
             const { data } = response
             
+            // Check if email confirmation is required
+            if (data.requires_email_confirmation) {
+                // Don't set user as authenticated - they need to confirm email first
+                // Return special indicator that email confirmation is needed
+                const error = new Error('EMAIL_CONFIRMATION_REQUIRED')
+                ;(error as any).confirmationMessage = data.message || 'Пожалуйста, подтвердите e-mail для того чтобы начать пользоваться системой. Вам было отправлено письмо на электронный адрес, указанный при регистрации.'
+                throw error
+            }
+            
             setUser(data.user)
             setRole(data.role)
             setStatus('authenticated')
