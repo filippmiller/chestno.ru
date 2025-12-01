@@ -312,30 +312,54 @@ async def signup_v2(
                 )
         except HTTPException as signin_exc:
             # If password was just set, it might take a moment to propagate
-            # Try once more after a brief delay
+            # Try multiple times with increasing delays
             logger.warning('First sign-in attempt failed, retrying after password update...')
             import time
-            time.sleep(0.5)  # Brief delay for password propagation
             
-            try:
-                auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
-                refresh_token = auth_response.get('refresh_token')
+            max_retries = 3
+            retry_delays = [1.0, 2.0, 3.0]  # Increasing delays
+            
+            for retry_num in range(max_retries):
+                delay = retry_delays[retry_num] if retry_num < len(retry_delays) else 3.0
+                logger.info(f'Retry attempt {retry_num + 1}/{max_retries} after {delay}s delay...')
+                time.sleep(delay)
                 
-                if not refresh_token:
-                    logger.error('Failed to sign in after retry: no refresh_token')
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail='Failed to sign in after registration. Please try logging in manually.',
-                    )
-            except Exception as retry_exc:
-                logger.error('Sign-in retry also failed: %s', retry_exc)
-                # If user was updated (password set), tell them to login manually
-                if existing_user and not has_password:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail='Password was set successfully. Please login with your email and password.',
-                    )
-                raise
+                try:
+                    auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
+                    refresh_token = auth_response.get('refresh_token')
+                    
+                    if refresh_token:
+                        logger.info(f'Sign-in successful on retry {retry_num + 1}')
+                        break
+                    else:
+                        logger.error(f'Retry {retry_num + 1}: no refresh_token')
+                        if retry_num == max_retries - 1:
+                            raise HTTPException(
+                                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                detail='Failed to sign in after registration. Please try logging in manually.',
+                            )
+                except HTTPException as retry_exc:
+                    logger.warning(f'Retry {retry_num + 1} failed: {retry_exc.detail}')
+                    if retry_num == max_retries - 1:
+                        # If user was updated (password set), tell them to login manually
+                        if existing_user and not has_password:
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail='Password was set successfully. Please wait a moment and try logging in manually.',
+                            )
+                        raise HTTPException(
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail='Failed to sign in after registration. Please try logging in manually.',
+                        )
+                except Exception as retry_exc:
+                    logger.error(f'Retry {retry_num + 1} exception: {retry_exc}')
+                    if retry_num == max_retries - 1:
+                        if existing_user and not has_password:
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail='Password was set successfully. Please wait a moment and try logging in manually.',
+                            )
+                        raise
         
         # Create session
         session_id = create_session(user_id, refresh_token)
