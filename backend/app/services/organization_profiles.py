@@ -176,7 +176,7 @@ def search_public_organizations(
     if q:
         like = f'%{q}%'
         where_clauses.append(
-            '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(o.tags, \'\') ILIKE %s OR COALESCE(p.tags, \'\') ILIKE %s)'
+            '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(p.tags, \'\') ILIKE %s)'
         )
         params.extend([like, like, like, like])
     where_sql = ' AND '.join(where_clauses) if where_clauses else '1=1'
@@ -232,7 +232,7 @@ def get_public_organization_details_by_id(organization_id: str) -> PublicOrganiz
         cur.execute(
             '''
             SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
-                   o.verification_status, o.tags,
+                   o.verification_status, p.tags,
                    p.short_description, p.long_description, p.production_description,
                    p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
                    p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
@@ -308,7 +308,7 @@ def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDeta
         cur.execute(
             '''
             SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
-                   o.verification_status, o.tags,
+                   o.verification_status, p.tags,
                    p.short_description, p.long_description, p.production_description,
                    p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
                    p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,

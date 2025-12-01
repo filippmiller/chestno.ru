@@ -47,7 +47,8 @@ def list_organizations(user_id: str, status_filter: str | None = 'pending', limi
                     (limit, offset),
                 )
             rows = cur.fetchall()
-            return [ModerationOrganization(**row) for row in rows]
+            # Convert UUID to string for Pydantic
+            return [ModerationOrganization(**{**row, 'id': str(row['id'])}) for row in rows]
 
 
 def verify_organization(org_id: str, user_id: str, action: ModerationAction) -> ModerationOrganization:
@@ -73,5 +74,6 @@ def verify_organization(org_id: str, user_id: str, action: ModerationAction) -> 
             if not row:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Организация не найдена')
             conn.commit()
-            return ModerationOrganization(**row)
+            # Convert UUID to string for Pydantic
+            return ModerationOrganization(**{**row, 'id': str(row['id'])})
 
