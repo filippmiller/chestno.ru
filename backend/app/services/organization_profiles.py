@@ -232,7 +232,7 @@ def get_public_organization_details_by_id(organization_id: str) -> PublicOrganiz
         cur.execute(
             '''
             SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
-                   o.verification_status, p.tags,
+                   o.verification_status, p.tags,  -- Fixed: use p.tags instead of o.tags
                    p.short_description, p.long_description, p.production_description,
                    p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
                    p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
