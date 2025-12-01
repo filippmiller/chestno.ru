@@ -251,17 +251,23 @@ async def signup_v2(
                     if payload.full_name:
                         user_metadata['full_name'] = payload.full_name
                     
-                    # Update user with password
+                    # Update user with password and ensure email is confirmed
+                    update_payload = {
+                        'password': payload.password,
+                        'user_metadata': user_metadata,
+                    }
+                    # Ensure email is confirmed (required for password login)
+                    if not existing_user.get('email_confirmed_at'):
+                        update_payload['email_confirm'] = True
+                    
                     update_response = supabase_admin._client.put(
                         f'{supabase_admin.base_auth_url}/admin/users/{user_id}',
                         headers=supabase_admin.admin_headers,
-                        json={
-                            'password': payload.password,
-                            'user_metadata': user_metadata,
-                        }
+                        json=update_payload
                     )
                     supabase_admin._raise_for_status(update_response)
-                    logger.info('Password set for existing user: %s', user_id)
+                    logger.info('Password set for existing user: %s (email_confirmed=%s)', 
+                              user_id, update_payload.get('email_confirm', False))
         except HTTPException:
             raise  # Re-raise HTTP exceptions
         except Exception as e:
