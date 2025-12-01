@@ -178,7 +178,7 @@ def search_public_organizations(
         where_clauses.append(
             '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(p.tags, \'\') ILIKE %s)'
         )
-        params.extend([like, like, like, like])
+        params.extend([like, like, like])
     where_sql = ' AND '.join(where_clauses) if where_clauses else '1=1'
     base_query = '''
         FROM organizations o
