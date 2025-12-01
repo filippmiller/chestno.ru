@@ -259,16 +259,43 @@ async def signup_v2(
         )
         
         # Sign in the user immediately after signup
-        logger.info('Signing in newly created user...')
-        auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
-        refresh_token = auth_response.get('refresh_token')
-        
-        if not refresh_token:
-            logger.error('Failed to sign in after signup: no refresh_token')
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='Failed to sign in after registration',
-            )
+        logger.info('Signing in newly created/updated user...')
+        try:
+            auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
+            refresh_token = auth_response.get('refresh_token')
+            
+            if not refresh_token:
+                logger.error('Failed to sign in after signup: no refresh_token')
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail='Failed to sign in after registration',
+                )
+        except HTTPException as signin_exc:
+            # If password was just set, it might take a moment to propagate
+            # Try once more after a brief delay
+            logger.warning('First sign-in attempt failed, retrying after password update...')
+            import time
+            time.sleep(0.5)  # Brief delay for password propagation
+            
+            try:
+                auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
+                refresh_token = auth_response.get('refresh_token')
+                
+                if not refresh_token:
+                    logger.error('Failed to sign in after retry: no refresh_token')
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail='Failed to sign in after registration. Please try logging in manually.',
+                    )
+            except Exception as retry_exc:
+                logger.error('Sign-in retry also failed: %s', retry_exc)
+                # If user was updated (password set), tell them to login manually
+                if existing_user and not has_password:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail='Password was set successfully. Please login with your email and password.',
+                    )
+                raise
         
         # Create session
         session_id = create_session(user_id, refresh_token)

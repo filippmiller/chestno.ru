@@ -75,11 +75,18 @@ export function AuthPage() {
             
             if (typeof errorMessage === 'string') {
                 if (errorMessage.includes('Неверный email или пароль') || errorMessage.includes('Invalid login credentials')) {
-                    setError('Неверный e-mail или пароль')
+                    if (mode === 'register') {
+                        // During registration, this might mean user already exists
+                        setError('Этот e-mail уже зарегистрирован. Переключитесь на вкладку "Вход"')
+                        setMode('login')
+                    } else {
+                        setError('Неверный e-mail или пароль')
+                    }
                 } else if (errorMessage.includes('Слишком много попыток')) {
                     setError(errorMessage)
-                } else if (errorMessage.includes('User already registered')) {
-                    setError('Этот e-mail уже зарегистрирован')
+                } else if (errorMessage.includes('User already registered') || errorMessage.includes('already registered')) {
+                    setError('Этот e-mail уже зарегистрирован. Переключитесь на вкладку "Вход"')
+                    setMode('login')
                 } else if (errorMessage.includes('Password should be at least')) {
                     setError('Пароль слишком короткий (минимум 6 символов)')
                 } else if (errorMessage.includes('Invalid email')) {
