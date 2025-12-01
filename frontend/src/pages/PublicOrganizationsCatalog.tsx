@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react'
 
 import { searchPublicOrganizations } from '@/api/authService'
+import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { PublicOrganizationSummary } from '@/types/auth'
 
 export const PublicOrganizationsCatalogPage = () => {
+  const { platformRoles } = useAuthV2()
+  const isAdmin = platformRoles?.includes('admin') ?? false
+  
   const [items, setItems] = useState<PublicOrganizationSummary[]>([])
   const [query, setQuery] = useState('')
   const [country, setCountry] = useState('')
   const [category, setCategory] = useState('')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [includeNonPublic, setIncludeNonPublic] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
@@ -25,6 +30,7 @@ export const PublicOrganizationsCatalogPage = () => {
         country: country || undefined,
         category: category || undefined,
         verified_only: verifiedOnly,
+        include_non_public: includeNonPublic && isAdmin ? true : undefined,
       })
       setItems(data.items)
       setTotal(data.total)
@@ -39,7 +45,7 @@ export const PublicOrganizationsCatalogPage = () => {
   useEffect(() => {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [includeNonPublic])
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
