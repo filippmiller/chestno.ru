@@ -33,54 +33,113 @@ test.describe('Business Registration, Approval & Reviews Flow', () => {
   let businessOwnerAuthUserId: string
 
   test('Complete business lifecycle flow', async ({ page, request }) => {
-    // Step 1: Register business via API (since UI may not support full business registration)
+    // Step 1: Register business owner user via UI, then complete business registration via API
     test.step('1. Register business', async () => {
-      // First, create user in Supabase auth via the backend API
-      // We'll use the Auth V2 signup endpoint if available, or fall back to direct Supabase
-      const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
-      const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
-      
-      if (!supabaseUrl || !supabaseAnonKey) {
-        // Try using Auth V2 signup endpoint instead
-        console.log('⚠️ Supabase credentials not available, trying Auth V2 signup endpoint')
-        
-        // For now, skip if no Supabase credentials
-        // TODO: Implement Auth V2 signup endpoint usage
-        test.skip(true, 'Supabase credentials not available for API registration')
-        return
+      // Step 1a: Register user account via UI
+      console.log(`Navigating to ${BASE_URL}/auth`)
+      try {
+        await page.goto(`${BASE_URL}/auth`, { waitUntil: 'domcontentloaded', timeout: 30000 })
+        await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {
+          console.log('⚠️ Network idle timeout, continuing anyway')
+        })
+      } catch (error) {
+        console.error(`❌ Failed to load ${BASE_URL}/auth:`, error)
+        throw new Error(`Cannot connect to production site at ${BASE_URL}. Please verify the site is accessible.`)
       }
-
-      // Create user in Supabase
-      const signUpResponse = await request.post(`${supabaseUrl}/auth/v1/signup`, {
+      
+      // Switch to register tab
+      const registerTab = page.locator('button:has-text("Регистрация")')
+      if (await registerTab.isVisible()) {
+        await registerTab.click()
+        await page.waitForTimeout(500)
+      }
+      
+      // Fill registration form
+      const emailInput = page.locator('input[type="email"]').first()
+      const passwordInput = page.locator('input[type="password"]').first()
+      const fullNameInput = page.locator('input[placeholder*="Иван"], input[id*="fullName"], input[id*="full-name"]').first()
+      
+      if (await fullNameInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await fullNameInput.fill('Business Owner')
+      }
+      await emailInput.fill(businessOwnerEmail)
+      await passwordInput.fill(businessOwnerPassword)
+      
+      // Submit registration
+      const submitButton = page.locator('button:has-text("Зарегистрироваться")')
+      await submitButton.click()
+      
+      // Wait for registration response
+      await page.waitForTimeout(3000)
+      
+      // Check if registration was successful
+      // If redirected to dashboard, registration succeeded
+      // If still on auth page, check for success/error messages
+      const currentUrl = page.url()
+      
+      if (currentUrl.includes('/auth')) {
+        // Check for email confirmation message
+        const emailConfirmMsg = page.locator('text=проверьте почту, text=email, text=подтверждения').first()
+        if (await emailConfirmMsg.isVisible({ timeout: 2000 }).catch(() => false)) {
+          console.log('⚠️ Email confirmation required - this test requires email to be auto-confirmed')
+          // For E2E tests, we need users to be auto-confirmed
+          // This is a limitation - in production tests, you'd need email confirmation handling
+          throw new Error('Email confirmation required - cannot proceed with business registration')
+        }
+        
+        // Check for error
+        const errorMsg = page.locator('[role="alert"], .alert, text=ошибка').first()
+        if (await errorMsg.isVisible({ timeout: 2000 }).catch(() => false)) {
+          const errorText = await errorMsg.textContent()
+          throw new Error(`Registration failed: ${errorText}`)
+        }
+        
+        // If still here, try logging in (user might already exist)
+        const loginTab = page.locator('button:has-text("Вход")')
+        if (await loginTab.isVisible()) {
+          await loginTab.click()
+          await page.waitForTimeout(500)
+        }
+        await emailInput.fill(businessOwnerEmail)
+        await passwordInput.fill(businessOwnerPassword)
+        await page.click('button:has-text("Войти")')
+        await page.waitForURL(/\/dashboard/, { timeout: 10000 })
+      } else {
+        // Successfully registered and redirected
+        await page.waitForURL(/\/dashboard/, { timeout: 10000 })
+      }
+      
+      console.log('✅ User account registered and logged in')
+      
+      // Step 1b: Get user ID from session
+      // Use the Auth V2 session endpoint to get user ID
+      const cookies = await page.context().cookies()
+      const sessionCookie = cookies.find(c => c.name === 'session_id')
+      
+      if (!sessionCookie) {
+        throw new Error('Session cookie not found after registration')
+      }
+      
+      const sessionResponse = await request.get(`${BASE_URL}/api/auth/v2/session`, {
         headers: {
-          'apikey': supabaseAnonKey,
-          'Content-Type': 'application/json',
-        },
-        data: {
-          email: businessOwnerEmail,
-          password: businessOwnerPassword,
-          data: {
-            full_name: 'Business Owner',
-          },
+          'Cookie': `session_id=${sessionCookie.value}`,
         },
       })
-
-      if (!signUpResponse.ok()) {
-        const errorText = await signUpResponse.text()
-        console.error('❌ Supabase signup failed:', errorText)
-        throw new Error(`Failed to create user in Supabase: ${signUpResponse.status()} ${errorText}`)
+      
+      if (!sessionResponse.ok()) {
+        throw new Error(`Failed to get session: ${sessionResponse.status()}`)
       }
-
-      const signUpData = await signUpResponse.json()
-      businessOwnerAuthUserId = signUpData.user?.id
+      
+      const sessionData = await sessionResponse.json()
+      businessOwnerAuthUserId = sessionData.user?.id
       
       if (!businessOwnerAuthUserId) {
-        throw new Error('Failed to get user ID from Supabase signup response')
+        throw new Error('Failed to get user ID from session')
       }
       
-      console.log(`✅ User created in Supabase: ${businessOwnerEmail} (ID: ${businessOwnerAuthUserId})`)
-
-      // Complete business registration via after-signup endpoint
+      console.log(`✅ Got user ID from session: ${businessOwnerAuthUserId}`)
+      
+      // Step 1c: Complete business registration via after-signup endpoint
       const afterSignupResponse = await request.post(`${BASE_URL}/api/auth/after-signup`, {
         headers: {
           'Content-Type': 'application/json',
@@ -117,6 +176,9 @@ test.describe('Business Registration, Approval & Reviews Flow', () => {
       }
 
       console.log(`✅ Business registered: ${businessName} (ID: ${businessOrgId})`)
+      
+      // Logout to prepare for admin approval step
+      await page.context().clearCookies()
     })
 
     // Step 2: Admin approves the business

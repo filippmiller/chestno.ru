@@ -160,8 +160,10 @@ def search_public_organizations(
     verified_only: bool,
     limit: int,
     offset: int,
+    include_non_public: bool = False,  # For admin use
 ) -> Tuple[List[PublicOrganizationSummary], int]:
-    where_clauses = ['o.public_visible = true']
+    # Only filter by public_visible if not admin override
+    where_clauses = [] if include_non_public else ['o.public_visible = true']
     params: list[Any] = []
     if verified_only:
         where_clauses.append("o.verification_status = 'verified'")
@@ -177,7 +179,7 @@ def search_public_organizations(
             '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(o.tags, \'\') ILIKE %s OR COALESCE(p.tags, \'\') ILIKE %s)'
         )
         params.extend([like, like, like, like])
-    where_sql = ' AND '.join(where_clauses)
+    where_sql = ' AND '.join(where_clauses) if where_clauses else '1=1'
     base_query = '''
         FROM organizations o
         LEFT JOIN organization_profiles p ON p.organization_id = o.id

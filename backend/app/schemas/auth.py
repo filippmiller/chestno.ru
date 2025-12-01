@@ -118,6 +118,12 @@ class SessionResponse(BaseModel):
     platform_roles: list[str] = Field(default_factory=list)
 
 
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=6, description='Password must be at least 6 characters')
+    full_name: str | None = None
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str

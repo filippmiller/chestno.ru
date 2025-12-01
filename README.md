@@ -225,6 +225,21 @@ npx -y @railway/cli@latest run --service chestno.ru -- python -m compileall app
 - Frontend: `cd frontend && npm run lint`
 - Backend: `cd backend && python -m compileall app`
 
+### Админ-панель: Аудит и тесты
+
+**Документация:** См. [`docs/admin_audit.md`](docs/admin_audit.md)
+
+**Ручные тесты:** См. [`docs/admin_manual_tests.md`](docs/admin_manual_tests.md)
+
+**Статус админ-панели:**
+- ✅ Реализовано: Модерация регистраций, Аналитика (базовая), Database Explorer, AI Integrations
+- ⚠️ Частично: Модерация отзывов (только на уровне организации), Тарифы (встроены в модерацию)
+- ❌ Не реализовано: Управление компаниями, Управление пользователями, Управление категориями
+
+**E2E тесты для админа:**
+- `admin_pending_registrations.spec.ts` - Тесты модерации регистраций
+- `business_flow.spec.ts` - Полный цикл бизнеса (включая админ-одобрение)
+
 ### E2E тесты (бизнес-регистрация и отзывы)
 
 E2E тесты проверяют полный жизненный цикл бизнеса в production:

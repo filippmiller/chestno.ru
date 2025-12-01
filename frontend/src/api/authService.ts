@@ -37,6 +37,10 @@ import type {
   SessionPayload,
   SubscriptionPlan,
   AdminDashboardSummary,
+  AdminUser,
+  AdminUsersResponse,
+  AdminOrganization,
+  AdminOrganizationsResponse,
 } from '@/types/auth'
 
 import { httpClient } from './httpClient'
@@ -139,6 +143,7 @@ export const searchPublicOrganizations = async (params: {
   country?: string
   category?: string
   verified_only?: boolean
+  include_non_public?: boolean  // For admin to see all organizations
   limit?: number
   offset?: number
 }) => {
@@ -411,5 +416,105 @@ export const getLinkedAccounts = async () => {
 
 export const getAdminDashboardSummary = async () => {
   const { data } = await httpClient.get<AdminDashboardSummary>('/api/admin/dashboard/summary')
+  return data
+}
+
+// Admin Users Management
+export const listAllUsers = async (params?: {
+  email_search?: string
+  role?: 'admin' | 'business_owner' | 'user'
+  limit?: number
+  offset?: number
+}) => {
+  const { data } = await httpClient.get<AdminUsersResponse>('/api/admin/users', { params })
+  return data
+}
+
+export const updateUserRole = async (userId: string, role: 'admin' | 'business_owner' | 'user') => {
+  const { data } = await httpClient.patch<AdminUser>(`/api/admin/users/${userId}/role`, null, {
+    params: { role },
+  })
+  return data
+}
+
+export const blockUser = async (userId: string, blocked: boolean) => {
+  const { data } = await httpClient.patch<AdminUser>(`/api/admin/users/${userId}/block`, null, {
+    params: { blocked: blocked.toString() },
+  })
+  return data
+}
+
+// Business QR Code functions
+export const getBusinessPublicUrl = async (organizationId: string) => {
+  const { data } = await httpClient.get<{ public_url: string; slug: string; name: string; organization_id: string }>(
+    `/api/organizations/${organizationId}/public-url`,
+  )
+  return data
+}
+
+export const adminGetBusinessPublicUrl = async (organizationId: string) => {
+  const { data } = await httpClient.get<{ public_url: string; slug: string; name: string; organization_id: string }>(
+    `/api/organizations/${organizationId}/public-url/admin`,
+  )
+  return data
+}
+
+// Admin Organizations Management
+export const listAllOrganizations = async (params?: {
+  search?: string
+  status?: 'pending' | 'verified' | 'rejected'
+  city?: string
+  category?: string
+  limit?: number
+  offset?: number
+}) => {
+  const { data } = await httpClient.get<AdminOrganizationsResponse>('/api/admin/organizations', { params })
+  return data
+}
+
+export const updateOrganizationStatus = async (
+  organizationId: string,
+  verification_status: 'pending' | 'verified' | 'rejected',
+  verification_comment?: string,
+  public_visible?: boolean,
+) => {
+  const { data } = await httpClient.patch<AdminOrganization>(`/api/admin/organizations/${organizationId}/status`, null, {
+    params: {
+      verification_status,
+      verification_comment: verification_comment || undefined,
+      public_visible: public_visible?.toString(),
+    },
+  })
+  return data
+}
+
+export const blockOrganization = async (organizationId: string, blocked: boolean) => {
+  const { data } = await httpClient.patch<AdminOrganization>(`/api/admin/organizations/${organizationId}/block`, null, {
+    params: { blocked: blocked.toString() },
+  })
+  return data
+}
+
+// Admin Subscription Plans Management
+export const adminCreatePlan = async (payload: {
+  code: string
+  name: string
+  description?: string
+  price_monthly_cents?: number
+  price_yearly_cents?: number
+  currency?: string
+  max_products?: number
+  max_qr_codes?: number
+  max_members?: number
+  analytics_level?: string
+  is_default?: boolean
+  is_active?: boolean
+}) => {
+  const { data } = await httpClient.post<SubscriptionPlan>('/api/admin/subscriptions/plans', payload)
+  return data
+}
+
+export const adminUpdatePlan = async (planId: string, payload: Partial<SubscriptionPlan>) => {
+  const { data } = await httpClient.patch<SubscriptionPlan>(`/api/admin/subscriptions/plans/${planId}`, payload)
   return data
 }

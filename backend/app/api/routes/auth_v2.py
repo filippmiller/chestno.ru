@@ -11,7 +11,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.core.config import get_settings
 from app.core.supabase import supabase_admin
 from app.core.session_deps import get_current_user_from_session
-from app.schemas.auth import LoginRequest, SessionResponse
+from app.schemas.auth import LoginRequest, SessionResponse, SignupRequest
 from app.services import app_profiles
 from app.services import auth_events
 from app.services.sessions import SESSION_COOKIE_NAME, create_session, delete_session
@@ -156,6 +156,154 @@ async def login_v2(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Неверный email или пароль',
         )
+
+
+@router.post('/signup')
+async def signup_v2(
+    payload: SignupRequest,
+    request: Request,
+    response: Response,
+) -> dict:
+    """
+    Signup with email/password.
+    Creates user in Supabase, app_profiles, and session.
+    """
+    logger.info('Signup attempt for %s', payload.email)
+    
+    # Rate limiting check
+    client_ip = auth_events.get_client_ip(request)
+    is_blocked, retry_after = auth_events.check_rate_limit(email=payload.email, ip=client_ip)
+    if is_blocked:
+        auth_events.log_auth_event('registration', email=payload.email, request=request)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                'message': 'Слишком много попыток. Попробуйте позже.',
+                'retry_after_seconds': retry_after,
+            },
+        )
+    
+    # Log registration attempt
+    auth_events.log_auth_event('registration', email=payload.email, request=request)
+    
+    try:
+        # Check if user already exists (but don't fail if get_user_by_email throws)
+        try:
+            existing_user = supabase_admin.get_user_by_email(payload.email)
+            if existing_user:
+                logger.warning('User already exists: %s', payload.email)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='User already registered',
+                )
+        except HTTPException:
+            raise  # Re-raise HTTP exceptions
+        except Exception:
+            # If get_user_by_email fails for other reasons, continue with signup
+            logger.info('Could not check existing user, proceeding with signup')
+        
+        # Create user in Supabase
+        logger.info('Creating Supabase user for %s', payload.email)
+        user_metadata = {}
+        if payload.full_name:
+            user_metadata['full_name'] = payload.full_name
+        
+        supabase_user = supabase_admin.create_user(
+            email=payload.email,
+            password=payload.password,
+            user_metadata=user_metadata,
+        )
+        
+        user_id = supabase_user.get('id')
+        if not user_id:
+            logger.error('Failed to create user: no user_id returned')
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Failed to create user',
+            )
+        
+        logger.info('Supabase user created: %s', user_id)
+        
+        # Ensure app_profiles exists
+        profile = app_profiles.ensure_app_profile(
+            user_id=user_id,
+            email=payload.email,
+            display_name=payload.full_name,
+        )
+        
+        # Sign in the user immediately after signup
+        logger.info('Signing in newly created user...')
+        auth_response = supabase_admin.password_sign_in(payload.email, payload.password)
+        refresh_token = auth_response.get('refresh_token')
+        
+        if not refresh_token:
+            logger.error('Failed to sign in after signup: no refresh_token')
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Failed to sign in after registration',
+            )
+        
+        # Create session
+        session_id = create_session(user_id, refresh_token)
+        
+        # Set httpOnly cookie
+        response.set_cookie(
+            key=SESSION_COOKIE_NAME,
+            value=session_id,
+            max_age=SESSION_MAX_AGE,
+            httponly=True,
+            secure=settings.environment == 'production',
+            samesite='lax',
+            path='/',
+        )
+        
+        # Log success
+        auth_events.log_auth_event(
+            'login_success',
+            email=payload.email,
+            user_id=user_id,
+            request=request,
+        )
+        
+        # Get session data
+        session_data = await run_in_threadpool(get_session_data_v2, user_id)
+        
+        return {
+            'success': True,
+            'user': session_data.user,
+            'role': profile['role'],
+            'redirect_url': get_role_based_redirect_url(profile['role']),
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f'Signup failed with exception: {e}', exc_info=True)
+        logger.error(f'Exception type: {type(e).__name__}')
+        auth_events.log_auth_event('login_failure', email=payload.email, request=request)
+        
+        # Parse common Supabase errors
+        error_str = str(e)
+        if 'already registered' in error_str or 'already exists' in error_str:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='User already registered',
+            )
+        elif 'Password should be at least' in error_str or 'password' in error_str.lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Password should be at least 6 characters',
+            )
+        elif 'Invalid email' in error_str or 'email' in error_str.lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Invalid email format',
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Registration failed: {error_str}',
+            )
 
 
 @router.post('/oauth-callback')

@@ -7,8 +7,24 @@ ALLOWED_ADMIN_ROLES = ('platform_owner', 'platform_admin')
 
 
 def assert_platform_admin(user_id: str) -> None:
+    """
+    Assert that user has platform admin role.
+    Checks both app_profiles.role (Auth V2) and platform_roles table (legacy).
+    """
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
+            # Check app_profiles.role (Auth V2)
+            cur.execute(
+                '''
+                SELECT 1 FROM app_profiles
+                WHERE id = %s AND role = 'admin'
+                ''',
+                (user_id,),
+            )
+            if cur.fetchone():
+                return  # User is admin in app_profiles
+            
+            # Check platform_roles table (legacy)
             cur.execute(
                 '''
                 SELECT 1 FROM platform_roles
@@ -16,6 +32,9 @@ def assert_platform_admin(user_id: str) -> None:
                 ''',
                 (user_id, list(ALLOWED_ADMIN_ROLES)),
             )
-            if not cur.fetchone():
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Admin access required')
+            if cur.fetchone():
+                return  # User has platform role
+            
+            # No admin access found
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Admin access required')
 

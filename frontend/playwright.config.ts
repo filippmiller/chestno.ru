@@ -25,6 +25,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     /* Video on failure */
     video: 'retain-on-failure',
+    /* Ignore HTTPS errors for testing */
+    ignoreHTTPSErrors: true,
+    /* Increase timeout for slow connections */
+    navigationTimeout: 30000,
+    actionTimeout: 15000,
   },
 
   /* Configure projects for major browsers */

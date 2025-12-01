@@ -14,6 +14,9 @@ from app.api.routes.admin_ai import router as admin_ai_router
 from app.api.routes.admin_database import router as admin_db_router
 from app.api.routes.admin_notifications import router as admin_notifications_router
 from app.api.routes.admin_dashboard import router as admin_dashboard_router
+from app.api.routes.admin_reviews import router as admin_reviews_router
+from app.api.routes.admin_users import router as admin_users_router
+from app.api.routes.admin_organizations import router as admin_organizations_router
 from app.api.routes.dev_tasks import router as dev_tasks_router
 from app.api.routes.health import router as health_router
 from app.api.routes.invites import router as invites_router
@@ -23,6 +26,7 @@ from app.api.routes.analytics import router as analytics_router
 from app.api.routes.organizations import public_router as public_org_router, router as organizations_router
 from app.api.routes.products import public_router as public_products_router, router as products_router
 from app.api.routes.qr import redirect_router as qr_redirect_router, router as qr_router
+from app.api.routes.qr_business import router as qr_business_router, public_router as qr_business_public_router
 from app.api.routes.social import router as social_router
 from app.api.routes.social_v2 import router as social_v2_router
 from app.api.routes.subscriptions import admin_router as admin_subscriptions_router, router as subscriptions_router
@@ -57,11 +61,16 @@ def create_app() -> FastAPI:
     app.include_router(admin_notifications_router)
     app.include_router(admin_dashboard_router)
     app.include_router(admin_subscriptions_router)
+    app.include_router(admin_reviews_router)
+    app.include_router(admin_users_router)
+    app.include_router(admin_organizations_router)
     app.include_router(organizations_router)
     app.include_router(public_org_router)
     app.include_router(products_router)
     app.include_router(public_products_router)
     app.include_router(qr_router)
+    app.include_router(qr_business_router)
+    app.include_router(qr_business_public_router)
     app.include_router(notifications_router)
     app.include_router(analytics_router)
     app.include_router(subscriptions_router)

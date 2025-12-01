@@ -47,6 +47,9 @@ export const PublicOrganizationPage = () => {
       setPosts(postsData.items)
       setReviews(reviewsData.items)
       setAvgRating(reviewsData.average_rating || null)
+      
+      // Note: QR scan tracking happens automatically on backend when user visits /qr/b/{slug}
+      // The redirect endpoint logs the event before redirecting here with ?src=qr_business_main
     } catch (err) {
       console.error(err)
       setError('Организация не найдена или ещё находится на модерации')

@@ -61,6 +61,7 @@ async def public_search(
     country: str | None = Query(default=None),
     category: str | None = Query(default=None),
     verified_only: bool = Query(default=False),
+    include_non_public: bool = Query(default=False),  # Admin can use this
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> PublicOrganizationsResponse:
@@ -72,6 +73,7 @@ async def public_search(
         verified_only,
         limit,
         offset,
+        include_non_public,
     )
     return PublicOrganizationsResponse(items=items, total=total)
 

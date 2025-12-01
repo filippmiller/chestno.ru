@@ -21,7 +21,7 @@ interface AuthContextType {
 
     // Auth methods
     loginWithEmail: (email: string, password: string) => Promise<string | void>
-    signupWithEmail: (email: string, password: string, fullName?: string) => Promise<void>
+    signupWithEmail: (email: string, password: string, fullName?: string) => Promise<string | void>
     loginWithGoogle: () => Promise<void>
     loginWithYandex: () => Promise<void>
     logout: () => Promise<void>
@@ -117,10 +117,44 @@ export function AuthProviderV2({ children }: { children: ReactNode }) {
         }
     }
 
-    const signupWithEmail = async (_email: string, _password: string, _fullName?: string) => {
-        // For now, redirect to Supabase signup
-        // In production, you'd call /api/auth/v2/signup if implemented
-        throw new Error('Signup not implemented in V2 yet')
+    const signupWithEmail = async (email: string, password: string, fullName?: string) => {
+        try {
+            console.log('[AuthProviderV2] Starting signup request to /api/auth/v2/signup')
+            
+            const response = await httpClient.post('/api/auth/v2/signup', {
+                email,
+                password,
+                full_name: fullName || undefined,
+            })
+            
+            console.log('[AuthProviderV2] Signup response received:', {
+                status: response.status,
+                hasData: !!response.data,
+                redirectUrl: response.data?.redirect_url,
+            })
+            
+            const { data } = response
+            
+            setUser(data.user)
+            setRole(data.role)
+            setStatus('authenticated')
+            
+            // Fetch full session data
+            console.log('[AuthProviderV2] Fetching app user data after signup...')
+            await fetchAppUserData()
+            console.log('[AuthProviderV2] App user data fetched successfully')
+            
+            // Return redirect URL if provided
+            return data.redirect_url
+        } catch (error: any) {
+            console.error('[AuthProviderV2] Signup failed:', error)
+            console.error('[AuthProviderV2] Error details:', {
+                message: error.message,
+                response: error.response,
+                code: error.code,
+            })
+            throw error
+        }
     }
 
     const loginWithGoogle = async () => {

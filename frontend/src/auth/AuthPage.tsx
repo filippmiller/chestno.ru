@@ -57,17 +57,9 @@ export function AuthPage() {
                 // Use redirect_url from response, or fallback to 'from' location
                 navigate(redirectUrl || from, { replace: true })
             } else {
-                await signupWithEmail(email, password, fullName || undefined)
-
-                // Check if user needs to confirm email
-                if (status === 'unauthenticated') {
-                    setSuccessMessage('Регистрация успешна! Проверьте почту для подтверждения.')
-                    setEmail('')
-                    setPassword('')
-                    setFullName('')
-                } else {
-                    navigate(from, { replace: true })
-                }
+                const redirectUrl = await signupWithEmail(email, password, fullName || undefined)
+                // User is automatically logged in after signup
+                navigate(redirectUrl || from, { replace: true })
             }
         } catch (err: any) {
             console.error('[AuthPage] Auth error:', err)

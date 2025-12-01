@@ -87,6 +87,12 @@ export const PublicOrganizationsCatalogPage = () => {
           <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} className="h-4 w-4" />
           <span className="whitespace-nowrap">Только проверенные</span>
         </label>
+        {isAdmin && (
+          <label className="flex items-center gap-2 text-sm text-muted-foreground sm:col-span-2 md:col-span-1">
+            <input type="checkbox" checked={includeNonPublic} onChange={(e) => setIncludeNonPublic(e.target.checked)} className="h-4 w-4" />
+            <span className="whitespace-nowrap">Включить непубличные</span>
+          </label>
+        )}
         <Button type="submit" disabled={loading} className="h-10 min-h-[44px] sm:col-span-2 md:col-span-1 lg:col-span-1">
           Найти
         </Button>

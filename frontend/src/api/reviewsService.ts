@@ -92,3 +92,20 @@ export async function createPublicReviewById(organizationId: string, payload: Re
   return response.data
 }
 
+// Admin review moderation functions
+export async function listAllReviews(params?: {
+  organization_id?: string
+  status?: 'pending' | 'approved' | 'rejected'
+  rating?: number
+  limit?: number
+  offset?: number
+}): Promise<ReviewsResponse> {
+  const response = await httpClient.get<ReviewsResponse>('/api/admin/reviews', { params })
+  return response.data
+}
+
+export async function adminModerateReview(reviewId: string, payload: ReviewModeration): Promise<Review> {
+  const response = await httpClient.patch<Review>(`/api/admin/reviews/${reviewId}/moderate`, payload)
+  return response.data
+}
+

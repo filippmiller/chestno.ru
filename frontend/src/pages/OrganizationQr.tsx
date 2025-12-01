@@ -3,7 +3,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { createQrCode, getQrCodeStats, listQrCodes } from '@/api/authService'
+import { createQrCode, getQrCodeStats, getBusinessPublicUrl, listQrCodes } from '@/api/authService'
+import { BusinessQrCode } from '@/components/qr/BusinessQrCode'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,6 +27,7 @@ export const OrganizationQrPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [statsMap, setStatsMap] = useState<Record<string, QRCodeStats>>({})
+  const [businessPublicUrl, setBusinessPublicUrl] = useState<string | null>(null)
   const form = useForm<QRFormValues>({ resolver: zodResolver(qrSchema), defaultValues: { label: '' } })
   const backendUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) ?? 'http://localhost:8000'
 
@@ -42,9 +44,14 @@ export const OrganizationQrPage = () => {
     if (!organizationId) return
     setLoading(true)
     setError(null)
-    listQrCodes(organizationId)
-      .then(setQrCodes)
-      .catch(() => setError('Не удалось загрузить QR-коды'))
+    Promise.all([
+      listQrCodes(organizationId).catch(() => []),
+      getBusinessPublicUrl(organizationId)
+        .then((data) => setBusinessPublicUrl(data.public_url))
+        .catch(() => setBusinessPublicUrl(null)),
+    ])
+      .then(([codes]) => setQrCodes(codes))
+      .catch(() => setError('Не удалось загрузить данные'))
       .finally(() => setLoading(false))
   }, [organizationId])
 
@@ -110,6 +117,22 @@ export const OrganizationQrPage = () => {
           <AlertTitle>Ошибка</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Main Business QR Code */}
+      {businessPublicUrl && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ваш QR-код</CardTitle>
+            <CardDescription>
+              Распечатайте QR-код и разместите его на входе, на кассе, на упаковке или флаерах. Покупатели смогут
+              просканировать код, перейти на вашу страницу на платформе и оставить отзыв.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BusinessQrCode publicUrl={businessPublicUrl} businessName={currentOrganization.name} />
+          </CardContent>
+        </Card>
       )}
 
       <Card>

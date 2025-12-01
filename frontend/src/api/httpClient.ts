@@ -74,6 +74,7 @@ httpClient.interceptors.request.use(
       '/api/auth/register', 
       '/api/auth/yandex/start',
       '/api/auth/v2/login',  // Auth V2 login endpoint
+      '/api/auth/v2/signup',  // Auth V2 signup endpoint
       '/api/auth/v2/logout',  // Auth V2 logout endpoint
       '/api/auth/v2/oauth-callback',  // Auth V2 OAuth callback
       '/api/auth/v2/yandex/start',  // Auth V2 Yandex OAuth start

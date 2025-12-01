@@ -11,18 +11,32 @@ import {
   listAiIntegrations,
   listDevTasks,
   listModerationOrganizations,
+  listSubscriptionPlans,
   runAiIntegrationCheck,
   updateAiIntegration,
   updateDevTask,
   verifyOrganizationStatus,
 } from '@/api/authService'
+import { AdminSubscriptionPlansSection } from '@/components/admin/AdminSubscriptionPlansSection'
 import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import type { AiIntegration, DevTask, ModerationOrganization } from '@/types/auth'
+import { listAllReviews, adminModerateReview } from '@/api/reviewsService'
+import {
+  listAllUsers,
+  updateUserRole,
+  blockUser,
+  adminGetBusinessPublicUrl,
+  listAllOrganizations,
+  updateOrganizationStatus,
+  blockOrganization,
+} from '@/api/authService'
+import { BusinessQrCode } from '@/components/qr/BusinessQrCode'
+import type { AiIntegration, DevTask, ModerationOrganization, AdminUser, AdminOrganization } from '@/types/auth'
+import type { Review, ReviewModeration } from '@/types/reviews'
 
 const AI_FORM_SCHEMA = z.object({
   provider: z.string().min(2),
@@ -40,6 +54,11 @@ const DEV_FORM_SCHEMA = z.object({
 
 const ADMIN_TABS = [
   { id: 'pending', label: 'Pending Registrations' },
+  { id: 'reviews', label: 'Reviews Moderation' },
+  { id: 'users', label: 'Users & Roles' },
+  { id: 'organizations', label: 'Organizations' },
+  { id: 'subscriptions', label: 'Subscription Plans' },
+  { id: 'qr', label: 'Business QR Codes' },
   { id: 'ai', label: 'AI Integrations' },
   { id: 'dev', label: 'Dev / To-Do' },
 ]
@@ -73,6 +92,11 @@ export const AdminPanelPage = () => {
         </Button>
       </div>
       {activeTab === 'pending' && <PendingRegistrationsSection />}
+      {activeTab === 'reviews' && <AdminReviewsModerationSection />}
+      {activeTab === 'users' && <AdminUsersManagementSection />}
+      {activeTab === 'organizations' && <AdminOrganizationsSection />}
+      {activeTab === 'subscriptions' && <AdminSubscriptionPlansSection />}
+      {activeTab === 'qr' && <AdminBusinessQrSection />}
       {activeTab === 'ai' && <AiIntegrationsSection />}
       {activeTab === 'dev' && <DevTasksSection />}
     </div>
@@ -608,6 +632,457 @@ const DevTasksSection = () => {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+const AdminReviewsModerationSection = () => {
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [filters, setFilters] = useState<{
+    status?: 'pending' | 'approved' | 'rejected'
+    rating?: number
+    organizationId?: string
+  }>({})
+  const [total, setTotal] = useState(0)
+
+  const loadReviews = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await listAllReviews({
+        status: filters.status,
+        rating: filters.rating,
+        organization_id: filters.organizationId,
+        limit: 50,
+        offset: 0,
+      })
+      setReviews(response.items)
+      setTotal(response.total)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить отзывы')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters])
+
+  useEffect(() => {
+    void loadReviews()
+  }, [loadReviews])
+
+  const handleModerate = async (reviewId: string, status: 'approved' | 'rejected') => {
+    const comment = window.prompt('Комментарий к решению', '')
+    if (comment === null) return
+
+    setLoading(true)
+    setError(null)
+    try {
+      const payload: ReviewModeration = {
+        status,
+        moderation_comment: comment || undefined,
+      }
+      await adminModerateReview(reviewId, payload)
+      await loadReviews()
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось изменить статус отзыва')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Reviews Moderation</CardTitle>
+        <CardDescription>Глобальная модерация отзывов по всем организациям.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Ошибка</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3">
+          <select
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={filters.status || ''}
+            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value as any || undefined }))}
+          >
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+
+          <select
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={filters.rating || ''}
+            onChange={(e) => setFilters((prev) => ({ ...prev, rating: e.target.value ? parseInt(e.target.value) : undefined }))}
+          >
+            <option value="">All Ratings</option>
+            <option value="5">5 stars</option>
+            <option value="4">4 stars</option>
+            <option value="3">3 stars</option>
+            <option value="2">2 stars</option>
+            <option value="1">1 star</option>
+          </select>
+
+          <Input
+            placeholder="Organization ID (optional)"
+            value={filters.organizationId || ''}
+            onChange={(e) => setFilters((prev) => ({ ...prev, organizationId: e.target.value || undefined }))}
+            className="w-64"
+          />
+        </div>
+
+        {loading && reviews.length === 0 && <p className="text-sm text-muted-foreground">Загружаем...</p>}
+
+        {!loading && reviews.length === 0 && (
+          <p className="text-sm text-muted-foreground">Нет отзывов</p>
+        )}
+
+        <div className="text-sm text-muted-foreground">
+          Всего отзывов: {total}
+        </div>
+
+        <div className="space-y-3">
+          {reviews.map((review) => (
+            <div key={review.id} className="rounded-md border border-border p-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">Rating: {review.rating}/5</span>
+                      <span className="text-xs uppercase text-muted-foreground">{review.status}</span>
+                    </div>
+                    {review.title && <p className="font-medium">{review.title}</p>}
+                    <p className="text-sm">{review.body}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Organization: {review.organization_id} | Author: {review.author_user_id}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Created: {new Date(review.created_at).toLocaleString('ru-RU')}
+                    </p>
+                    {review.moderated_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Moderated: {new Date(review.moderated_at).toLocaleString('ru-RU')}
+                        {review.moderation_comment && ` - ${review.moderation_comment}`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <Button variant="outline" asChild size="sm">
+                    <a href={`/org/${review.organization_id}`} target="_blank" rel="noreferrer">
+                      View Organization
+                    </a>
+                  </Button>
+                  {review.status !== 'approved' && (
+                    <Button size="sm" onClick={() => handleModerate(review.id, 'approved')} disabled={loading}>
+                      Approve
+                    </Button>
+                  )}
+                  {review.status !== 'rejected' && (
+                    <Button size="sm" variant="destructive" onClick={() => handleModerate(review.id, 'rejected')} disabled={loading}>
+                      Reject
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const AdminUsersManagementSection = () => {
+  const [users, setUsers] = useState<AdminUser[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [filters, setFilters] = useState<{
+    email_search?: string
+    role?: 'admin' | 'business_owner' | 'user'
+  }>({})
+  const [total, setTotal] = useState(0)
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await listAllUsers({
+        email_search: filters.email_search,
+        role: filters.role,
+        limit: 50,
+        offset: 0,
+      })
+      setUsers(response.items)
+      setTotal(response.total)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить пользователей')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters])
+
+  useEffect(() => {
+    void loadUsers()
+  }, [loadUsers])
+
+  const handleRoleChange = async (userId: string, newRole: 'admin' | 'business_owner' | 'user') => {
+    if (!confirm(`Изменить роль пользователя на "${newRole}"?`)) return
+
+    setLoading(true)
+    setError(null)
+    try {
+      await updateUserRole(userId, newRole)
+      await loadUsers()
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось изменить роль пользователя')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBlock = async (userId: string, blocked: boolean) => {
+    const action = blocked ? 'заблокировать' : 'разблокировать'
+    if (!confirm(`Вы уверены, что хотите ${action} этого пользователя?`)) return
+
+    setLoading(true)
+    setError(null)
+    try {
+      await blockUser(userId, blocked)
+      await loadUsers()
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось изменить статус блокировки')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Users & Roles Management</CardTitle>
+        <CardDescription>Управление пользователями и их ролями на платформе.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Ошибка</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3">
+          <Input
+            placeholder="Search by email..."
+            value={filters.email_search || ''}
+            onChange={(e) => setFilters((prev) => ({ ...prev, email_search: e.target.value || undefined }))}
+            className="w-64"
+          />
+
+          <select
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={filters.role || ''}
+            onChange={(e) => setFilters((prev) => ({ ...prev, role: e.target.value as any || undefined }))}
+          >
+            <option value="">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="business_owner">Business Owner</option>
+            <option value="user">User</option>
+          </select>
+        </div>
+
+        {loading && users.length === 0 && <p className="text-sm text-muted-foreground">Загружаем...</p>}
+
+        {!loading && users.length === 0 && (
+          <p className="text-sm text-muted-foreground">Нет пользователей</p>
+        )}
+
+        <div className="text-sm text-muted-foreground">
+          Всего пользователей: {total}
+        </div>
+
+        <div className="space-y-3">
+          {users.map((user) => (
+            <div key={user.id} className="rounded-md border border-border p-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{user.email}</p>
+                      <span className="text-xs uppercase text-muted-foreground">{user.role}</span>
+                      {user.platform_roles.length > 0 && (
+                        <span className="text-xs text-primary">
+                          Platform: {user.platform_roles.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                    {user.display_name && <p className="text-sm text-muted-foreground">{user.display_name}</p>}
+                    <p className="text-xs text-muted-foreground">
+                      ID: {user.id}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Created: {user.created_at ? new Date(user.created_at).toLocaleString('ru-RU') : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <select
+                    className="h-9 rounded-md border border-input px-2 text-sm"
+                    value={user.role}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value as any)}
+                    disabled={loading}
+                  >
+                    <option value="user">User</option>
+                    <option value="business_owner">Business Owner</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  {user.blocked ? (
+                    <Button size="sm" variant="outline" onClick={() => handleBlock(user.id, false)} disabled={loading}>
+                      Unblock
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="destructive" onClick={() => handleBlock(user.id, true)} disabled={loading}>
+                      Block
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const AdminBusinessQrSection = () => {
+  const [organizations, setOrganizations] = useState<ModerationOrganization[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string; publicUrl: string } | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'verified' | 'rejected' | ''>('verified')
+
+  const loadOrganizations = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await listModerationOrganizations(statusFilter || undefined)
+      setOrganizations(data)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить организации')
+    } finally {
+      setLoading(false)
+    }
+  }, [statusFilter])
+
+  useEffect(() => {
+    void loadOrganizations()
+  }, [loadOrganizations])
+
+  const handleViewQr = async (org: ModerationOrganization) => {
+    try {
+      const urlData = await adminGetBusinessPublicUrl(org.id)
+      setSelectedOrg({
+        id: org.id,
+        name: org.name,
+        publicUrl: urlData.public_url,
+      })
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить QR-код')
+    }
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Business QR Codes</CardTitle>
+          <CardDescription>Просмотр QR-кодов для всех бизнесов на платформе.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertTitle>Ошибка</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Filter */}
+          <div className="flex gap-3">
+            <select
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+            >
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="verified">Verified</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
+          {loading && organizations.length === 0 && <p className="text-sm text-muted-foreground">Загружаем...</p>}
+
+          {!loading && organizations.length === 0 && (
+            <p className="text-sm text-muted-foreground">Нет организаций</p>
+          )}
+
+          <div className="space-y-3">
+            {organizations.map((org) => (
+              <div key={org.id} className="rounded-md border border-border p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex-1">
+                    <p className="font-semibold">{org.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {org.city ? `${org.city}, ` : ''}
+                      {org.country}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Slug: {org.slug || 'N/A'}</p>
+                    <p className="text-xs text-muted-foreground">Status: {org.verification_status}</p>
+                  </div>
+                  <Button size="sm" onClick={() => handleViewQr(org)} disabled={loading}>
+                    View QR Code
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* QR Code Display */}
+      {selectedOrg && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>QR Code: {selectedOrg.name}</CardTitle>
+            <CardDescription>QR-код для публичной страницы бизнеса</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center gap-4">
+              <BusinessQrCode publicUrl={selectedOrg.publicUrl} businessName={selectedOrg.name} showDownload={true} />
+              <Button variant="outline" onClick={() => setSelectedOrg(null)}>
+                Close
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </>
   )
 }
 

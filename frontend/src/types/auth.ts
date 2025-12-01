@@ -9,6 +9,46 @@ export interface AppUser {
   locale?: string | null
 }
 
+export interface AdminUser {
+  id: string
+  email: string
+  role: 'admin' | 'business_owner' | 'user'
+  display_name?: string | null
+  avatar_url?: string | null
+  platform_roles: PlatformRole[]
+  blocked?: boolean
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface AdminUsersResponse {
+  items: AdminUser[]
+  total: number
+}
+
+export interface AdminOrganization {
+  id: string
+  name: string
+  slug?: string | null
+  country?: string | null
+  city?: string | null
+  website_url?: string | null
+  phone?: string | null
+  verification_status?: string | null
+  is_verified: boolean
+  public_visible: boolean
+  verification_comment?: string | null
+  category?: string | null
+  short_description?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface AdminOrganizationsResponse {
+  items: AdminOrganization[]
+  total: number
+}
+
 export interface Organization {
   id: string
   name: string
