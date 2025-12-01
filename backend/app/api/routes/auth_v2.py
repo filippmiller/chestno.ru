@@ -199,7 +199,47 @@ async def signup_v2(
                 logger.info('User already exists: %s, has_password=%s', payload.email, has_password)
                 
                 if has_password:
-                    # User exists with password - they should login instead
+                    # User exists with password - check if password matches
+                    # If it does, sign them in automatically (user might be trying to register with same credentials)
+                    try:
+                        test_auth = supabase_admin.password_sign_in(payload.email, payload.password)
+                        # Password matches - sign them in
+                        logger.info('Password matches for existing user during signup, signing in...')
+                        refresh_token = test_auth.get('refresh_token')
+                        if refresh_token:
+                            # Ensure app_profiles exists
+                            profile = app_profiles.ensure_app_profile(
+                                user_id=user_id,
+                                email=payload.email,
+                                display_name=payload.full_name,
+                            )
+                            # Create session
+                            session_id = create_session(user_id, refresh_token)
+                            # Set httpOnly cookie
+                            response.set_cookie(
+                                key=SESSION_COOKIE_NAME,
+                                value=session_id,
+                                max_age=SESSION_MAX_AGE,
+                                httponly=True,
+                                secure=settings.environment == 'production',
+                                samesite='lax',
+                                path='/',
+                            )
+                            # Log success
+                            auth_events.log_auth_event('login_success', email=payload.email, user_id=user_id, request=request)
+                            # Get session data
+                            session_data = await run_in_threadpool(get_session_data_v2, user_id)
+                            return {
+                                'success': True,
+                                'user': session_data.user,
+                                'role': profile['role'],
+                                'redirect_url': get_role_based_redirect_url(profile['role']),
+                            }
+                    except Exception:
+                        # Password doesn't match - tell them to login
+                        pass
+                    
+                    # Password doesn't match or sign-in failed
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail='User already registered. Please login instead.',
