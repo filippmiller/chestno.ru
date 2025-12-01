@@ -18,6 +18,7 @@ import {
   verifyOrganizationStatus,
 } from '@/api/authService'
 import { AdminSubscriptionPlansSection } from '@/components/admin/AdminSubscriptionPlansSection'
+import { AdminOrganizationsSection } from '@/components/admin/AdminOrganizationsSection'
 import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -35,7 +36,7 @@ import {
   blockOrganization,
 } from '@/api/authService'
 import { BusinessQrCode } from '@/components/qr/BusinessQrCode'
-import type { AiIntegration, DevTask, ModerationOrganization, AdminUser, AdminOrganization } from '@/types/auth'
+import type { AiIntegration, DevTask, ModerationOrganization, AdminUser } from '@/types/auth'
 import type { Review, ReviewModeration } from '@/types/reviews'
 
 const AI_FORM_SCHEMA = z.object({
