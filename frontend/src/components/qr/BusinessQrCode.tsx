@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Download, Copy, Check } from 'lucide-react'
 
 interface BusinessQrCodeProps {
@@ -76,7 +75,6 @@ export const BusinessQrCode = ({ publicUrl, businessName, size = 256, showDownlo
     // A4 size at 300 DPI: 2480x3508 pixels
     // We'll create a poster with QR code centered
     const qrSize = 1200 // Large QR code
-    const padding = 200
     canvas.width = 2480
     canvas.height = 3508
 

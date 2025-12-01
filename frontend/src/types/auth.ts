@@ -37,6 +37,7 @@ export interface AdminOrganization {
   verification_status?: string | null
   is_verified: boolean
   public_visible: boolean
+  blocked?: boolean
   verification_comment?: string | null
   category?: string | null
   short_description?: string | null

@@ -147,7 +147,7 @@ export const AdminOrganizationsSection = () => {
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{org.name}</p>
                       <span className="text-xs uppercase text-muted-foreground">{org.verification_status}</span>
-                      {org.blocked && (
+                      {org.blocked === true && (
                         <span className="text-xs text-destructive">BLOCKED</span>
                       )}
                       {org.public_visible && (
@@ -185,7 +185,7 @@ export const AdminOrganizationsSection = () => {
                 <div className="mt-2 flex flex-wrap gap-2">
                   <select
                     className="h-9 rounded-md border border-input px-2 text-sm"
-                    value={org.verification_status}
+                    value={org.verification_status || ''}
                     onChange={(e) => handleStatusChange(org.id, e.target.value as any)}
                     disabled={loading}
                   >
@@ -193,7 +193,7 @@ export const AdminOrganizationsSection = () => {
                     <option value="verified">Verified</option>
                     <option value="rejected">Rejected</option>
                   </select>
-                  {org.blocked ? (
+                  {org.blocked === true ? (
                     <Button size="sm" variant="outline" onClick={() => handleBlock(org.id, false)} disabled={loading}>
                       Unblock
                     </Button>

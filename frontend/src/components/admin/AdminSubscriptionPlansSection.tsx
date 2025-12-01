@@ -208,7 +208,7 @@ export const AdminSubscriptionPlansSection = () => {
                             max_members: formData.get('max_members')
                               ? parseInt(formData.get('max_members') as string)
                               : undefined,
-                            analytics_level: (formData.get('analytics_level') as string) || undefined,
+                            analytics_level: (formData.get('analytics_level') as 'basic' | 'advanced') || undefined,
                             is_default: formData.get('is_default') === 'on',
                             is_active: formData.get('is_active') !== 'off',
                           })

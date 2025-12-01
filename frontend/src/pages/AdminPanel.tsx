@@ -11,7 +11,6 @@ import {
   listAiIntegrations,
   listDevTasks,
   listModerationOrganizations,
-  listSubscriptionPlans,
   runAiIntegrationCheck,
   updateAiIntegration,
   updateDevTask,
@@ -31,9 +30,6 @@ import {
   updateUserRole,
   blockUser,
   adminGetBusinessPublicUrl,
-  listAllOrganizations,
-  updateOrganizationStatus,
-  blockOrganization,
 } from '@/api/authService'
 import { BusinessQrCode } from '@/components/qr/BusinessQrCode'
 import type { AiIntegration, DevTask, ModerationOrganization, AdminUser } from '@/types/auth'
