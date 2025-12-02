@@ -48,6 +48,25 @@ async def public_details(slug: str) -> PublicOrganizationDetails:
     return await run_in_threadpool(get_public_organization_details_by_slug, slug)
 
 
+@public_router.get('/test', response_model=dict)
+async def test_search():
+    """Тестовый эндпоинт для проверки работы search_public_organizations"""
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        logger.info("Test endpoint called")
+        items, total = await run_in_threadpool(
+            search_public_organizations,
+            None, None, None, False, 5, 0, False
+        )
+        return {"status": "ok", "total": total, "items_count": len(items), "items": [{"id": str(item.id), "name": item.name} for item in items]}
+    except Exception as e:
+        import traceback
+        logger.error(f"Test endpoint error: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
+
 @public_router.get('/{organization_id}', response_model=PublicOrganizationDetails)
 async def public_details_by_id(organization_id: str) -> PublicOrganizationDetails:
     """Получить детали организации по ID (публичный API)."""
