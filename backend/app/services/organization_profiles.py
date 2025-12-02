@@ -220,30 +220,38 @@ def search_public_organizations(
 
         summaries: List[PublicOrganizationSummary] = []
         for row in rows:
-            gallery_items = _deserialize_list(row.get('gallery'))
-            main_image = None
-            if gallery_items:
-                item = gallery_items[0]
-                if isinstance(item, dict):
-                    main_image = item.get('url')
-            summaries.append(
-                PublicOrganizationSummary(
-                    id=str(row['id']),
-                    name=row['name'],
-                    slug=row['slug'],
-                    country=row['country'],
-                    city=row['city'],
-                    primary_category=row.get('primary_category'),
-                    is_verified=row['is_verified'],
-                    verification_status=row.get('verification_status'),
-                    short_description=row.get('short_description'),
-                    main_image_url=main_image,
+            try:
+                gallery_items = _deserialize_list(row.get('gallery'))
+                main_image = None
+                if gallery_items:
+                    item = gallery_items[0]
+                    if isinstance(item, dict):
+                        main_image = item.get('url')
+                summaries.append(
+                    PublicOrganizationSummary(
+                        id=str(row['id']),
+                        name=row['name'],
+                        slug=row['slug'],
+                        country=row.get('country'),
+                        city=row.get('city'),
+                        primary_category=row.get('primary_category'),
+                        is_verified=row.get('is_verified', False),
+                        verification_status=row.get('verification_status'),
+                        short_description=row.get('short_description'),
+                        main_image_url=main_image,
+                    )
                 )
-            )
+            except Exception as row_error:
+                logger.error(f"Error processing row {row.get('id', 'unknown')}: {row_error}", exc_info=True)
+                # Skip this row and continue
+                continue
+        
         logger.info(f"Found {total} organizations, returning {len(summaries)} items")
         return summaries, total
     except Exception as e:
         logger.error(f"Error in search_public_organizations: {e}", exc_info=True)
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise
 
 
