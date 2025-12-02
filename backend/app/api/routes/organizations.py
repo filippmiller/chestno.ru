@@ -66,7 +66,10 @@ async def public_search(
     offset: int = Query(default=0, ge=0),
 ) -> PublicOrganizationsResponse:
     import logging
+    import traceback
     logger = logging.getLogger(__name__)
+    
+    logger.info(f"public_search called: q={q}, country={country}, category={category}, verified_only={verified_only}, limit={limit}, offset={offset}")
     
     try:
         items, total = await run_in_threadpool(
@@ -79,12 +82,18 @@ async def public_search(
             offset,
             include_non_public,
         )
+        logger.info(f"public_search success: total={total}, items_count={len(items)}")
         return PublicOrganizationsResponse(items=items, total=total)
     except Exception as e:
-        logger.error(f"Error in public_search: {e}", exc_info=True)
+        error_msg = str(e)
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error in public_search: {error_msg}")
+        logger.error(f"Traceback: {error_traceback}")
         from fastapi import HTTPException, status
+        # Return error details in development, but keep it safe for production
+        detail = f"Failed to search organizations: {error_msg}"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to search organizations: {str(e)}"
+            detail=detail
         )
 
