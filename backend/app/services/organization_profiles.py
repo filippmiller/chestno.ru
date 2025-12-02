@@ -176,10 +176,11 @@ def search_public_organizations(
         where_clauses.append('o.country = %s')
         params.append(country)
     if category:
-        # Category is stored in organization_profiles, not in organizations table
-        # For now, we'll search in tags or skip category filter if not available
-        # TODO: Add category field to organization_profiles if needed
-        pass  # Category filtering temporarily disabled
+        # Category filtering: search in organization_profiles.tags
+        # Note: The category column doesn't exist yet in organization_profiles,
+        # so we search in tags field which may contain category information
+        where_clauses.append('COALESCE(p.tags, \'\') ILIKE %s')
+        params.append(f'%{category}%')
     if q:
         like = f'%{q}%'
         where_clauses.append(
@@ -197,7 +198,8 @@ def search_public_organizations(
 
         cur.execute(
             f'''
-            SELECT o.id, o.name, o.slug, o.country, o.city, NULL as primary_category,
+            SELECT o.id, o.name, o.slug, o.country, o.city, 
+                   NULL as primary_category,
                    o.is_verified, o.verification_status, p.short_description, p.gallery
             {base_query}
             WHERE {where_sql}
