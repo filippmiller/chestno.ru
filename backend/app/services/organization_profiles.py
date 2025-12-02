@@ -26,7 +26,12 @@ def _deserialize_list(raw):
         return []
     if isinstance(raw, list):
         return raw
-    return json.loads(raw)
+    if isinstance(raw, str):
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            return []
+    return []
 
 
 def _require_role(cur, organization_id: str, user_id: str, allowed_roles: set[str]) -> str:
