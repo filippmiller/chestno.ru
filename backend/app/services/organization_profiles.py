@@ -162,77 +162,89 @@ def search_public_organizations(
     offset: int,
     include_non_public: bool = False,  # For admin use
 ) -> Tuple[List[PublicOrganizationSummary], int]:
-    # Show verified organizations or organizations with public_visible = true
-    # Admin can override to see all organizations
-    if include_non_public:
-        where_clauses = []
-    else:
-        # Show organizations that are verified OR have public_visible = true
-        where_clauses = ["(o.verification_status = 'verified' OR o.public_visible = true)"]
-    params: list[Any] = []
-    if verified_only:
-        where_clauses.append("o.verification_status = 'verified'")
-    if country:
-        where_clauses.append('o.country = %s')
-        params.append(country)
-    if category:
-        # Category filtering: search in organization_profiles.tags
-        # Note: The category column doesn't exist yet in organization_profiles,
-        # so we search in tags field which may contain category information
-        where_clauses.append('COALESCE(p.tags, \'\') ILIKE %s')
-        params.append(f'%{category}%')
-    if q:
-        like = f'%{q}%'
-        where_clauses.append(
-            '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(p.tags, \'\') ILIKE %s)'
-        )
-        params.extend([like, like, like])
-    where_sql = ' AND '.join(where_clauses) if where_clauses else '1=1'
-    base_query = '''
-        FROM organizations o
-        LEFT JOIN organization_profiles p ON p.organization_id = o.id
-    '''
-    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
-        cur.execute(f'SELECT COUNT(*) {base_query} WHERE {where_sql}', params)
-        total = cur.fetchone()['count']
-
-        cur.execute(
-            f'''
-            SELECT o.id, o.name, o.slug, o.country, o.city, 
-                   NULL as primary_category,
-                   o.is_verified, o.verification_status, p.short_description, p.gallery
-            {base_query}
-            WHERE {where_sql}
-            ORDER BY o.is_verified DESC, o.created_at DESC
-            LIMIT %s OFFSET %s
-            ''',
-            params + [limit, offset],
-        )
-        rows = cur.fetchall()
-
-    summaries: List[PublicOrganizationSummary] = []
-    for row in rows:
-        gallery_items = _deserialize_list(row.get('gallery'))
-        main_image = None
-        if gallery_items:
-            item = gallery_items[0]
-            if isinstance(item, dict):
-                main_image = item.get('url')
-        summaries.append(
-            PublicOrganizationSummary(
-                id=str(row['id']),
-                name=row['name'],
-                slug=row['slug'],
-                country=row['country'],
-                city=row['city'],
-                primary_category=row.get('primary_category'),
-                is_verified=row['is_verified'],
-                verification_status=row.get('verification_status'),
-                short_description=row.get('short_description'),
-                main_image_url=main_image,
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Show verified organizations or organizations with public_visible = true
+        # Admin can override to see all organizations
+        if include_non_public:
+            where_clauses = []
+        else:
+            # Show organizations that are verified OR have public_visible = true
+            where_clauses = ["(o.verification_status = 'verified' OR o.public_visible = true)"]
+        params: list[Any] = []
+        if verified_only:
+            where_clauses.append("o.verification_status = 'verified'")
+        if country:
+            where_clauses.append('o.country = %s')
+            params.append(country)
+        if category:
+            # Category filtering: search in organization_profiles.tags
+            # Note: The category column doesn't exist yet in organization_profiles,
+            # so we search in tags field which may contain category information
+            where_clauses.append('COALESCE(p.tags, \'\') ILIKE %s')
+            params.append(f'%{category}%')
+        if q:
+            like = f'%{q}%'
+            where_clauses.append(
+                '(o.name ILIKE %s OR o.city ILIKE %s OR COALESCE(p.tags, \'\') ILIKE %s)'
             )
-        )
-    return summaries, total
+            params.extend([like, like, like])
+        where_sql = ' AND '.join(where_clauses) if where_clauses else '1=1'
+        base_query = '''
+            FROM organizations o
+            LEFT JOIN organization_profiles p ON p.organization_id = o.id
+        '''
+        
+        logger.info(f"Search query: WHERE {where_sql}, params: {params}, limit: {limit}, offset: {offset}")
+        
+        with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+            count_query = f'SELECT COUNT(*) {base_query} WHERE {where_sql}'
+            logger.debug(f"Count query: {count_query}")
+            cur.execute(count_query, params)
+            total = cur.fetchone()['count']
+
+            select_query = f'''
+                SELECT o.id, o.name, o.slug, o.country, o.city, 
+                       NULL as primary_category,
+                       o.is_verified, o.verification_status, p.short_description, p.gallery
+                {base_query}
+                WHERE {where_sql}
+                ORDER BY o.is_verified DESC, o.created_at DESC
+                LIMIT %s OFFSET %s
+            '''
+            logger.debug(f"Select query: {select_query}")
+            cur.execute(select_query, params + [limit, offset])
+            rows = cur.fetchall()
+
+        summaries: List[PublicOrganizationSummary] = []
+        for row in rows:
+            gallery_items = _deserialize_list(row.get('gallery'))
+            main_image = None
+            if gallery_items:
+                item = gallery_items[0]
+                if isinstance(item, dict):
+                    main_image = item.get('url')
+            summaries.append(
+                PublicOrganizationSummary(
+                    id=str(row['id']),
+                    name=row['name'],
+                    slug=row['slug'],
+                    country=row['country'],
+                    city=row['city'],
+                    primary_category=row.get('primary_category'),
+                    is_verified=row['is_verified'],
+                    verification_status=row.get('verification_status'),
+                    short_description=row.get('short_description'),
+                    main_image_url=main_image,
+                )
+            )
+        logger.info(f"Found {total} organizations, returning {len(summaries)} items")
+        return summaries, total
+    except Exception as e:
+        logger.error(f"Error in search_public_organizations: {e}", exc_info=True)
+        raise
 
 
 def get_public_organization_details_by_id(organization_id: str) -> PublicOrganizationDetails:
