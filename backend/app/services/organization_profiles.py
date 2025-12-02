@@ -171,6 +171,7 @@ def search_public_organizations(
     logger = logging.getLogger(__name__)
     
     try:
+        logger.info(f"search_public_organizations called with: q={q}, country={country}, category={category}, verified_only={verified_only}, limit={limit}, offset={offset}, include_non_public={include_non_public}")
         # Show verified organizations or organizations with public_visible = true
         # Admin can override to see all organizations
         if include_non_public:
