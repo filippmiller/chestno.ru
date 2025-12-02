@@ -162,8 +162,13 @@ def search_public_organizations(
     offset: int,
     include_non_public: bool = False,  # For admin use
 ) -> Tuple[List[PublicOrganizationSummary], int]:
-    # Only filter by public_visible if not admin override
-    where_clauses = [] if include_non_public else ['o.public_visible = true']
+    # Show verified organizations or organizations with public_visible = true
+    # Admin can override to see all organizations
+    if include_non_public:
+        where_clauses = []
+    else:
+        # Show organizations that are verified OR have public_visible = true
+        where_clauses = ["(o.verification_status = 'verified' OR o.public_visible = true)"]
     params: list[Any] = []
     if verified_only:
         where_clauses.append("o.verification_status = 'verified'")

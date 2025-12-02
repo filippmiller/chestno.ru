@@ -45,7 +45,7 @@ export const PublicOrganizationsCatalogPage = () => {
   useEffect(() => {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeNonPublic])
+  }, [])
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
