@@ -65,15 +65,26 @@ async def public_search(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> PublicOrganizationsResponse:
-    items, total = await run_in_threadpool(
-        search_public_organizations,
-        q,
-        country,
-        category,
-        verified_only,
-        limit,
-        offset,
-        include_non_public,
-    )
-    return PublicOrganizationsResponse(items=items, total=total)
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        items, total = await run_in_threadpool(
+            search_public_organizations,
+            q,
+            country,
+            category,
+            verified_only,
+            limit,
+            offset,
+            include_non_public,
+        )
+        return PublicOrganizationsResponse(items=items, total=total)
+    except Exception as e:
+        logger.error(f"Error in public_search: {e}", exc_info=True)
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search organizations: {str(e)}"
+        )
 
