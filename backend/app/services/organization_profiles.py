@@ -269,9 +269,10 @@ def get_public_organization_details_by_id(organization_id: str) -> PublicOrganiz
             SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
                    o.verification_status, p.tags,  -- Fixed: use p.tags instead of o.tags
                    p.short_description, p.long_description, p.production_description,
-                   p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
-                   p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
-                   p.quality_standards, p.buy_links,
+                   p.safety_and_quality, p.video_url, p.gallery, 
+                   NULL as category, NULL as founded_year,
+                   NULL as employee_count, NULL as factory_size, NULL as certifications, NULL as sustainability_practices,
+                   NULL as quality_standards, NULL as buy_links,
                    p.contact_email, p.contact_phone, p.contact_website, p.contact_address,
                    p.contact_telegram, p.contact_whatsapp, p.social_links
             FROM organizations o
@@ -345,9 +346,10 @@ def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDeta
             SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
                    o.verification_status, p.tags,
                    p.short_description, p.long_description, p.production_description,
-                   p.safety_and_quality, p.video_url, p.gallery, p.category, p.founded_year,
-                   p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
-                   p.quality_standards, p.buy_links,
+                   p.safety_and_quality, p.video_url, p.gallery, 
+                   NULL as category, NULL as founded_year,
+                   NULL as employee_count, NULL as factory_size, NULL as certifications, NULL as sustainability_practices,
+                   NULL as quality_standards, NULL as buy_links,
                    p.contact_email, p.contact_phone, p.contact_website, p.contact_address,
                    p.contact_telegram, p.contact_whatsapp, p.social_links
             FROM organizations o
