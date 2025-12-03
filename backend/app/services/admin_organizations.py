@@ -265,3 +265,164 @@ def block_organization(
                 'updated_at': row['updated_at'].isoformat() if row['updated_at'] else None,
             }
 
+
+def get_organization_details(organization_id: str, admin_user_id: str) -> dict:
+    """
+    Get full organization details including owners (admin only).
+    """
+    assert_platform_admin(admin_user_id)
+    
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Get organization and profile data
+            cur.execute(
+                '''
+                SELECT 
+                    o.id, o.name, o.slug, o.country, o.city, o.website_url, o.phone,
+                    o.verification_status, o.is_verified, o.public_visible,
+                    o.verification_comment, o.created_at, o.updated_at,
+                    p.short_description, p.long_description, p.production_description,
+                    p.safety_and_quality, p.video_url, p.tags,
+                    p.contact_email, p.contact_phone, p.contact_website, p.contact_address,
+                    p.contact_telegram, p.contact_whatsapp
+                FROM organizations o
+                LEFT JOIN organization_profiles p ON p.organization_id = o.id
+                WHERE o.id = %s
+                ''',
+                (organization_id,),
+            )
+            org = cur.fetchone()
+            if not org:
+                raise ValueError('Organization not found')
+            
+            # Get owners/members
+            cur.execute(
+                '''
+                SELECT 
+                    u.id, u.email, u.full_name, om.role
+                FROM organization_members om
+                JOIN app_users u ON u.id = om.user_id
+                WHERE om.organization_id = %s
+                ''',
+                (organization_id,),
+            )
+            members = cur.fetchall()
+            
+            return {
+                'organization': {
+                    'id': str(org['id']),
+                    'name': org['name'],
+                    'slug': org.get('slug'),
+                    'country': org.get('country'),
+                    'city': org.get('city'),
+                    'website_url': org.get('website_url'),
+                    'phone': org.get('phone'),
+                    'verification_status': org.get('verification_status'),
+                    'is_verified': org.get('is_verified', False),
+                    'public_visible': org.get('public_visible', False),
+                    'verification_comment': org.get('verification_comment'),
+                    'created_at': org['created_at'].isoformat() if org['created_at'] else None,
+                    'updated_at': org['updated_at'].isoformat() if org['updated_at'] else None,
+                },
+                'profile': {
+                    'short_description': org.get('short_description'),
+                    'long_description': org.get('long_description'),
+                    'production_description': org.get('production_description'),
+                    'safety_and_quality': org.get('safety_and_quality'),
+                    'video_url': org.get('video_url'),
+                    'tags': org.get('tags'),
+                    'contact_email': org.get('contact_email'),
+                    'contact_phone': org.get('contact_phone'),
+                    'contact_website': org.get('contact_website'),
+                    'contact_address': org.get('contact_address'),
+                    'contact_telegram': org.get('contact_telegram'),
+                    'contact_whatsapp': org.get('contact_whatsapp'),
+                },
+                'members': [
+                    {
+                        'id': str(m['id']),
+                        'email': m['email'],
+                        'full_name': m['full_name'],
+                        'role': m['role'],
+                    }
+                    for m in members
+                ],
+            }
+
+
+def update_organization_details(
+    organization_id: str,
+    admin_user_id: str,
+    payload: dict,
+) -> dict:
+    """
+    Update organization details (admin only).
+    Payload can contain fields for 'organization' and 'profile'.
+    """
+    assert_platform_admin(admin_user_id)
+    
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Update organization table
+            org_fields = []
+            org_params = []
+            
+            allowed_org_fields = ['name', 'slug', 'country', 'city', 'website_url', 'phone']
+            for field in allowed_org_fields:
+                if field in payload:
+                    org_fields.append(f'{field} = %s')
+                    org_params.append(payload[field])
+            
+            if org_fields:
+                org_fields.append('updated_at = now()')
+                org_params.append(organization_id)
+                cur.execute(
+                    f'''
+                    UPDATE organizations
+                    SET {', '.join(org_fields)}
+                    WHERE id = %s
+                    ''',
+                    org_params,
+                )
+            
+            # Update profile table
+            # First check if profile exists, if not create it
+            cur.execute('SELECT 1 FROM organization_profiles WHERE organization_id = %s', (organization_id,))
+            if not cur.fetchone():
+                cur.execute(
+                    'INSERT INTO organization_profiles (organization_id) VALUES (%s)',
+                    (organization_id,),
+                )
+            
+            profile_fields = []
+            profile_params = []
+            
+            allowed_profile_fields = [
+                'short_description', 'long_description', 'production_description',
+                'safety_and_quality', 'video_url', 'tags',
+                'contact_email', 'contact_phone', 'contact_website', 'contact_address',
+                'contact_telegram', 'contact_whatsapp'
+            ]
+            
+            for field in allowed_profile_fields:
+                if field in payload:
+                    profile_fields.append(f'{field} = %s')
+                    profile_params.append(payload[field])
+            
+            if profile_fields:
+                profile_fields.append('updated_at = now()')
+                profile_params.append(organization_id)
+                cur.execute(
+                    f'''
+                    UPDATE organization_profiles
+                    SET {', '.join(profile_fields)}
+                    WHERE organization_id = %s
+                    ''',
+                    profile_params,
+                )
+            
+            conn.commit()
+            
+            return get_organization_details(organization_id, admin_user_id)
+
+

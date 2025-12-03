@@ -6,7 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
 
 from app.api.routes.auth import get_current_user_id
-from app.services.admin_organizations import list_all_organizations, update_organization_status, block_organization
+from app.services.admin_organizations import (
+    list_all_organizations,
+    update_organization_status,
+    block_organization,
+    get_organization_details,
+    update_organization_details,
+)
 
 router = APIRouter(prefix='/api/admin/organizations', tags=['admin-organizations'])
 
@@ -98,4 +104,51 @@ async def admin_block_organization(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Failed to block/unblock organization: {str(e)}')
+
+
+@router.get('/{organization_id}/details')
+async def admin_get_organization_details(
+    organization_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> dict:
+    """
+    Get full organization details including owners (admin only).
+    """
+    try:
+        return await run_in_threadpool(
+            get_organization_details,
+            organization_id,
+            current_user_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to get organization details: {str(e)}')
+
+
+@router.patch('/{organization_id}/details')
+async def admin_update_organization_details(
+    organization_id: str,
+    payload: dict,
+    current_user_id: str = Depends(get_current_user_id),
+) -> dict:
+    """
+    Update organization details (admin only).
+    """
+    try:
+        return await run_in_threadpool(
+            update_organization_details,
+            organization_id,
+            current_user_id,
+            payload,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to update organization details: {str(e)}')
+
 

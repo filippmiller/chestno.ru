@@ -53,7 +53,7 @@ const ADMIN_TABS = [
   { id: 'pending', label: 'Pending Registrations' },
   { id: 'reviews', label: 'Reviews Moderation' },
   { id: 'users', label: 'Users & Roles' },
-  { id: 'organizations', label: 'Organizations' },
+  { id: 'businesses', label: 'Businesses' },
   { id: 'subscriptions', label: 'Subscription Plans' },
   { id: 'qr', label: 'Business QR Codes' },
   { id: 'ai', label: 'AI Integrations' },
@@ -91,7 +91,7 @@ export const AdminPanelPage = () => {
       {activeTab === 'pending' && <PendingRegistrationsSection />}
       {activeTab === 'reviews' && <AdminReviewsModerationSection />}
       {activeTab === 'users' && <AdminUsersManagementSection />}
-      {activeTab === 'organizations' && <AdminOrganizationsSection />}
+      {activeTab === 'businesses' && <AdminOrganizationsSection />}
       {activeTab === 'subscriptions' && <AdminSubscriptionPlansSection />}
       {activeTab === 'qr' && <AdminBusinessQrSection />}
       {activeTab === 'ai' && <AiIntegrationsSection />}

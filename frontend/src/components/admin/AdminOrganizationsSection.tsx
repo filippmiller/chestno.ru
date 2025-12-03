@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { BusinessDetailsDialog } from '@/components/admin/BusinessDetailsDialog'
 import type { AdminOrganization } from '@/types/auth'
 
 export const AdminOrganizationsSection = () => {
@@ -18,6 +19,8 @@ export const AdminOrganizationsSection = () => {
     category?: string
   }>({})
   const [total, setTotal] = useState(0)
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
 
   const loadOrganizations = useCallback(async () => {
     setLoading(true)
@@ -82,8 +85,8 @@ export const AdminOrganizationsSection = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Organizations Management</CardTitle>
-        <CardDescription>Управление всеми организациями на платформе.</CardDescription>
+        <CardTitle>Businesses Management</CardTitle>
+        <CardDescription>Управление всеми бизнесами на платформе.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
@@ -135,7 +138,7 @@ export const AdminOrganizationsSection = () => {
         )}
 
         <div className="text-sm text-muted-foreground">
-          Всего организаций: {total}
+          Всего бизнесов: {total}
         </div>
 
         <div className="space-y-3">
@@ -207,11 +210,28 @@ export const AdminOrganizationsSection = () => {
                       View Profile
                     </a>
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedOrgId(org.id)
+                      setDetailsDialogOpen(true)
+                    }}
+                  >
+                    Details
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
+
+        <BusinessDetailsDialog
+          organizationId={selectedOrgId}
+          open={detailsDialogOpen}
+          onOpenChange={setDetailsDialogOpen}
+          onUpdate={loadOrganizations}
+        />
       </CardContent>
     </Card>
   )

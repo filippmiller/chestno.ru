@@ -61,26 +61,26 @@ export const login = async (email: string, password: string) => {
   console.log('[authService.login] URL = /api/auth/login')
   console.log('[authService.login] Full URL will be:', httpClient.defaults.baseURL ? `${httpClient.defaults.baseURL}/api/auth/login` : '/api/auth/login')
   console.log('[authService.login] Email:', email)
-  
+
   try {
     const loginUrl = '/api/auth/login'
     const loginPayload = { email, password }
-    
+
     console.log('[authService.login] Calling httpClient.post...')
     console.log('[authService.login] URL:', loginUrl)
     console.log('[authService.login] baseURL:', httpClient.defaults.baseURL || '(empty)')
-    console.log('[authService.login] Full URL will be:', 
-      httpClient.defaults.baseURL 
+    console.log('[authService.login] Full URL will be:',
+      httpClient.defaults.baseURL
         ? `${httpClient.defaults.baseURL}${loginUrl}`
         : typeof window !== 'undefined'
           ? `${window.location.origin}${loginUrl}`
           : loginUrl
     )
     console.log('[authService.login] Payload:', { email, passwordLength: password.length })
-    
+
     const requestPromise = httpClient.post<LoginResponse>(loginUrl, loginPayload)
     console.log('[authService.login] Request promise created, awaiting response...')
-    
+
     const { data } = await requestPromise
     console.log('[authService.login] Response received successfully')
     console.log('[authService.login] Response data keys:', Object.keys(data))
@@ -89,7 +89,7 @@ export const login = async (email: string, password: string) => {
     console.error('[authService.login] HTTP error occurred')
     console.error('[authService.login] Error type:', error?.constructor?.name)
     console.error('[authService.login] Error message:', error instanceof Error ? error.message : String(error))
-    
+
     if (axios.isAxiosError(error)) {
       console.error('[authService.login] Axios error details:', {
         status: error.response?.status,
@@ -101,7 +101,7 @@ export const login = async (email: string, password: string) => {
         headers: error.config?.headers,
         request: error.request ? 'Request object exists' : 'No request object',
       })
-      
+
       if (error.request && !error.response) {
         console.error('[authService.login] Request was made but no response received!')
         console.error('[authService.login] This usually means: network error, CORS issue, or server not reachable')
@@ -516,5 +516,16 @@ export const adminCreatePlan = async (payload: {
 
 export const adminUpdatePlan = async (planId: string, payload: Partial<SubscriptionPlan>) => {
   const { data } = await httpClient.patch<SubscriptionPlan>(`/api/admin/subscriptions/plans/${planId}`, payload)
+  return data
+}
+
+// Admin Organization Details
+export const getAdminOrganizationDetails = async (organizationId: string) => {
+  const { data } = await httpClient.get(`/api/admin/organizations/${organizationId}/details`)
+  return data
+}
+
+export const updateAdminOrganizationDetails = async (organizationId: string, payload: any) => {
+  const { data } = await httpClient.patch(`/api/admin/organizations/${organizationId}/details`, payload)
   return data
 }
