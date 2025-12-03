@@ -60,6 +60,12 @@ def _fetch_session(cur, user_id: str) -> SessionResponse:
     platform_roles_rows = cur.fetchall()
     platform_roles = [row['role'] for row in platform_roles_rows]
 
+    # Also check app_profiles for admin role (Auth V2)
+    cur.execute("SELECT role FROM app_profiles WHERE id = %s AND role = 'admin'", (user_id,))
+    if cur.fetchone():
+        if 'platform_admin' not in platform_roles:
+            platform_roles.append('platform_admin')
+
     return SessionResponse(
         user=user_row,
         organizations=organizations,
