@@ -44,6 +44,7 @@ def get_table_columns(user_id: str, table_name: str) -> List[Dict[str, Any]]:
     assert_platform_admin(user_id)
     table_name = _validate_identifier(table_name)
     with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        # Use to_regclass() which returns NULL instead of throwing an error if table doesn't exist
         cur.execute(
             '''
             SELECT
@@ -58,7 +59,7 @@ def get_table_columns(user_id: str, table_name: str) -> List[Dict[str, Any]]:
                     FROM pg_constraint pc
                     JOIN pg_attribute pa ON pa.attrelid = pc.conrelid AND pa.attnum = ANY(pc.conkey)
                     WHERE pc.contype = 'p'
-                      AND pc.conrelid = format('public.%s', %s)::regclass
+                      AND pc.conrelid = to_regclass(format('public.%%I', %s))
                       AND pa.attname = col.column_name
                 ) AS is_primary_key,
                 EXISTS (
@@ -66,17 +67,17 @@ def get_table_columns(user_id: str, table_name: str) -> List[Dict[str, Any]]:
                     FROM pg_constraint pc
                     JOIN pg_attribute pa ON pa.attrelid = pc.conrelid AND pa.attnum = ANY(pc.conkey)
                     WHERE pc.contype = 'f'
-                      AND pc.conrelid = format('public.%s', %s)::regclass
+                      AND pc.conrelid = to_regclass(format('public.%%I', %s))
                       AND pa.attname = col.column_name
                 ) AS is_foreign_key
             FROM information_schema.columns col
             LEFT JOIN pg_catalog.pg_description pgd
-              ON pgd.objoid = format('public.%s', %s)::regclass
+              ON pgd.objoid = to_regclass(format('public.%%I', %s))
              AND pgd.objsubid = col.ordinal_position
             WHERE col.table_schema = 'public' AND col.table_name = %s
             ORDER BY col.ordinal_position
             ''',
-            (table_name, table_name, table_name),
+            (table_name, table_name, table_name, table_name),
         )
         columns = cur.fetchall()
         if not columns:
