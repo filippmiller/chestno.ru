@@ -658,6 +658,90 @@
         "api": ["authService.listAdminImports"]
       },
       "createdAt": "2026-01-18"
+    },
+    {
+      "id": "comp-ui-select",
+      "domain": "frontend",
+      "type": "component",
+      "name": "select.tsx",
+      "keywords": ["select", "dropdown", "ui", "shadcn", "radix"],
+      "file": "domains/frontend/components.md",
+      "anchor": "#selection--dropdowns",
+      "summary": "Radix UI based dropdown select component",
+      "references": {
+        "file": ["frontend/src/components/ui/select.tsx"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "comp-ui-table",
+      "domain": "frontend",
+      "type": "component",
+      "name": "table.tsx",
+      "keywords": ["table", "data", "grid", "ui", "shadcn"],
+      "file": "domains/frontend/components.md",
+      "anchor": "#layout",
+      "summary": "Data table components for tabular data display",
+      "references": {
+        "file": ["frontend/src/components/ui/table.tsx"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "comp-ui-progress",
+      "domain": "frontend",
+      "type": "component",
+      "name": "progress.tsx",
+      "keywords": ["progress", "bar", "loading", "ui", "shadcn", "radix"],
+      "file": "domains/frontend/components.md",
+      "anchor": "#feedback",
+      "summary": "Progress bar component with percentage indicator",
+      "references": {
+        "file": ["frontend/src/components/ui/progress.tsx"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "comp-ui-dropdown-menu",
+      "domain": "frontend",
+      "type": "component",
+      "name": "dropdown-menu.tsx",
+      "keywords": ["dropdown", "menu", "context", "ui", "shadcn", "radix"],
+      "file": "domains/frontend/components.md",
+      "anchor": "#selection--dropdowns",
+      "summary": "Full dropdown menu with items, separators, and shortcuts",
+      "references": {
+        "file": ["frontend/src/components/ui/dropdown-menu.tsx"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "comp-ui-collapsible",
+      "domain": "frontend",
+      "type": "component",
+      "name": "collapsible.tsx",
+      "keywords": ["collapsible", "expand", "collapse", "accordion", "ui", "radix"],
+      "file": "domains/frontend/components.md",
+      "anchor": "#layout",
+      "summary": "Expandable/collapsible panel component",
+      "references": {
+        "file": ["frontend/src/components/ui/collapsible.tsx"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "deploy-docker-react19",
+      "domain": "deployment",
+      "type": "pattern",
+      "name": "React 19 Docker Build",
+      "keywords": ["docker", "react19", "legacy-peer-deps", "npmrc", "railway"],
+      "file": "domains/deployment/infrastructure.md",
+      "anchor": "#docker-configuration",
+      "summary": "Multi-stage Docker build with --legacy-peer-deps for React 19 compatibility",
+      "references": {
+        "files": ["Dockerfile", "frontend/.npmrc"]
+      },
+      "createdAt": "2026-01-18"
     }
   ]
 }

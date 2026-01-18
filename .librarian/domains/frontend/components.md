@@ -20,14 +20,23 @@ and custom feature components.
 - **input.tsx** - Text input fields
 - **textarea.tsx** - Multi-line text inputs
 - **label.tsx** - Form labels
-- **checkbox.tsx** - Form checkboxes
+- **checkbox.tsx** - Radix UI checkbox (uses `onCheckedChange` not `onChange`)
 - **badge.tsx** - Tag/label badges
+
+### Selection & Dropdowns
+- **select.tsx** - Dropdown select component (Select, SelectTrigger, SelectValue, SelectContent, SelectItem)
+- **dropdown-menu.tsx** - Full dropdown menu with items, separators, labels, shortcuts
 
 ### Layout
 - **card.tsx** - Card container (CardHeader, CardTitle, CardDescription, CardContent, CardFooter)
 - **dialog.tsx** - Modal dialogs (Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter)
 - **tabs.tsx** - Tab navigation (Tabs, TabsList, TabsTrigger, TabsContent)
 - **alert.tsx** - Alert/notification boxes with variants (default, destructive)
+- **collapsible.tsx** - Collapsible/expandable panels (Collapsible, CollapsibleTrigger, CollapsibleContent)
+- **table.tsx** - Data table components (Table, TableHeader, TableBody, TableRow, TableHead, TableCell)
+
+### Feedback
+- **progress.tsx** - Progress bar with percentage indicator
 
 ### Form Integration
 - **form.tsx** - React Hook Form integration with error handling
