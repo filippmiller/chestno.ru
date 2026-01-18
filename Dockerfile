@@ -2,7 +2,7 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY frontend/ ./
 # Build args for Vite environment variables
 ARG VITE_SUPABASE_URL
@@ -35,3 +35,4 @@ WORKDIR /app/backend
 ENTRYPOINT ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0"]
 CMD ["--port", "8080"]
 
+# Force rebuild
