@@ -742,6 +742,78 @@
         "files": ["Dockerfile", "frontend/.npmrc"]
       },
       "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-app_profiles",
+      "domain": "database",
+      "type": "table",
+      "name": "app_profiles",
+      "keywords": ["profile", "auth", "role", "admin", "session", "cookie", "auth_v2"],
+      "file": "domains/database/tables.md",
+      "anchor": "#app_profiles",
+      "summary": "User profiles for Auth V2 with role-based access (admin/business_owner/user)",
+      "references": {
+        "backend": ["backend/app/services/app_profiles.py", "backend/app/services/admin_guard.py"],
+        "migrations": ["supabase/migrations/0026_auth_v2_tables.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-sessions",
+      "domain": "database",
+      "type": "table",
+      "name": "sessions",
+      "keywords": ["session", "cookie", "auth", "token", "refresh", "auth_v2"],
+      "file": "domains/database/tables.md",
+      "anchor": "#sessions",
+      "summary": "Cookie-based session storage for Auth V2 authentication",
+      "references": {
+        "backend": ["backend/app/services/sessions.py", "backend/app/core/session_deps.py"],
+        "migrations": ["supabase/migrations/0026_auth_v2_tables.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "gotcha-admin-role-check",
+      "domain": "admin",
+      "type": "gotcha",
+      "name": "Admin Role Check Pattern",
+      "keywords": ["admin", "role", "platform_roles", "app_profiles", "403", "moderator"],
+      "file": "domains/admin/panel.md",
+      "anchor": "#1-admin-role-checks-must-check-both-tables",
+      "summary": "Must check both app_profiles.role AND platform_roles for admin access",
+      "references": {
+        "backend": ["backend/app/services/moderation.py", "backend/app/services/admin_guard.py"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "gotcha-import-jobs-columns",
+      "domain": "admin",
+      "type": "gotcha",
+      "name": "import_jobs Column Names",
+      "keywords": ["import", "column", "source_filename", "original_filename", "500"],
+      "file": "domains/admin/panel.md",
+      "anchor": "#2-import_jobs-column-name",
+      "summary": "Use source_filename not original_filename in import_jobs queries",
+      "references": {
+        "backend": ["backend/app/api/routes/admin_imports.py"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "gotcha-org-contact-email",
+      "domain": "admin",
+      "type": "gotcha",
+      "name": "contact_email Table Location",
+      "keywords": ["contact_email", "organizations", "organization_profiles", "500"],
+      "file": "domains/admin/panel.md",
+      "anchor": "#3-organizations-vs-organization_profiles-columns",
+      "summary": "contact_email is on organization_profiles table, not organizations",
+      "references": {
+        "backend": ["backend/app/services/admin_organizations.py"]
+      },
+      "createdAt": "2026-01-18"
     }
   ]
 }

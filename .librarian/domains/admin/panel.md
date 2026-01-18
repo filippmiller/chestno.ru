@@ -369,3 +369,64 @@ All admin route files updated to use cookie-based auth:
 - admin_dashboard.py
 - dev_tasks.py
 - subscriptions.py
+
+---
+
+## Common Gotchas (Bug Fixes Log)
+
+> Updated: 2026-01-18
+
+### 1. Admin Role Checks Must Check Both Tables
+
+**Problem:** Moderation endpoints returned 403 for admins.
+
+**Root Cause:** `moderation.py` only checked `platform_roles` table, but Auth V2 uses `app_profiles.role`.
+
+**Fix:** Check both:
+```python
+# Check app_profiles.role first (Auth V2)
+cur.execute("SELECT 1 FROM app_profiles WHERE id = %s AND role = 'admin'", (user_id,))
+if cur.fetchone():
+    return  # Is admin
+
+# Fall back to platform_roles (legacy)
+cur.execute("SELECT role FROM platform_roles WHERE user_id = %s AND role = ANY(%s)",
+            (user_id, list(MODERATOR_ROLES)))
+```
+
+### 2. import_jobs Column Name
+
+**Problem:** `/api/admin/imports` returned 500.
+
+**Root Cause:** Code used `j.original_filename` but table column is `source_filename`.
+
+**Fix:** Use correct column name `j.source_filename` in SQL queries.
+
+### 3. organizations vs organization_profiles Columns
+
+**Problem:** `/api/admin/organizations` search returned 500.
+
+**Root Cause:** Code searched `o.contact_email` but `contact_email` is on `organization_profiles` (p), not `organizations` (o).
+
+**Fix:** Use `p.contact_email` in search queries (must JOIN organization_profiles).
+
+### 4. FastAPI Route Trailing Slashes
+
+**Problem:** `/api/admin/dev-tasks` returned 404.
+
+**Root Cause:** Route defined as `@router.get('/')` requires trailing slash.
+
+**Fix:** Use `@router.get('')` for routes without trailing slash requirement.
+
+### 5. Service Worker MIME Type
+
+**Problem:** Service Worker registration failed with MIME type error.
+
+**Root Cause:** Backend served HTML (fallback) for `/sw.js` instead of JavaScript.
+
+**Fix:** Add dedicated route in `main.py`:
+```python
+@app.get('/sw.js', include_in_schema=False)
+async def serve_service_worker():
+    return Response(content=sw_content, media_type='application/javascript')
+```

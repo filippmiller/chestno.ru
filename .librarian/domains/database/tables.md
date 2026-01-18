@@ -29,8 +29,39 @@ Row Level Security (RLS) is enabled on all tables except `login_throttle`.
 
 **RLS:** Users can view only their own profile; platform admins have full access.
 
+### app_profiles
+**Purpose:** User profiles for Auth V2 cookie-based authentication
+**File:** `supabase/migrations/0026_auth_v2_tables.sql`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | References auth.users(id), CASCADE |
+| email | text | NOT NULL |
+| role | text | CHECK: 'admin', 'business_owner', 'user' |
+| display_name | text | |
+| avatar_url | text | |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
+
+**RLS:** Users read/update own profile. Admins can read all.
+
+> **GOTCHA:** Admin role checks must query BOTH `app_profiles.role='admin'` AND `platform_roles` table for backward compatibility. See moderation.py `_ensure_moderator()`.
+
+### sessions
+**Purpose:** Cookie-based session storage for Auth V2
+**File:** `supabase/migrations/0026_auth_v2_tables.sql`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | |
+| user_id | uuid | References app_profiles(id), CASCADE |
+| refresh_token_hash | text | NOT NULL |
+| expires_at | timestamptz | NOT NULL |
+| created_at | timestamptz | |
+| last_used_at | timestamptz | |
+
 ### platform_roles
-**Purpose:** Platform-level administrative roles
+**Purpose:** Platform-level administrative roles (LEGACY - use app_profiles.role for new code)
 **File:** `supabase/migrations/0001_initial.sql`
 
 | Column | Type | Notes |
