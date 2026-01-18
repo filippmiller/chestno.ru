@@ -146,7 +146,7 @@ async def list_all_imports(
                 SELECT
                     j.id, j.organization_id, o.name as org_name,
                     j.created_by, u.email as creator_email,
-                    j.source_type, j.original_filename, j.status,
+                    j.source_type, j.source_filename, j.status,
                     j.total_rows, j.processed_rows, j.successful_rows, j.failed_rows,
                     j.created_at, j.updated_at
                 FROM import_jobs j
@@ -286,7 +286,7 @@ async def get_import_details(
                 SELECT
                     j.id, j.organization_id, o.name as org_name,
                     j.created_by, u.email as creator_email,
-                    j.source_type, j.original_filename, j.status,
+                    j.source_type, j.source_filename, j.status,
                     j.total_rows, j.processed_rows, j.successful_rows, j.failed_rows,
                     j.created_at, j.updated_at
                 FROM import_jobs j

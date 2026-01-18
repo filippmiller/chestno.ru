@@ -47,7 +47,7 @@ def list_all_organizations(
             count_params = []
             
             if search:
-                count_query += ' AND (o.name ILIKE %s OR o.slug ILIKE %s OR o.contact_email ILIKE %s)'
+                count_query += ' AND (o.name ILIKE %s OR o.slug ILIKE %s OR p.contact_email ILIKE %s)'
                 search_pattern = f'%{search}%'
                 count_params.extend([search_pattern, search_pattern, search_pattern])
             
@@ -80,7 +80,7 @@ def list_all_organizations(
             params = []
             
             if search:
-                query += ' AND (o.name ILIKE %s OR o.slug ILIKE %s OR o.contact_email ILIKE %s)'
+                query += ' AND (o.name ILIKE %s OR o.slug ILIKE %s OR p.contact_email ILIKE %s)'
                 search_pattern = f'%{search}%'
                 params.extend([search_pattern, search_pattern, search_pattern])
             
