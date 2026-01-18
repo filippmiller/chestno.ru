@@ -10,6 +10,22 @@ MODERATOR_ROLES = ('platform_admin', 'moderator')
 
 
 def _ensure_moderator(cur, user_id: str) -> None:
+    """
+    Check if user has moderator access.
+    Checks both app_profiles.role (Auth V2) and platform_roles table (legacy).
+    """
+    # Check app_profiles.role (Auth V2) - admins have moderator access
+    cur.execute(
+        '''
+        SELECT 1 FROM app_profiles
+        WHERE id = %s AND role = 'admin'
+        ''',
+        (user_id,),
+    )
+    if cur.fetchone():
+        return  # User is admin in app_profiles
+
+    # Check platform_roles table (legacy)
     cur.execute(
         '''
         SELECT role FROM platform_roles

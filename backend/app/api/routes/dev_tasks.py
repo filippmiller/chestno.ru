@@ -6,7 +6,7 @@ from app.services import dev_tasks
 router = APIRouter(prefix='/api/admin/dev-tasks', tags=['admin-dev'])
 
 
-@router.get('/')
+@router.get('')
 async def list_tasks(
     request: Request,
     status_filter: str | None = Query(default=None, alias='status'),
@@ -24,7 +24,7 @@ async def list_tasks(
     return dev_tasks.list_tasks(current_user_id, filters, limit, offset)
 
 
-@router.post('/')
+@router.post('')
 async def create_task(request: Request, payload: dict, current_user_id: str = Depends(get_current_user_id_from_session)):
     return dev_tasks.create_task(current_user_id, payload)
 

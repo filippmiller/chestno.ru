@@ -6,7 +6,7 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.core.scheduler import start_scheduler, stop_scheduler
@@ -154,7 +154,16 @@ def create_app() -> FastAPI:
         static_assets_path = frontend_dist_path / 'assets'
         if static_assets_path.exists():
             app.mount('/assets', StaticFiles(directory=str(static_assets_path)), name='assets')
-        
+
+        # Serve service worker with correct MIME type
+        @app.get('/sw.js', include_in_schema=False)
+        async def serve_service_worker():
+            sw_path = frontend_dist_path / 'sw.js'
+            if sw_path.exists():
+                with open(sw_path, 'r', encoding='utf-8') as f:
+                    return Response(content=f.read(), media_type='application/javascript')
+            return HTMLResponse(status_code=404, content='Service worker not found')
+
         # Для всех остальных путей (кроме API) отдаем index.html (SPA routing)
         @app.get('/{full_path:path}', include_in_schema=False)
         async def serve_frontend(full_path: str):
