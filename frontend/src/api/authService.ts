@@ -418,7 +418,7 @@ export interface LinkedAccount {
 }
 
 export const getLinkedAccounts = async () => {
-  const { data } = await httpClient.get<LinkedAccount[]>('/api/auth/linked-accounts')
+  const { data } = await httpClient.get<LinkedAccount[]>('/api/auth/v2/linked-accounts')
   return data
 }
 

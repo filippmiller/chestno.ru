@@ -568,3 +568,44 @@ async def get_session_v2(
         },
     }
 
+
+@router.get('/linked-accounts')
+async def get_linked_accounts_v2(
+    current_user: dict = Depends(get_current_user_from_session),
+) -> list[dict]:
+    """
+    Returns list of linked social accounts for current user.
+    Queries auth_providers table for OAuth connections.
+    """
+    from app.core.db import get_connection
+    from psycopg.rows import dict_row
+
+    user_id = current_user['id']
+
+    try:
+        with get_connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    '''
+                    SELECT provider, provider_user_id, email, created_at
+                    FROM auth_providers
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC
+                    ''',
+                    (user_id,),
+                )
+                accounts = cur.fetchall()
+                return [
+                    {
+                        'provider': row['provider'],
+                        'provider_user_id': row['provider_user_id'],
+                        'email': row['email'],
+                        'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                    }
+                    for row in accounts
+                ]
+    except Exception as e:
+        logger.error(f'Failed to get linked accounts: {e}')
+        # Return empty list if table doesn't exist or other error
+        return []
+
