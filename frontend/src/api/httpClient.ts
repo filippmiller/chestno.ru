@@ -133,14 +133,17 @@ httpClient.interceptors.response.use(
     return response
   },
   (error) => {
-    console.error('[httpClient] API error:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: error.config?.url,
-      method: error.config?.method,
-      data: error.response?.data,
-    })
+    // Only log non-401 errors (401 is expected for unauthenticated users)
+    if (error.response?.status !== 401) {
+      console.error('[httpClient] API error:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.response?.data,
+      })
+    }
     return Promise.reject(error)
   },
 )

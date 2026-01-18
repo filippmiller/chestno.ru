@@ -58,7 +58,10 @@ export function AuthProviderV2({ children }: { children: ReactNode }) {
             setStatus('authenticated')
             console.log('[AuthProviderV2] App user data loaded:', data.user.email)
         } catch (error: any) {
-            console.error('[AuthProviderV2] Failed to fetch app user data:', error)
+            // Only log non-401 errors (401 is expected when not authenticated)
+            if (error?.response?.status !== 401) {
+                console.error('[AuthProviderV2] Failed to fetch app user data:', error)
+            }
             setStatus('unauthenticated')
             setUser(null)
             setRole(null)
