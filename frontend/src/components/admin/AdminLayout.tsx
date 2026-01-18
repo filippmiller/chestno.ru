@@ -18,7 +18,6 @@ import {
   CreditCard,
   QrCode,
   X,
-  Factory,
 } from 'lucide-react'
 
 import { useAuthV2 } from '@/auth/AuthProviderV2'

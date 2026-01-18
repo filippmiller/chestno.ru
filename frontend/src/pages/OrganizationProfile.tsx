@@ -24,9 +24,9 @@ interface SocialLink {
 
 interface CertificationItem {
   name: string
-  issuer?: string
-  valid_until?: string
-  link?: string
+  issuer?: string | null
+  valid_until?: string | null
+  link?: string | null
 }
 
 interface BuyLinkItem {
@@ -135,7 +135,7 @@ export const OrganizationProfilePage = () => {
           tags: profile?.tags ?? '',
           language: profile?.language ?? 'ru',
           galleryInput: profile?.gallery
-            ? profile.gallery.map((item: { url: string; caption?: string }) => (item.caption ? `${item.url} | ${item.caption}` : item.url)).join('\n')
+            ? profile.gallery.map((item: { url: string; caption?: string | null }) => (item.caption ? `${item.url} | ${item.caption}` : item.url)).join('\n')
             : '',
           founded_year: profile?.founded_year ?? undefined,
           employee_count: profile?.employee_count ?? undefined,

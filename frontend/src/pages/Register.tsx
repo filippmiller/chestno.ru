@@ -373,7 +373,7 @@ export const RegisterPage = () => {
                   <FormItem>
                     <FormControl>
                       <div className="flex items-center gap-3 rounded-lg border border-dashed border-border p-3">
-                        <Checkbox checked={field.value} onChange={(event) => field.onChange(event.target.checked)} />
+                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                         <p className="text-sm text-muted-foreground">
                           Я подтверждаю честность данных и принимаю условия сервиса и политику конфиденциальности.
                         </p>

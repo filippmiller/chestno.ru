@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
-  Download,
   FileSpreadsheet,
   Loader2,
   RefreshCw,
@@ -38,12 +37,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import type {
   ImportJobAdmin,

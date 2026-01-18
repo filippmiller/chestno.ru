@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -58,11 +58,6 @@ const ADMIN_TABS = [
   { id: 'qr', label: 'Business QR Codes' },
   { id: 'ai', label: 'AI Integrations' },
   { id: 'dev', label: 'Dev / To-Do' },
-]
-
-const ADMIN_LINKS = [
-  { href: '/admin/db', label: 'Database Explorer' },
-  { href: '/admin/imports', label: 'Imports Catalog' },
 ]
 
 export const AdminPanelPage = () => {

@@ -88,6 +88,18 @@ export interface SocialLink {
   url: string
 }
 
+export interface CertificationItem {
+  name: string
+  issuer?: string | null
+  valid_until?: string | null
+  link?: string | null
+}
+
+export interface BuyLinkItem {
+  label: string
+  url: string
+}
+
 export interface OrganizationProfile {
   id: string
   organization_id: string
@@ -99,6 +111,15 @@ export interface OrganizationProfile {
   gallery: Array<{ url: string; caption?: string | null }>
   tags?: string | null
   language: string
+  // Advanced metadata
+  founded_year?: number | null
+  employee_count?: number | null
+  factory_size?: string | null
+  category?: string | null
+  sustainability_practices?: string | null
+  quality_standards?: string | null
+  certifications?: CertificationItem[]
+  buy_links?: BuyLinkItem[]
   // Contacts
   contact_email?: string | null
   contact_phone?: string | null
@@ -471,18 +492,6 @@ export interface PublicOrganizationSummary {
 export interface PublicOrganizationsResponse {
   items: PublicOrganizationSummary[]
   total: number
-}
-
-export interface CertificationItem {
-  name: string
-  issuer?: string | null
-  valid_until?: string | null
-  link?: string | null
-}
-
-export interface BuyLinkItem {
-  label: string
-  url: string
 }
 
 export interface PublicOrganizationDetails extends PublicOrganizationProfile {

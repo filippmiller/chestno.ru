@@ -2,7 +2,9 @@
  * Admin import API service for managing bulk imports.
  */
 
-import api from './axios'
+import axios from 'axios'
+
+const api = axios
 import type {
   AdminImportsListResponse,
   AdminImportDetailsResponse,

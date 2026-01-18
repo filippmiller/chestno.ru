@@ -344,7 +344,7 @@ export const OrganizationPostEditPage = () => {
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
-                      <Checkbox checked={field.value} onChange={(e) => field.onChange(e.target.checked)} disabled={loading} />
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={loading} />
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel>Закрепить пост</FormLabel>

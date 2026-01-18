@@ -42,11 +42,6 @@ export function ImportFieldMapper({ mappingInfo, onSave, loading }: ImportFieldM
     return mapping[sourceColumn] || '_none'
   }
 
-  const getTargetFieldLabel = (fieldName: string): string => {
-    const field = mappingInfo.target_fields.find((f) => f.name === fieldName)
-    return field?.label || fieldName
-  }
-
   const isFieldMapped = (fieldName: string): boolean => {
     return Object.values(mapping).includes(fieldName)
   }
@@ -105,7 +100,6 @@ export function ImportFieldMapper({ mappingInfo, onSave, loading }: ImportFieldM
                 column={column}
                 targetFields={mappingInfo.target_fields}
                 selectedTarget={getMappedTarget(column.name)}
-                getTargetLabel={getTargetFieldLabel}
                 isTargetMapped={isFieldMapped}
                 onChange={(target) => handleMappingChange(column.name, target)}
               />
@@ -127,7 +121,6 @@ interface MappingRowProps {
   column: SourceColumnInfo
   targetFields: TargetField[]
   selectedTarget: string
-  getTargetLabel: (name: string) => string
   isTargetMapped: (name: string) => boolean
   onChange: (target: string) => void
 }
@@ -136,7 +129,6 @@ function MappingRow({
   column,
   targetFields,
   selectedTarget,
-  getTargetLabel,
   isTargetMapped,
   onChange,
 }: MappingRowProps) {
