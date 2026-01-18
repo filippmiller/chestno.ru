@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Save } from 'lucide-react'
+import { Save, Plus, Trash2 } from 'lucide-react'
 
 import {
   getOrganizationPost,
@@ -12,6 +12,8 @@ import {
 } from '@/api/postsService'
 import type { OrganizationPostCreate, OrganizationPostUpdate } from '@/types/posts'
 import { MediaUploader } from '@/components/MediaUploader'
+import { RichTextEditor } from '@/components/RichTextEditor'
+import { uploadPostImage, validateImageFile } from '@/utils/mediaUploader'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -41,6 +43,7 @@ export const OrganizationPostEditPage = () => {
   const orgId = organizationId || selectedOrganizationId
 
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null)
   const [gallery, setGallery] = useState<Array<{ url: string; alt?: string | null; sort_order?: number | null }>>([])
@@ -88,6 +91,39 @@ export const OrganizationPostEditPage = () => {
       })
       .finally(() => setLoading(false))
   }, [orgId, postId, form])
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !orgId) return
+
+    const validation = validateImageFile(file)
+    if (!validation.valid) {
+      setError(validation.error || 'Некорректный файл')
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+    try {
+      const url = await uploadPostImage(orgId, postId || 'new', file)
+      setGallery((prev) => [...prev, { url, alt: '', sort_order: prev.length }])
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить изображение')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeGalleryImage = (index: number) => {
+    setGallery((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const updateGalleryAlt = (index: number, alt: string) => {
+    setGallery((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, alt } : item))
+    )
+  }
 
   const onSubmit = async (values: PostFormValues) => {
     if (!orgId) return
@@ -216,7 +252,15 @@ export const OrganizationPostEditPage = () => {
                   <FormItem>
                     <FormLabel>Текст поста</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Полный текст поста" rows={10} disabled={loading} {...field} />
+                      <RichTextEditor
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Полный текст поста"
+                        disabled={loading}
+                        onImageUpload={async (file) => {
+                          return await uploadPostImage(orgId!, postId || 'new', file)
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -252,6 +296,47 @@ export const OrganizationPostEditPage = () => {
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-2">
+                <FormLabel>Галерея изображений</FormLabel>
+                <div className="flex flex-wrap gap-3">
+                  {gallery.map((item, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={item.url}
+                        alt={item.alt || `Изображение ${index + 1}`}
+                        className="h-24 w-24 rounded-lg border object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -right-2 -top-2 h-6 w-6 rounded-full p-0"
+                        onClick={() => removeGalleryImage(index)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                      <Input
+                        placeholder="Подпись"
+                        value={item.alt || ''}
+                        onChange={(e) => updateGalleryAlt(index, e.target.value)}
+                        className="mt-1 h-7 text-xs"
+                      />
+                    </div>
+                  ))}
+                  <label className="flex h-24 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleGalleryUpload}
+                      disabled={uploading || loading}
+                    />
+                    <Plus className="h-8 w-8 text-muted-foreground/50" />
+                  </label>
+                </div>
+                {uploading && <p className="text-sm text-muted-foreground">Загрузка...</p>}
+              </div>
 
               <FormField
                 control={form.control}

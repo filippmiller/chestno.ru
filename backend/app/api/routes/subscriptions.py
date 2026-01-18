@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
-from app.api.routes.auth import get_current_user_id
+from app.core.session_deps import get_current_user_id_from_session
 from app.schemas.subscriptions import (
     OrganizationSubscription,
     OrganizationSubscriptionSummary,
@@ -17,8 +17,9 @@ admin_router = APIRouter(prefix='/api/admin/subscriptions', tags=['subscriptions
 
 @router.get('/organizations/{organization_id}/subscription', response_model=OrganizationSubscriptionSummary)
 async def org_subscription_summary(
+    request: Request,
     organization_id: str,
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> OrganizationSubscriptionSummary:
     subscriptions_service.ensure_org_member(current_user_id, organization_id)
     return subscriptions_service.get_org_subscription_summary(organization_id)
@@ -26,8 +27,9 @@ async def org_subscription_summary(
 
 @admin_router.get('/plans', response_model=list[SubscriptionPlan])
 async def admin_list_plans(
+    request: Request,
     include_inactive: bool = False,
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> list[SubscriptionPlan]:
     assert_platform_admin(current_user_id)
     return subscriptions_service.list_plans(include_inactive=include_inactive)
@@ -35,26 +37,29 @@ async def admin_list_plans(
 
 @admin_router.post('/plans', response_model=SubscriptionPlan)
 async def admin_create_plan(
+    request: Request,
     payload: SubscriptionPlanCreate,
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> SubscriptionPlan:
     return subscriptions_service.create_plan(payload, actor_user_id=current_user_id)
 
 
 @admin_router.patch('/plans/{plan_id}', response_model=SubscriptionPlan)
 async def admin_update_plan(
+    request: Request,
     plan_id: str,
     payload: SubscriptionPlanUpdate,
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> SubscriptionPlan:
     return subscriptions_service.update_plan(plan_id, payload, actor_user_id=current_user_id)
 
 
 @admin_router.post('/organizations/{organization_id}/subscription', response_model=OrganizationSubscription)
 async def admin_set_org_subscription(
+    request: Request,
     organization_id: str,
     plan_id: str = Query(..., description='ID тарифного плана'),
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> OrganizationSubscription:
     assert_platform_admin(current_user_id)
     return subscriptions_service.set_org_subscription(organization_id, plan_id, actor_user_id=current_user_id)

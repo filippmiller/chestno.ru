@@ -20,19 +20,25 @@ import { OrganizationInvitesPage } from '@/pages/OrganizationInvites'
 import { OrganizationOnboardingPage } from '@/pages/OrganizationOnboarding'
 import { OrganizationPlanPage } from '@/pages/OrganizationPlan'
 import { OrganizationProductsPage } from '@/pages/OrganizationProducts'
+import { OrganizationProductImportPage } from '@/pages/OrganizationProductImport'
 import { OrganizationProfilePage } from '@/pages/OrganizationProfile'
 import { OrganizationPostsPage } from '@/pages/OrganizationPosts'
 import { OrganizationPostEditPage } from '@/pages/OrganizationPostEdit'
 import { OrganizationReviewsPage } from '@/pages/OrganizationReviews'
 import { OrganizationQrPage } from '@/pages/OrganizationQr'
 import { OrganizationQrPosterPage } from '@/pages/OrganizationQrPoster'
+import { OrganizationMarketingPage } from '@/pages/OrganizationMarketing'
+import { OrganizationMarketingEditPage } from '@/pages/OrganizationMarketingEdit'
 import { ProducersLandingPage } from '@/pages/ProducersLanding'
 import { PublicOrganizationPage } from '@/pages/PublicOrganization'
 import { PublicOrganizationsCatalogPage } from '@/pages/PublicOrganizationsCatalog'
 import { CreateReviewPage } from '@/pages/CreateReview'
 import { AdminDashboardPage } from '@/pages/AdminDashboard'
+import { AdminImportsPage } from '@/pages/AdminImports'
+import { AdminImportDetailsPage } from '@/pages/AdminImportDetails'
 import { LinkedAccountsPage } from '@/pages/LinkedAccounts'
 import { ProductsCatalogPage } from '@/pages/ProductsCatalog'
+import { PublicOrganizationPostsPage } from '@/pages/PublicOrganizationPosts'
 import { StoriesPage } from '@/pages/StoriesPage'
 import { AboutPage } from '@/pages/AboutPage'
 import { PricingPage } from '@/pages/PricingPage'
@@ -46,6 +52,8 @@ export const AppRoutes = () => (
     <Route path="/about" element={<AboutPage />} />
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/org/:id" element={<PublicOrganizationPage />} />
+    <Route path="/org/:slug/posts" element={<PublicOrganizationPostsPage />} />
+    <Route path="/org/:slug/posts/:postSlug" element={<PublicOrganizationPostsPage />} />
     <Route path="/org/:id/review" element={<CreateReviewPage />} />
     <Route path="/orgs" element={<PublicOrganizationsCatalogPage />} />
 
@@ -117,6 +125,14 @@ export const AppRoutes = () => (
       }
     />
     <Route
+      path="/dashboard/organization/products/import"
+      element={
+        <ProtectedRoute>
+          <OrganizationProductImportPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
       path="/dashboard/organization/plan"
       element={
         <ProtectedRoute>
@@ -161,6 +177,22 @@ export const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <OrganizationQrPosterPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/marketing"
+      element={
+        <ProtectedRoute>
+          <OrganizationMarketingPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/marketing/:materialId"
+      element={
+        <ProtectedRoute>
+          <OrganizationMarketingEditPage />
         </ProtectedRoute>
       }
     />
@@ -217,6 +249,22 @@ export const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <DatabaseExplorerPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin/imports"
+      element={
+        <ProtectedRoute>
+          <AdminImportsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin/imports/:jobId"
+      element={
+        <ProtectedRoute>
+          <AdminImportDetailsPage />
         </ProtectedRoute>
       }
     />

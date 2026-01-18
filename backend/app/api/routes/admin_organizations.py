@@ -2,10 +2,10 @@
 Admin Organizations API Routes
 Organization management for platform admins.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
-from app.api.routes.auth import get_current_user_id
+from app.core.session_deps import get_current_user_id_from_session
 from app.services.admin_organizations import (
     list_all_organizations,
     update_organization_status,
@@ -19,13 +19,14 @@ router = APIRouter(prefix='/api/admin/organizations', tags=['admin-organizations
 
 @router.get('')
 async def admin_list_organizations(
+    request: Request,
     search: str | None = Query(default=None),
     status: str | None = Query(default=None, pattern='^(pending|verified|rejected)$'),
     city: str | None = Query(default=None),
     category: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> dict:
     """
     List all organizations (admin only).
@@ -56,11 +57,12 @@ async def admin_list_organizations(
 
 @router.patch('/{organization_id}/status')
 async def admin_update_status(
+    request: Request,
     organization_id: str,
     verification_status: str | None = Query(default=None, pattern='^(pending|verified|rejected)$'),
     verification_comment: str | None = Query(default=None),
     public_visible: bool | None = Query(default=None),
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> dict:
     """
     Update organization verification status (admin only).
@@ -84,9 +86,10 @@ async def admin_update_status(
 
 @router.patch('/{organization_id}/block')
 async def admin_block_organization(
+    request: Request,
     organization_id: str,
     blocked: bool = Query(...),
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> dict:
     """
     Block/unblock organization (admin only).
@@ -108,8 +111,9 @@ async def admin_block_organization(
 
 @router.get('/{organization_id}/details')
 async def admin_get_organization_details(
+    request: Request,
     organization_id: str,
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> dict:
     """
     Get full organization details including owners (admin only).
@@ -130,9 +134,10 @@ async def admin_get_organization_details(
 
 @router.patch('/{organization_id}/details')
 async def admin_update_organization_details(
+    request: Request,
     organization_id: str,
     payload: dict,
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> dict:
     """
     Update organization details (admin only).

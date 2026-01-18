@@ -1,10 +1,15 @@
 import os
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncGenerator
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+
+from app.core.scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,7 +37,21 @@ from app.api.routes.social_v2 import router as social_v2_router
 from app.api.routes.subscriptions import admin_router as admin_subscriptions_router, router as subscriptions_router
 from app.api.routes.posts import router as posts_router, public_router as public_posts_router
 from app.api.routes.reviews import router as reviews_router, public_router as public_reviews_router
+from app.api.routes.marketing import router as marketing_router, org_router as marketing_org_router, admin_router as marketing_admin_router
+from app.api.routes.bulk_import import router as bulk_import_router
+from app.api.routes.admin_imports import router as admin_imports_router
 from app.core.config import get_settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """FastAPI lifespan context manager for startup/shutdown events."""
+    logger = logging.getLogger(__name__)
+    logger.info("Starting background scheduler...")
+    start_scheduler()
+    yield
+    logger.info("Stopping background scheduler...")
+    stop_scheduler()
 
 
 def create_app() -> FastAPI:
@@ -40,6 +59,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title='Работаем Честно! Backend',
         version='0.1.0',
+        lifespan=lifespan,
     )
     app.add_middleware(
         CORSMiddleware,
@@ -81,6 +101,11 @@ def create_app() -> FastAPI:
     app.include_router(public_posts_router)
     app.include_router(reviews_router)
     app.include_router(public_reviews_router)
+    app.include_router(marketing_router)
+    app.include_router(marketing_org_router)
+    app.include_router(marketing_admin_router)
+    app.include_router(bulk_import_router)
+    app.include_router(admin_imports_router)
     
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -60,10 +60,20 @@ const ADMIN_TABS = [
   { id: 'dev', label: 'Dev / To-Do' },
 ]
 
+const ADMIN_LINKS = [
+  { href: '/admin/db', label: 'Database Explorer' },
+  { href: '/admin/imports', label: 'Imports Catalog' },
+]
+
 export const AdminPanelPage = () => {
   const { platformRoles } = useAuthV2()
-  const [activeTab, setActiveTab] = useState(ADMIN_TABS[0].id)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get('tab') || ADMIN_TABS[0].id
   const isAdmin = useMemo(() => platformRoles.some((role) => role === 'platform_owner' || role === 'platform_admin'), [platformRoles])
+
+  const setActiveTab = (tabId: string) => {
+    setSearchParams({ tab: tabId })
+  }
 
   if (!isAdmin) {
     return (
@@ -77,17 +87,29 @@ export const AdminPanelPage = () => {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="flex w-full flex-col gap-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-semibold">Admin Panel</h1>
+        <p className="text-sm text-muted-foreground">Platform management and moderation tools</p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
         {ADMIN_TABS.map((tab) => (
-          <Button key={tab.id} variant={activeTab === tab.id ? 'default' : 'outline'} onClick={() => setActiveTab(tab.id)}>
+          <Button
+            key={tab.id}
+            variant={activeTab === tab.id ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab(tab.id)}
+            className={activeTab === tab.id ? '' : 'text-muted-foreground'}
+          >
             {tab.label}
           </Button>
         ))}
-        <Button variant="secondary" asChild>
-          <Link to="/admin/db">Database Explorer</Link>
-        </Button>
       </div>
+
+      {/* Tab Content */}
       {activeTab === 'pending' && <PendingRegistrationsSection />}
       {activeTab === 'reviews' && <AdminReviewsModerationSection />}
       {activeTab === 'users' && <AdminUsersManagementSection />}

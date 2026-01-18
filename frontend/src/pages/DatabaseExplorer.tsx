@@ -138,10 +138,12 @@ export const DatabaseExplorerPage = () => {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold">Database Explorer</h1>
-        <p className="text-muted-foreground">Просматривайте таблицы, структуру и создавайте черновики миграций.</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Database Explorer</h1>
+          <p className="text-sm text-muted-foreground">Просматривайте таблицы, структуру и создавайте черновики миграций.</p>
+        </div>
       </div>
 
       {error && (

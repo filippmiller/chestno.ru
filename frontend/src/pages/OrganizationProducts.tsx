@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import axios from 'axios'
+import { ChevronDown, ChevronRight, Download, Plus, Trash2, Upload } from 'lucide-react'
 
 import { createProduct, listProducts, updateProduct, archiveProduct } from '@/api/authService'
+import { getProductWithVariants, listVariants, ProductWithVariants, ProductVariant } from '@/api/importService'
+import { uploadProductImage, uploadProductGalleryImage, validateImageFile } from '@/utils/mediaUploader'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useUserStore } from '@/store/userStore'
@@ -41,6 +47,108 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9а-яё]+/gi, '-')
     .replace(/^-+|-+$/g, '')
 
+// Product list item with variant support
+interface ProductListItemProps {
+  product: Product
+  allProducts: Product[]
+  canEdit: boolean | undefined
+  onEdit: (product: Product) => void
+  onArchive: (productId: string) => Promise<void>
+}
+
+function ProductListItem({ product, allProducts, canEdit, onEdit, onArchive }: ProductListItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  // Find variants for this product
+  const variants = allProducts.filter(p => p.parent_product_id === product.id)
+  const hasVariants = variants.length > 0
+
+  return (
+    <div className="rounded-lg border border-border">
+      <div className="p-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3">
+            {hasVariants && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-1 rounded p-1 hover:bg-muted"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-lg font-semibold">{product.name}</p>
+                {hasVariants && (
+                  <Badge variant="secondary">{variants.length} вариант(ов)</Badge>
+                )}
+                {product.sku && (
+                  <Badge variant="outline">SKU: {product.sku}</Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Статус: {product.status} • Цена:{' '}
+                {product.price_cents ? `${(product.price_cents / 100).toFixed(2)} ${product.currency}` : '—'}
+                {product.stock_quantity !== undefined && product.stock_quantity > 0 && (
+                  <> • Остаток: {product.stock_quantity}</>
+                )}
+              </p>
+              {product.short_description && (
+                <p className="text-sm text-muted-foreground">{product.short_description}</p>
+              )}
+            </div>
+          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => onEdit(product)}>
+                Редактировать
+              </Button>
+              {product.status !== 'archived' && (
+                <Button variant="destructive" size="sm" onClick={() => onArchive(product.id)}>
+                  В архив
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Variants list */}
+      {hasVariants && isExpanded && (
+        <div className="border-t bg-muted/30 p-4">
+          <p className="mb-2 text-sm font-medium text-muted-foreground">Варианты:</p>
+          <div className="space-y-2">
+            {variants.map((variant) => (
+              <div
+                key={variant.id}
+                className="flex items-center justify-between rounded border bg-background p-3"
+              >
+                <div>
+                  <p className="font-medium">{variant.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {variant.sku && <>SKU: {variant.sku} • </>}
+                    Цена: {variant.price_cents ? `${(variant.price_cents / 100).toFixed(2)} ${variant.currency}` : '—'}
+                    {variant.stock_quantity !== undefined && <> • Остаток: {variant.stock_quantity}</>}
+                  </p>
+                </div>
+                {canEdit && (
+                  <Button variant="ghost" size="sm" onClick={() => onEdit(variant)}>
+                    Редактировать
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export const OrganizationProductsPage = () => {
   const { organizations, selectedOrganizationId, memberships } = useUserStore()
   const [products, setProducts] = useState<Product[]>([])
@@ -48,6 +156,7 @@ export const OrganizationProductsPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -167,6 +276,75 @@ export const OrganizationProductsPage = () => {
     }
   }
 
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !currentOrganization) return
+
+    const validation = validateImageFile(file)
+    if (!validation.valid) {
+      setError(validation.error || 'Некорректный файл')
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+    try {
+      const productId = editingId || 'new'
+      const url = await uploadProductImage(currentOrganization.id, productId, file)
+      setFormState((prev) => ({ ...prev, main_image_url: url }))
+      setMessage('Изображение загружено')
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить изображение')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !currentOrganization) return
+
+    const validation = validateImageFile(file)
+    if (!validation.valid) {
+      setError(validation.error || 'Некорректный файл')
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+    try {
+      const productId = editingId || 'new'
+      const url = await uploadProductGalleryImage(currentOrganization.id, productId, file)
+      setFormState((prev) => ({
+        ...prev,
+        gallery: [...(prev.gallery || []), { url, caption: '' }],
+      }))
+      setMessage('Изображение добавлено в галерею')
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить изображение')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeGalleryImage = (index: number) => {
+    setFormState((prev) => ({
+      ...prev,
+      gallery: (prev.gallery || []).filter((_, i) => i !== index),
+    }))
+  }
+
+  const updateGalleryCaption = (index: number, caption: string) => {
+    setFormState((prev) => ({
+      ...prev,
+      gallery: (prev.gallery || []).map((item, i) =>
+        i === index ? { ...item, caption } : item
+      ),
+    }))
+  }
+
   if (!currentOrganization) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-10">
@@ -204,8 +382,20 @@ export const OrganizationProductsPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Список товаров</CardTitle>
-          <CardDescription>Всего: {products.length}</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Список товаров</CardTitle>
+              <CardDescription>Всего: {products.length}</CardDescription>
+            </div>
+            {canEdit && (
+              <Button asChild>
+                <Link to="/dashboard/organization/products/import">
+                  <Download className="mr-2 h-4 w-4" />
+                  Импорт товаров
+                </Link>
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -222,33 +412,15 @@ export const OrganizationProductsPage = () => {
           {loading && <p className="text-sm text-muted-foreground">Загружаем...</p>}
           {!loading && products.length === 0 && <p className="text-muted-foreground">Пока нет товаров.</p>}
           <div className="grid gap-3">
-            {products.map((product) => (
-              <div key={product.id} className="rounded-lg border border-border p-4">
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-lg font-semibold">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Статус: {product.status} • Цена:{' '}
-                      {product.price_cents ? `${(product.price_cents / 100).toFixed(2)} ${product.currency}` : '—'}
-                    </p>
-                    {product.short_description && (
-                      <p className="text-sm text-muted-foreground">{product.short_description}</p>
-                    )}
-                  </div>
-                  {canEdit && (
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(product)}>
-                        Редактировать
-                      </Button>
-                      {product.status !== 'archived' && (
-                        <Button variant="destructive" size="sm" onClick={() => handleArchive(product.id)}>
-                          В архив
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+            {products.filter(p => !p.is_variant).map((product) => (
+              <ProductListItem
+                key={product.id}
+                product={product}
+                allProducts={products}
+                canEdit={canEdit}
+                onEdit={handleEdit}
+                onArchive={handleArchive}
+              />
             ))}
           </div>
         </CardContent>
@@ -303,18 +475,79 @@ export const OrganizationProductsPage = () => {
                   onChange={(e) => setFormState((prev) => ({ ...prev, price: e.target.value }))}
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  placeholder="Главное изображение (URL)"
-                  value={formState.main_image_url ?? ''}
-                  onChange={(e) => handleInputChange('main_image_url', e.target.value)}
-                />
-                <Input
-                  placeholder="Внешняя ссылка"
-                  value={formState.external_url ?? ''}
-                  onChange={(e) => handleInputChange('external_url', e.target.value)}
-                />
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Главное изображение</label>
+                <div className="flex items-center gap-4">
+                  {formState.main_image_url && (
+                    <img
+                      src={formState.main_image_url}
+                      alt="Главное изображение"
+                      className="h-24 w-24 rounded-lg border object-cover"
+                    />
+                  )}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleMainImageUpload}
+                      disabled={uploading || loading}
+                    />
+                    <Button type="button" variant="outline" size="sm" asChild>
+                      <span>
+                        <Upload className="mr-2 h-4 w-4" />
+                        {uploading ? 'Загрузка...' : 'Загрузить'}
+                      </span>
+                    </Button>
+                  </label>
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Галерея изображений</label>
+                <div className="flex flex-wrap gap-3">
+                  {(formState.gallery || []).map((item, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={item.url}
+                        alt={item.caption || `Изображение ${index + 1}`}
+                        className="h-24 w-24 rounded-lg border object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -right-2 -top-2 h-6 w-6 rounded-full p-0"
+                        onClick={() => removeGalleryImage(index)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                      <Input
+                        placeholder="Подпись"
+                        value={item.caption || ''}
+                        onChange={(e) => updateGalleryCaption(index, e.target.value)}
+                        className="mt-1 h-7 text-xs"
+                      />
+                    </div>
+                  ))}
+                  <label className="flex h-24 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleGalleryUpload}
+                      disabled={uploading || loading}
+                    />
+                    <Plus className="h-8 w-8 text-muted-foreground/50" />
+                  </label>
+                </div>
+              </div>
+
+              <Input
+                placeholder="Внешняя ссылка (URL)"
+                value={formState.external_url ?? ''}
+                onChange={(e) => handleInputChange('external_url', e.target.value)}
+              />
               <div className="flex flex-wrap gap-2">
                 <select
                   className="h-10 rounded-md border border-input bg-background px-3 text-sm"

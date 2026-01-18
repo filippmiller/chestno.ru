@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { Plus, Trash2 } from 'lucide-react'
 
 import { getOrganizationProfile, upsertOrganizationProfile } from '@/api/authService'
 import { MediaUploader } from '@/components/MediaUploader'
@@ -11,7 +12,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useUserStore } from '@/store/userStore'
+
+// Types for complex fields
+interface SocialLink {
+  type: 'instagram' | 'vk' | 'youtube' | 'ok' | 'tiktok' | 'facebook' | 'other'
+  label: string
+  url: string
+}
+
+interface CertificationItem {
+  name: string
+  issuer?: string
+  valid_until?: string
+  link?: string
+}
+
+interface BuyLinkItem {
+  label: string
+  url: string
+}
+
+const SOCIAL_LINK_TYPES = [
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'vk', label: 'VK' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'ok', label: 'Одноклассники' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'other', label: 'Другое' },
+] as const
 
 const profileSchema = z.object({
   short_description: z.string().max(500, 'Максимум 500 символов').optional().or(z.literal('').transform(() => undefined)),
@@ -22,6 +53,13 @@ const profileSchema = z.object({
   tags: z.string().optional(),
   language: z.string().default('ru'),
   galleryInput: z.string().optional(),
+  // Advanced metadata
+  founded_year: z.coerce.number().min(1800).max(2100).optional().or(z.literal('').transform(() => undefined)),
+  employee_count: z.coerce.number().min(1).optional().or(z.literal('').transform(() => undefined)),
+  factory_size: z.string().optional(),
+  category: z.string().optional(),
+  sustainability_practices: z.string().optional(),
+  quality_standards: z.string().optional(),
   // Contacts
   contact_email: z.string().email('Неверный email').optional().or(z.literal('').transform(() => undefined)),
   contact_phone: z.string().optional(),
@@ -42,6 +80,10 @@ export const OrganizationProfilePage = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null)
   const [gallery, setGallery] = useState<Array<{ url: string; caption?: string | null }>>([])
+  // Complex list fields managed separately
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
+  const [certifications, setCertifications] = useState<CertificationItem[]>([])
+  const [buyLinks, setBuyLinks] = useState<BuyLinkItem[]>([])
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -54,6 +96,12 @@ export const OrganizationProfilePage = () => {
       tags: '',
       language: 'ru',
       galleryInput: '',
+      founded_year: undefined,
+      employee_count: undefined,
+      factory_size: '',
+      category: '',
+      sustainability_practices: '',
+      quality_standards: '',
       contact_email: '',
       contact_phone: '',
       contact_website: '',
@@ -87,8 +135,14 @@ export const OrganizationProfilePage = () => {
           tags: profile?.tags ?? '',
           language: profile?.language ?? 'ru',
           galleryInput: profile?.gallery
-            ? profile.gallery.map((item) => (item.caption ? `${item.url} | ${item.caption}` : item.url)).join('\n')
+            ? profile.gallery.map((item: { url: string; caption?: string }) => (item.caption ? `${item.url} | ${item.caption}` : item.url)).join('\n')
             : '',
+          founded_year: profile?.founded_year ?? undefined,
+          employee_count: profile?.employee_count ?? undefined,
+          factory_size: profile?.factory_size ?? '',
+          category: profile?.category ?? '',
+          sustainability_practices: profile?.sustainability_practices ?? '',
+          quality_standards: profile?.quality_standards ?? '',
           contact_email: profile?.contact_email ?? '',
           contact_phone: profile?.contact_phone ?? '',
           contact_website: profile?.contact_website ?? '',
@@ -98,6 +152,9 @@ export const OrganizationProfilePage = () => {
         })
         setMainImageUrl(profile?.gallery?.[0]?.url || null)
         setGallery(profile?.gallery || [])
+        setSocialLinks(profile?.social_links || [])
+        setCertifications(profile?.certifications || [])
+        setBuyLinks(profile?.buy_links || [])
       })
       .catch((err) => {
         console.error(err)
@@ -112,7 +169,6 @@ export const OrganizationProfilePage = () => {
     setError(null)
     setSuccessMessage(null)
     try {
-      // gallery уже в состоянии
       await upsertOrganizationProfile(organizationId, {
         short_description: values.short_description,
         long_description: values.long_description,
@@ -122,6 +178,15 @@ export const OrganizationProfilePage = () => {
         tags: values.tags,
         language: values.language,
         gallery,
+        founded_year: values.founded_year,
+        employee_count: values.employee_count,
+        factory_size: values.factory_size,
+        category: values.category,
+        sustainability_practices: values.sustainability_practices,
+        quality_standards: values.quality_standards,
+        certifications,
+        buy_links: buyLinks,
+        social_links: socialLinks,
         contact_email: values.contact_email,
         contact_phone: values.contact_phone,
         contact_website: values.contact_website,
@@ -136,6 +201,49 @@ export const OrganizationProfilePage = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Helper functions for managing list fields
+  const addSocialLink = () => {
+    setSocialLinks([...socialLinks, { type: 'other', label: '', url: '' }])
+  }
+
+  const removeSocialLink = (index: number) => {
+    setSocialLinks(socialLinks.filter((_, i) => i !== index))
+  }
+
+  const updateSocialLink = (index: number, field: keyof SocialLink, value: string) => {
+    const updated = [...socialLinks]
+    updated[index] = { ...updated[index], [field]: value }
+    setSocialLinks(updated)
+  }
+
+  const addCertification = () => {
+    setCertifications([...certifications, { name: '', issuer: '', valid_until: '', link: '' }])
+  }
+
+  const removeCertification = (index: number) => {
+    setCertifications(certifications.filter((_, i) => i !== index))
+  }
+
+  const updateCertification = (index: number, field: keyof CertificationItem, value: string) => {
+    const updated = [...certifications]
+    updated[index] = { ...updated[index], [field]: value }
+    setCertifications(updated)
+  }
+
+  const addBuyLink = () => {
+    setBuyLinks([...buyLinks, { label: '', url: '' }])
+  }
+
+  const removeBuyLink = (index: number) => {
+    setBuyLinks(buyLinks.filter((_, i) => i !== index))
+  }
+
+  const updateBuyLink = (index: number, field: keyof BuyLinkItem, value: string) => {
+    const updated = [...buyLinks]
+    updated[index] = { ...updated[index], [field]: value }
+    setBuyLinks(updated)
   }
 
   if (!selectedOrganization) {
@@ -336,6 +444,243 @@ export const OrganizationProfilePage = () => {
                 />
               </div>
 
+              {/* Advanced Metadata Section */}
+              <div className="border-t pt-6">
+                <h3 className="mb-4 text-lg font-semibold">Дополнительная информация</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="founded_year"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Год основания</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="2010" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="employee_count"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Количество сотрудников</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="50" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="factory_size"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Площадь производства</FormLabel>
+                        <FormControl>
+                          <Input placeholder="1000 кв.м" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Категория</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Пищевая промышленность" disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="mt-4 space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="sustainability_practices"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Экологичность и устойчивое развитие</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Расскажите о ваших экологических практиках" rows={3} disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="quality_standards"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Стандарты качества</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Какие стандарты качества вы соблюдаете" rows={3} disabled={!canEdit || loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Certifications Section */}
+              <div className="border-t pt-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Сертификаты</h3>
+                  {canEdit && (
+                    <Button type="button" variant="outline" size="sm" onClick={addCertification} disabled={loading}>
+                      <Plus className="mr-1 h-4 w-4" /> Добавить
+                    </Button>
+                  )}
+                </div>
+                {certifications.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Сертификаты не добавлены</p>
+                )}
+                <div className="space-y-4">
+                  {certifications.map((cert, index) => (
+                    <div key={index} className="grid gap-4 rounded-lg border p-4 md:grid-cols-4">
+                      <Input
+                        placeholder="Название сертификата"
+                        value={cert.name}
+                        onChange={(e) => updateCertification(index, 'name', e.target.value)}
+                        disabled={!canEdit || loading}
+                      />
+                      <Input
+                        placeholder="Выдан организацией"
+                        value={cert.issuer || ''}
+                        onChange={(e) => updateCertification(index, 'issuer', e.target.value)}
+                        disabled={!canEdit || loading}
+                      />
+                      <Input
+                        type="date"
+                        placeholder="Действителен до"
+                        value={cert.valid_until || ''}
+                        onChange={(e) => updateCertification(index, 'valid_until', e.target.value)}
+                        disabled={!canEdit || loading}
+                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Ссылка"
+                          value={cert.link || ''}
+                          onChange={(e) => updateCertification(index, 'link', e.target.value)}
+                          disabled={!canEdit || loading}
+                        />
+                        {canEdit && (
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeCertification(index)} disabled={loading}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Buy Links Section */}
+              <div className="border-t pt-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Где купить</h3>
+                  {canEdit && (
+                    <Button type="button" variant="outline" size="sm" onClick={addBuyLink} disabled={loading}>
+                      <Plus className="mr-1 h-4 w-4" /> Добавить
+                    </Button>
+                  )}
+                </div>
+                {buyLinks.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Ссылки на магазины не добавлены</p>
+                )}
+                <div className="space-y-2">
+                  {buyLinks.map((link, index) => (
+                    <div key={index} className="flex gap-4">
+                      <Input
+                        placeholder="Название (напр. Wildberries)"
+                        value={link.label}
+                        onChange={(e) => updateBuyLink(index, 'label', e.target.value)}
+                        disabled={!canEdit || loading}
+                        className="flex-1"
+                      />
+                      <Input
+                        placeholder="URL"
+                        value={link.url}
+                        onChange={(e) => updateBuyLink(index, 'url', e.target.value)}
+                        disabled={!canEdit || loading}
+                        className="flex-1"
+                      />
+                      {canEdit && (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeBuyLink(index)} disabled={loading}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Social Links Section */}
+              <div className="border-t pt-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Социальные сети</h3>
+                  {canEdit && (
+                    <Button type="button" variant="outline" size="sm" onClick={addSocialLink} disabled={loading}>
+                      <Plus className="mr-1 h-4 w-4" /> Добавить
+                    </Button>
+                  )}
+                </div>
+                {socialLinks.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Социальные сети не добавлены</p>
+                )}
+                <div className="space-y-2">
+                  {socialLinks.map((link, index) => (
+                    <div key={index} className="flex gap-4">
+                      <Select
+                        value={link.type}
+                        onValueChange={(value) => updateSocialLink(index, 'type', value)}
+                        disabled={!canEdit || loading}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Тип" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SOCIAL_LINK_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="Название (напр. @mycompany)"
+                        value={link.label}
+                        onChange={(e) => updateSocialLink(index, 'label', e.target.value)}
+                        disabled={!canEdit || loading}
+                        className="flex-1"
+                      />
+                      <Input
+                        placeholder="URL"
+                        value={link.url}
+                        onChange={(e) => updateSocialLink(index, 'url', e.target.value)}
+                        disabled={!canEdit || loading}
+                        className="flex-1"
+                      />
+                      {canEdit && (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeSocialLink(index)} disabled={loading}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Contacts Section */}
               <div className="border-t pt-6">
                 <h3 className="mb-4 text-lg font-semibold">Контакты</h3>
                 <div className="grid gap-4 md:grid-cols-2">

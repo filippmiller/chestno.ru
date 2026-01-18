@@ -3,15 +3,16 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { createQrCode, getQrCodeStats, getBusinessPublicUrl, listQrCodes } from '@/api/authService'
+import { createQrCode, getQrCodeStats, getQrCodeDetailedStats, getBusinessPublicUrl, listQrCodes } from '@/api/authService'
 import { BusinessQrCode } from '@/components/qr/BusinessQrCode'
+import { QRGeoMap } from '@/components/qr/QRGeoMap'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { useUserStore } from '@/store/userStore'
-import type { QRCode, QRCodePayload, QRCodeStats } from '@/types/auth'
+import type { QRCode, QRCodePayload, QRCodeStats, QRCodeDetailedStats } from '@/types/auth'
 
 const qrSchema = z.object({
   label: z.string().min(2, 'Введите название'),
@@ -27,6 +28,8 @@ export const OrganizationQrPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [statsMap, setStatsMap] = useState<Record<string, QRCodeStats>>({})
+  const [detailedStatsMap, setDetailedStatsMap] = useState<Record<string, QRCodeDetailedStats>>({})
+  const [expandedQrId, setExpandedQrId] = useState<string | null>(null)
   const [businessPublicUrl, setBusinessPublicUrl] = useState<string | null>(null)
   const form = useForm<QRFormValues>({ resolver: zodResolver(qrSchema), defaultValues: { label: '' } })
   const backendUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) ?? 'http://localhost:8000'
@@ -99,6 +102,32 @@ export const OrganizationQrPage = () => {
     }
   }
 
+  const loadDetailedStats = async (code: QRCode) => {
+    if (!organizationId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const stats = await getQrCodeDetailedStats(organizationId, code.id)
+      setDetailedStatsMap((prev) => ({ ...prev, [code.id]: stats }))
+      setExpandedQrId(code.id)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить детальную статистику')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleDetailedStats = (code: QRCode) => {
+    if (expandedQrId === code.id) {
+      setExpandedQrId(null)
+    } else if (detailedStatsMap[code.id]) {
+      setExpandedQrId(code.id)
+    } else {
+      loadDetailedStats(code)
+    }
+  }
+
   const qrLink = (code: string) => {
     const base = backendUrl.replace(/\/$/, '')
     return `${base}/q/${code}`
@@ -164,6 +193,49 @@ export const OrganizationQrPage = () => {
                       <p>Всего сканов: {statsMap[code.id].total}</p>
                       <p>За 7 дней: {statsMap[code.id].last_7_days}</p>
                       <p>За 30 дней: {statsMap[code.id].last_30_days}</p>
+                      <Button
+                        size="sm"
+                        variant="link"
+                        className="mt-1 h-auto p-0"
+                        onClick={() => toggleDetailedStats(code)}
+                      >
+                        {expandedQrId === code.id ? 'Скрыть детали' : 'Показать детали'}
+                      </Button>
+                    </div>
+                  )}
+                  {expandedQrId === code.id && detailedStatsMap[code.id] && (
+                    <div className="mt-3 space-y-4 rounded-md border border-border p-3">
+                      <div>
+                        <h4 className="mb-2 text-sm font-medium">География сканирований</h4>
+                        <QRGeoMap geoBreakdown={detailedStatsMap[code.id].geo_breakdown} />
+                        {detailedStatsMap[code.id].geo_breakdown.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {detailedStatsMap[code.id].geo_breakdown.slice(0, 5).map((item, idx) => (
+                              <div key={idx} className="flex justify-between text-sm">
+                                <span>{item.city ?? 'Неизвестно'}, {item.country ?? 'N/A'}</span>
+                                <span className="font-medium">{item.count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {detailedStatsMap[code.id].utm_breakdown.length > 0 && (
+                        <div>
+                          <h4 className="mb-2 text-sm font-medium">UTM-метки</h4>
+                          <div className="space-y-1">
+                            {detailedStatsMap[code.id].utm_breakdown.slice(0, 5).map((item, idx) => (
+                              <div key={idx} className="flex justify-between text-sm">
+                                <span>
+                                  {item.utm_source && `source: ${item.utm_source}`}
+                                  {item.utm_medium && `, medium: ${item.utm_medium}`}
+                                  {item.utm_campaign && `, campaign: ${item.utm_campaign}`}
+                                </span>
+                                <span className="font-medium">{item.count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

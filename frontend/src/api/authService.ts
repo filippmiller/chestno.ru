@@ -33,6 +33,7 @@ import type {
   QRCode,
   QRCodePayload,
   QRCodeStats,
+  QRCodeDetailedStats,
   QROverviewResponse,
   SessionPayload,
   SubscriptionPlan,
@@ -209,6 +210,13 @@ export const createQrCode = async (organizationId: string, payload: QRCodePayloa
 export const getQrCodeStats = async (organizationId: string, qrCodeId: string) => {
   const { data } = await httpClient.get<QRCodeStats>(
     `/api/organizations/${organizationId}/qr-codes/${qrCodeId}/stats`,
+  )
+  return data
+}
+
+export const getQrCodeDetailedStats = async (organizationId: string, qrCodeId: string) => {
+  const { data } = await httpClient.get<QRCodeDetailedStats>(
+    `/api/organizations/${organizationId}/qr-codes/${qrCodeId}/detailed-stats`,
   )
   return data
 }

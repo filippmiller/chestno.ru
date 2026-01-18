@@ -461,6 +461,63 @@ def list_public_organization_reviews_by_id(
             return reviews, total, avg_rating
 
 
+def delete_review(
+    organization_id: str,
+    review_id: str,
+    user_id: str,
+) -> bool:
+    """
+    Удалить отзыв.
+
+    Правила доступа:
+    - Владелец/администратор/менеджер организации может удалить любой отзыв
+    - Автор может удалить только свой отзыв со статусом 'pending'
+    """
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Проверяем существование отзыва
+            cur.execute(
+                '''
+                SELECT id, author_user_id, status
+                FROM reviews
+                WHERE id = %s AND organization_id = %s
+                ''',
+                (review_id, organization_id),
+            )
+            review = cur.fetchone()
+            if not review:
+                raise ValueError('Review not found')
+
+            # Проверяем права
+            is_author = str(review['author_user_id']) == user_id
+            is_pending = review['status'] == 'pending'
+
+            # Проверяем роль пользователя в организации
+            cur.execute(
+                '''
+                SELECT role FROM organization_members
+                WHERE organization_id = %s AND user_id = %s
+                ''',
+                (organization_id, user_id),
+            )
+            member = cur.fetchone()
+            is_manager = member and member['role'] in ('owner', 'admin', 'manager')
+
+            # Автор может удалить только свой pending отзыв
+            # Менеджер может удалить любой отзыв
+            if not is_manager and not (is_author and is_pending):
+                raise PermissionError('Cannot delete this review')
+
+            # Удаляем
+            cur.execute(
+                'DELETE FROM reviews WHERE id = %s AND organization_id = %s',
+                (review_id, organization_id),
+            )
+            conn.commit()
+
+            return True
+
+
 def list_public_organization_reviews(
     organization_slug: str,
     product_slug: str | None = None,

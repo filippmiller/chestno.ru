@@ -17,6 +17,7 @@ from app.services.reviews import (
     moderate_review,
     get_review_stats,
     respond_to_review,
+    delete_review,
 )
 
 from .auth import get_current_user_id
@@ -94,6 +95,31 @@ async def respond(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete('/{organization_id}/reviews/{review_id}', status_code=204)
+async def delete(
+    organization_id: str,
+    review_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> None:
+    """
+    Удалить отзыв.
+
+    - Менеджеры организации (owner/admin/manager) могут удалить любой отзыв
+    - Авторы могут удалить только свои pending отзывы
+    """
+    try:
+        await run_in_threadpool(
+            delete_review,
+            organization_id,
+            review_id,
+            current_user_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 
 # ============================================

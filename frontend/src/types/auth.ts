@@ -187,6 +187,27 @@ export interface QRCodeStats {
   last_30_days: number
 }
 
+export interface GeoBreakdownItem {
+  country: string | null
+  city: string | null
+  count: number
+}
+
+export interface UTMBreakdownItem {
+  utm_source: string | null
+  utm_medium: string | null
+  utm_campaign: string | null
+  count: number
+}
+
+export interface QRCodeDetailedStats {
+  total: number
+  last_7_days: number
+  last_30_days: number
+  geo_breakdown: GeoBreakdownItem[]
+  utm_breakdown: UTMBreakdownItem[]
+}
+
 export interface PublicOrganizationProfile {
   name: string
   slug: string
@@ -300,6 +321,12 @@ export interface Product {
   main_image_url?: string | null
   gallery?: Array<{ url: string; caption?: string | null }> | null
   external_url?: string | null
+  // Variant fields
+  parent_product_id?: string | null
+  is_variant: boolean
+  sku?: string | null
+  barcode?: string | null
+  stock_quantity?: number
   created_at: string
   updated_at: string
 }
@@ -318,6 +345,12 @@ export interface ProductPayload {
   main_image_url?: string | null
   gallery?: Array<{ url: string; caption?: string | null }> | null
   external_url?: string | null
+  // Variant fields
+  parent_product_id?: string | null
+  is_variant?: boolean
+  sku?: string | null
+  barcode?: string | null
+  stock_quantity?: number
 }
 
 export interface PublicProduct {

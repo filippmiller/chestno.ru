@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Star } from 'lucide-react'
+import { Star, ImagePlus, X, Loader2 } from 'lucide-react'
 
 import { fetchPublicOrganizationDetailsById } from '@/api/authService'
 import { createPublicReviewById } from '@/api/reviewsService'
@@ -14,14 +14,22 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useUserStore } from '@/store/userStore'
+import { uploadReviewMedia, validateImageFile, validateVideoFile } from '@/utils/mediaUploader'
 import type { PublicOrganizationDetails } from '@/types/auth'
-import type { ReviewCreate } from '@/types/reviews'
+import type { ReviewCreate, ReviewMediaItem } from '@/types/reviews'
 
 const reviewSchema = z.object({
   rating: z.number().min(1).max(5),
   title: z.string().optional(),
   body: z.string().min(10, 'Отзыв должен содержать минимум 10 символов'),
 })
+
+interface UploadedMedia {
+  url: string
+  type: 'image' | 'video'
+  file?: File
+  uploading?: boolean
+}
 
 export const CreateReviewPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -31,6 +39,12 @@ export const CreateReviewPage = () => {
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [media, setMedia] = useState<UploadedMedia[]>([])
+  const [uploadingMedia, setUploadingMedia] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Generate a stable temp ID for uploads (used in file path)
+  const tempReviewId = useMemo(() => crypto.randomUUID(), [])
 
   const form = useForm<z.infer<typeof reviewSchema>>({
     resolver: zodResolver(reviewSchema),
@@ -66,6 +80,47 @@ export const CreateReviewPage = () => {
     void load()
   }, [id, user, navigate])
 
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0 || !id) return
+
+    setUploadingMedia(true)
+    setError(null)
+
+    try {
+      for (const file of Array.from(files)) {
+        // Validate file
+        const isVideo = file.type.startsWith('video/')
+        const validation = isVideo ? validateVideoFile(file) : validateImageFile(file)
+
+        if (!validation.valid) {
+          setError(validation.error || 'Недопустимый файл')
+          continue
+        }
+
+        // Upload file
+        const url = await uploadReviewMedia(id, null, tempReviewId, file)
+        setMedia((prev) => [
+          ...prev,
+          { url, type: isVideo ? 'video' : 'image' },
+        ])
+      }
+    } catch (err: any) {
+      console.error('Upload error:', err)
+      setError('Ошибка загрузки файла')
+    } finally {
+      setUploadingMedia(false)
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const removeMedia = (index: number) => {
+    setMedia((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const onSubmit = async (values: z.infer<typeof reviewSchema>) => {
     if (!id) return
 
@@ -73,11 +128,16 @@ export const CreateReviewPage = () => {
     setError(null)
 
     try {
+      const mediaItems: ReviewMediaItem[] = media.map((m) => ({
+        type: m.type,
+        url: m.url,
+      }))
+
       const payload: ReviewCreate = {
         rating: values.rating,
         title: values.title || undefined,
         body: values.body,
-        media: [], // TODO: добавить загрузку медиа
+        media: mediaItems,
       }
 
       await createPublicReviewById(id, payload)
@@ -188,6 +248,61 @@ export const CreateReviewPage = () => {
                   </FormItem>
                 )}
               />
+
+              {/* Media Upload Section */}
+              <div className="space-y-2">
+                <FormLabel>Фото или видео (необязательно)</FormLabel>
+                <div className="flex flex-wrap gap-3">
+                  {media.map((item, index) => (
+                    <div key={index} className="relative">
+                      {item.type === 'image' ? (
+                        <img
+                          src={item.url}
+                          alt={`Медиа ${index + 1}`}
+                          className="h-24 w-24 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={item.url}
+                          className="h-24 w-24 rounded-lg object-cover"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(index)}
+                        className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow-sm"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {media.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingMedia}
+                      className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 disabled:opacity-50"
+                    >
+                      {uploadingMedia ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      ) : (
+                        <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <p className="text-xs text-muted-foreground">
+                  До 5 файлов. Фото: JPEG, PNG, WebP (до 10 МБ). Видео: MP4, WebM (до 3 ГБ).
+                </p>
+              </div>
 
               {error && (
                 <Alert variant="destructive">

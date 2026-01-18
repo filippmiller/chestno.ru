@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     vapid_public_key: str | None = None
     vapid_private_key: str | None = None
     vapid_subject: str = 'mailto:noreply@chestno.ru'
+    # GeoIP settings
+    geoip_db_path: str | None = None  # Path to GeoLite2-City.mmdb
 
     model_config = SettingsConfigDict(
         env_file=('.env', 'backend/.env'),

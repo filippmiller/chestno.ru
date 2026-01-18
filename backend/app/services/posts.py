@@ -480,3 +480,30 @@ def get_public_organization_post(organization_slug: str, post_slug: str) -> Publ
                 is_pinned=row['is_pinned'],
             )
 
+
+def delete_organization_post(
+    organization_id: str,
+    post_id: str,
+    user_id: str,
+) -> bool:
+    """Удалить пост организации."""
+    _require_role(None, organization_id, user_id, {'owner', 'admin', 'manager', 'editor'})
+
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Проверка существования поста
+            cur.execute(
+                'SELECT id FROM organization_posts WHERE id = %s AND organization_id = %s',
+                (post_id, organization_id),
+            )
+            if not cur.fetchone():
+                raise ValueError('Post not found')
+
+            # Удаление
+            cur.execute(
+                'DELETE FROM organization_posts WHERE id = %s AND organization_id = %s',
+                (post_id, organization_id),
+            )
+            conn.commit()
+
+            return True

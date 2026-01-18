@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "name": "Chestno.ru Knowledge Librarian",
+  "description": "Internal knowledge management system for the Chestno.ru platform",
+  "settings": {
+    "searchBreadth": "broad",
+    "serveFreshFirst": true,
+    "maxKeywordsPerQuery": 10,
+    "maxResultsPerQuery": 20,
+    "autoCreateDomains": true,
+    "invalidationTracking": true
+  },
+  "domainCreationRules": {
+    "minEntriesForNewDomain": 3,
+    "keywordOverlapThreshold": 0.3,
+    "allowedDomainTypes": [
+      "feature",
+      "module",
+      "integration",
+      "workflow",
+      "component"
+    ]
+  },
+  "searchWeights": {
+    "exactMatch": 1.0,
+    "partialMatch": 0.7,
+    "domainMatch": 0.5,
+    "relatedMatch": 0.3
+  },
+  "freshnessWeights": {
+    "today": 1.0,
+    "thisWeek": 0.9,
+    "thisMonth": 0.7,
+    "older": 0.5
+  },
+  "entryTypes": [
+    "table",
+    "service",
+    "route",
+    "page",
+    "component",
+    "workflow",
+    "integration",
+    "config",
+    "type",
+    "utility",
+    "pattern"
+  ],
+  "ingestionProtocol": {
+    "requiredFields": ["name", "domain", "type", "keywords", "summary"],
+    "optionalFields": ["file", "anchor", "references", "notes"],
+    "validationRules": {
+      "keywords": "array, 1-10 items",
+      "summary": "string, max 500 chars"
+    }
+  },
+  "queryProtocol": {
+    "inputFormat": {
+      "action": "query",
+      "keywords": ["string array, 1-10 items"],
+      "context": "optional string describing work context"
+    },
+    "outputFormat": {
+      "matches": "array of relevant entries with confidence scores",
+      "suggestedDomains": "array of domains to explore",
+      "relatedKnowledge": "array of related entries"
+    }
+  }
+}

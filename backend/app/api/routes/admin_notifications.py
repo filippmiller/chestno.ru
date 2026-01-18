@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.concurrency import run_in_threadpool
 
-from app.api.routes.auth import get_current_user_id
+from app.core.session_deps import get_current_user_id_from_session
 from app.schemas.notifications import NotificationEmitRequest
 from app.services import notifications as notifications_service
 from app.services.admin_guard import assert_platform_admin
@@ -11,8 +11,9 @@ router = APIRouter(prefix='/api/admin/notifications', tags=['notifications'])
 
 @router.post('/')
 async def send_notification(
+    request: Request,
     payload: NotificationEmitRequest,
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ) -> None:
     assert_platform_admin(current_user_id)
     await run_in_threadpool(notifications_service.emit_notification, payload, current_user_id)
@@ -20,7 +21,8 @@ async def send_notification(
 
 @router.post('/reminders/process', status_code=200)
 async def process_reminders(
-    current_user_id: str = Depends(get_current_user_id),
+    request: Request,
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ):
     """
     Обрабатывает активные reminders (для запуска вручную или по cron).
@@ -37,7 +39,8 @@ async def process_reminders(
 
 @router.post('/email/process', status_code=200)
 async def process_email_deliveries(
-    current_user_id: str = Depends(get_current_user_id),
+    request: Request,
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ):
     """
     Обрабатывает pending email deliveries и отправляет их через SMTP.
@@ -54,7 +57,8 @@ async def process_email_deliveries(
 
 @router.post('/telegram/process', status_code=200)
 async def process_telegram_deliveries(
-    current_user_id: str = Depends(get_current_user_id),
+    request: Request,
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ):
     """
     Обрабатывает pending telegram deliveries и отправляет их через Telegram Bot API.
@@ -71,7 +75,8 @@ async def process_telegram_deliveries(
 
 @router.post('/push/process', status_code=200)
 async def process_push_deliveries(
-    current_user_id: str = Depends(get_current_user_id),
+    request: Request,
+    current_user_id: str = Depends(get_current_user_id_from_session),
 ):
     """
     Обрабатывает pending push deliveries (помечает как ready для отправки на клиенте).
@@ -84,4 +89,3 @@ async def process_push_deliveries(
         'processed': result['processed'],
         'ready': result['ready'],
     }
-

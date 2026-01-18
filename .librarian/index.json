@@ -1,0 +1,663 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-18",
+  "description": "Knowledge base index for Chestno.ru platform",
+  "domains": {
+    "database": {
+      "description": "Database tables, schemas, migrations, relationships",
+      "files": ["domains/database/tables.md"],
+      "keywords": ["table", "schema", "postgresql", "supabase", "migration", "column", "foreign key", "rls", "policy", "index", "constraint"]
+    },
+    "backend": {
+      "description": "API routes, services, business logic, FastAPI",
+      "files": ["domains/backend/routes.md", "domains/backend/services.md"],
+      "keywords": ["api", "route", "endpoint", "service", "fastapi", "python", "http", "rest", "controller", "function"]
+    },
+    "frontend": {
+      "description": "React pages, components, routing, API clients",
+      "files": ["domains/frontend/pages.md", "domains/frontend/components.md", "domains/frontend/api-services.md"],
+      "keywords": ["page", "component", "react", "typescript", "tsx", "route", "ui", "axios", "hook", "state"]
+    },
+    "auth": {
+      "description": "Authentication flows, sessions, OAuth, tokens",
+      "files": ["domains/auth/flows.md"],
+      "keywords": ["auth", "authentication", "login", "signup", "session", "cookie", "oauth", "google", "yandex", "token", "jwt", "password"]
+    },
+    "organizations": {
+      "description": "Organization management, profiles, teams, invites",
+      "files": ["domains/organizations/management.md"],
+      "keywords": ["organization", "org", "profile", "member", "team", "invite", "membership", "role", "verification", "onboarding"]
+    },
+    "products": {
+      "description": "Product catalog, pricing, inventory",
+      "files": ["domains/products/catalog.md"],
+      "keywords": ["product", "catalog", "item", "pricing", "featured", "inventory", "price", "currency"]
+    },
+    "posts": {
+      "description": "Blog posts, news, content management",
+      "files": ["domains/posts/system.md"],
+      "keywords": ["post", "blog", "news", "article", "content", "publish", "draft", "editor", "slug"]
+    },
+    "reviews": {
+      "description": "Customer reviews, ratings, moderation",
+      "files": ["domains/reviews/system.md"],
+      "keywords": ["review", "rating", "moderation", "moderate", "approve", "reject", "response", "feedback", "star"]
+    },
+    "qr": {
+      "description": "QR codes, scan analytics, tracking",
+      "files": ["domains/qr/analytics.md"],
+      "keywords": ["qr", "code", "scan", "analytics", "tracking", "utm", "geo", "geolocation", "redirect", "event"]
+    },
+    "notifications": {
+      "description": "Notification system, channels, delivery",
+      "files": ["domains/notifications/system.md"],
+      "keywords": ["notification", "alert", "email", "push", "telegram", "channel", "delivery", "settings", "subscribe"]
+    },
+    "marketing": {
+      "description": "Marketing materials, templates, layouts",
+      "files": ["domains/marketing/materials.md"],
+      "keywords": ["marketing", "template", "poster", "flyer", "layout", "design", "print", "material", "block"]
+    },
+    "integrations": {
+      "description": "External services, Supabase, OAuth providers",
+      "files": ["domains/integrations/supabase.md"],
+      "keywords": ["supabase", "integration", "storage", "bucket", "auth", "external", "api", "webhook"]
+    },
+    "admin": {
+      "description": "Admin panel, moderation, platform management",
+      "files": ["domains/admin/panel.md"],
+      "keywords": ["admin", "panel", "dashboard", "moderation", "user", "management", "platform", "block"]
+    },
+    "deployment": {
+      "description": "Infrastructure, Railway, Docker, environment",
+      "files": ["domains/deployment/infrastructure.md"],
+      "keywords": ["railway", "deploy", "docker", "environment", "config", "production", "server", "hosting"]
+    },
+    "business": {
+      "description": "Business workflows, processes, lifecycles",
+      "files": ["domains/business/workflows.md"],
+      "keywords": ["workflow", "process", "flow", "business", "lifecycle", "onboarding", "verification"]
+    }
+  },
+  "entries": [
+    {
+      "id": "db-app_users",
+      "domain": "database",
+      "type": "table",
+      "name": "app_users",
+      "keywords": ["user", "profile", "email", "locale", "app_users"],
+      "file": "domains/database/tables.md",
+      "anchor": "#app_users",
+      "summary": "Extended user profiles linked to Supabase auth",
+      "references": {
+        "backend": ["backend/app/services/app_profiles.py"],
+        "migrations": ["supabase/migrations/0001_initial.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-organizations",
+      "domain": "database",
+      "type": "table",
+      "name": "organizations",
+      "keywords": ["organization", "business", "company", "slug", "verification"],
+      "file": "domains/database/tables.md",
+      "anchor": "#organizations",
+      "summary": "Core organization/business records with verification status",
+      "references": {
+        "backend": ["backend/app/services/organization_profiles.py"],
+        "frontend": ["frontend/src/pages/OrganizationProfile.tsx"],
+        "migrations": ["supabase/migrations/0001_initial.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-organization_profiles",
+      "domain": "database",
+      "type": "table",
+      "name": "organization_profiles",
+      "keywords": ["profile", "description", "gallery", "contact", "social"],
+      "file": "domains/database/tables.md",
+      "anchor": "#organization_profiles",
+      "summary": "Rich public profile with media, contacts, certifications",
+      "references": {
+        "backend": ["backend/app/services/organization_profiles.py"],
+        "frontend": ["frontend/src/pages/OrganizationProfile.tsx"],
+        "migrations": ["supabase/migrations/0002_org_profiles.sql", "supabase/migrations/0015_profile_enhancements.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-organization_members",
+      "domain": "database",
+      "type": "table",
+      "name": "organization_members",
+      "keywords": ["member", "membership", "role", "team", "invite"],
+      "file": "domains/database/tables.md",
+      "anchor": "#organization_members",
+      "summary": "User membership in organizations with roles",
+      "references": {
+        "backend": ["backend/app/services/organization_profiles.py"],
+        "migrations": ["supabase/migrations/0001_initial.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-products",
+      "domain": "database",
+      "type": "table",
+      "name": "products",
+      "keywords": ["product", "catalog", "price", "inventory", "featured"],
+      "file": "domains/database/tables.md",
+      "anchor": "#products",
+      "summary": "Product catalog with pricing and media",
+      "references": {
+        "backend": ["backend/app/services/products.py", "backend/app/api/routes/products.py"],
+        "frontend": ["frontend/src/pages/OrganizationProducts.tsx"],
+        "migrations": ["supabase/migrations/0013_products.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-reviews",
+      "domain": "database",
+      "type": "table",
+      "name": "reviews",
+      "keywords": ["review", "rating", "moderation", "response", "feedback"],
+      "file": "domains/database/tables.md",
+      "anchor": "#reviews",
+      "summary": "Customer reviews with moderation workflow",
+      "references": {
+        "backend": ["backend/app/services/reviews.py", "backend/app/api/routes/reviews.py"],
+        "frontend": ["frontend/src/pages/OrganizationReviews.tsx", "frontend/src/pages/CreateReview.tsx"],
+        "migrations": ["supabase/migrations/0016_reviews_posts.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-organization_posts",
+      "domain": "database",
+      "type": "table",
+      "name": "organization_posts",
+      "keywords": ["post", "blog", "news", "article", "content"],
+      "file": "domains/database/tables.md",
+      "anchor": "#organization_posts",
+      "summary": "Blog posts/news with draft/published workflow",
+      "references": {
+        "backend": ["backend/app/services/posts.py", "backend/app/api/routes/posts.py"],
+        "frontend": ["frontend/src/pages/OrganizationPosts.tsx", "frontend/src/pages/OrganizationPostEdit.tsx"],
+        "migrations": ["supabase/migrations/0016_reviews_posts.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-qr_codes",
+      "domain": "database",
+      "type": "table",
+      "name": "qr_codes",
+      "keywords": ["qr", "code", "tracking", "redirect"],
+      "file": "domains/database/tables.md",
+      "anchor": "#qr_codes",
+      "summary": "Trackable QR codes for organizations",
+      "references": {
+        "backend": ["backend/app/services/qr.py", "backend/app/api/routes/qr.py"],
+        "frontend": ["frontend/src/pages/OrganizationQr.tsx"],
+        "migrations": ["supabase/migrations/0006_qr_codes.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-qr_events",
+      "domain": "database",
+      "type": "table",
+      "name": "qr_events",
+      "keywords": ["qr", "scan", "event", "analytics", "utm", "geo"],
+      "file": "domains/database/tables.md",
+      "anchor": "#qr_events",
+      "summary": "QR scan event logs with geo and UTM data",
+      "references": {
+        "backend": ["backend/app/services/qr.py"],
+        "migrations": ["supabase/migrations/0006_qr_codes.sql", "supabase/migrations/0021_qr_enhancements.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-notifications",
+      "domain": "database",
+      "type": "table",
+      "name": "notifications",
+      "keywords": ["notification", "alert", "message"],
+      "file": "domains/database/tables.md",
+      "anchor": "#notifications",
+      "summary": "Sent notification records",
+      "references": {
+        "backend": ["backend/app/services/notifications.py"],
+        "migrations": ["supabase/migrations/0012_notifications.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-notification_deliveries",
+      "domain": "database",
+      "type": "table",
+      "name": "notification_deliveries",
+      "keywords": ["notification", "delivery", "channel", "email", "push"],
+      "file": "domains/database/tables.md",
+      "anchor": "#notification_deliveries",
+      "summary": "Per-user notification delivery tracking",
+      "references": {
+        "backend": ["backend/app/services/notifications.py", "backend/app/api/routes/notifications.py"],
+        "frontend": ["frontend/src/pages/Notifications.tsx"],
+        "migrations": ["supabase/migrations/0012_notifications.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-subscription_plans",
+      "domain": "database",
+      "type": "table",
+      "name": "subscription_plans",
+      "keywords": ["subscription", "plan", "pricing", "tier", "limit"],
+      "file": "domains/database/tables.md",
+      "anchor": "#subscription_plans",
+      "summary": "Pricing tier definitions with limits",
+      "references": {
+        "backend": ["backend/app/services/subscriptions.py"],
+        "migrations": ["supabase/migrations/0014_subscriptions.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-marketing_materials",
+      "domain": "database",
+      "type": "table",
+      "name": "marketing_materials",
+      "keywords": ["marketing", "material", "poster", "flyer", "layout"],
+      "file": "domains/database/tables.md",
+      "anchor": "#marketing_materials",
+      "summary": "Organization marketing materials with custom layouts",
+      "references": {
+        "backend": ["backend/app/services/marketing.py", "backend/app/api/routes/marketing.py"],
+        "frontend": ["frontend/src/pages/OrganizationMarketing.tsx"],
+        "migrations": ["supabase/migrations/0023_marketing_materials.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "svc-organization_profiles",
+      "domain": "backend",
+      "type": "service",
+      "name": "organization_profiles.py",
+      "keywords": ["organization", "profile", "crud", "search", "public"],
+      "file": "domains/backend/services.md",
+      "anchor": "#organization_profilespy",
+      "summary": "Organization profile CRUD and public search",
+      "references": {
+        "routes": ["backend/app/api/routes/organizations.py"],
+        "tables": ["organizations", "organization_profiles", "organization_members"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "svc-posts",
+      "domain": "backend",
+      "type": "service",
+      "name": "posts.py",
+      "keywords": ["post", "blog", "content", "publish", "draft"],
+      "file": "domains/backend/services.md",
+      "anchor": "#postspy",
+      "summary": "Blog post management with draft/publish workflow",
+      "references": {
+        "routes": ["backend/app/api/routes/posts.py"],
+        "tables": ["organization_posts"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "svc-reviews",
+      "domain": "backend",
+      "type": "service",
+      "name": "reviews.py",
+      "keywords": ["review", "rating", "moderation", "approve", "reject"],
+      "file": "domains/backend/services.md",
+      "anchor": "#reviewspy",
+      "summary": "Review system with moderation workflow",
+      "references": {
+        "routes": ["backend/app/api/routes/reviews.py"],
+        "tables": ["reviews", "organizations", "products"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "svc-qr",
+      "domain": "backend",
+      "type": "service",
+      "name": "qr.py",
+      "keywords": ["qr", "code", "scan", "analytics", "tracking", "redirect"],
+      "file": "domains/backend/services.md",
+      "anchor": "#qrpy",
+      "summary": "QR code generation and scan analytics",
+      "references": {
+        "routes": ["backend/app/api/routes/qr.py"],
+        "tables": ["qr_codes", "qr_events"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "svc-notifications",
+      "domain": "backend",
+      "type": "service",
+      "name": "notifications.py",
+      "keywords": ["notification", "email", "push", "telegram", "delivery"],
+      "file": "domains/backend/services.md",
+      "anchor": "#notificationspy",
+      "summary": "Multi-channel notification system",
+      "references": {
+        "routes": ["backend/app/api/routes/notifications.py"],
+        "tables": ["notification_types", "notifications", "notification_deliveries"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "route-auth",
+      "domain": "backend",
+      "type": "route",
+      "name": "auth_v2.py",
+      "keywords": ["auth", "login", "signup", "session", "oauth", "cookie"],
+      "file": "domains/backend/routes.md",
+      "anchor": "#apiauth",
+      "summary": "Cookie-based authentication endpoints",
+      "references": {
+        "frontend": ["frontend/src/auth/AuthProviderV2.tsx"],
+        "tables": ["app_users", "sessions"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "page-dashboard",
+      "domain": "frontend",
+      "type": "page",
+      "name": "Dashboard.tsx",
+      "keywords": ["dashboard", "home", "main", "hub"],
+      "file": "domains/frontend/pages.md",
+      "anchor": "#dashboardtsx",
+      "summary": "Main dashboard hub with navigation and status",
+      "references": {
+        "route": "/dashboard",
+        "api": ["authService.fetchSession"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "page-org-profile",
+      "domain": "frontend",
+      "type": "page",
+      "name": "OrganizationProfile.tsx",
+      "keywords": ["organization", "profile", "edit", "form"],
+      "file": "domains/frontend/pages.md",
+      "anchor": "#organizationprofiletsx",
+      "summary": "Comprehensive organization profile editor",
+      "references": {
+        "route": "/dashboard/organization/profile",
+        "api": ["authService.getOrganizationProfile", "authService.upsertOrganizationProfile"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "page-org-products",
+      "domain": "frontend",
+      "type": "page",
+      "name": "OrganizationProducts.tsx",
+      "keywords": ["product", "catalog", "manage", "create"],
+      "file": "domains/frontend/pages.md",
+      "anchor": "#organizationproductstsx",
+      "summary": "Product catalog management interface",
+      "references": {
+        "route": "/dashboard/organization/products",
+        "api": ["authService.listProducts", "authService.createProduct"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "page-org-reviews",
+      "domain": "frontend",
+      "type": "page",
+      "name": "OrganizationReviews.tsx",
+      "keywords": ["review", "moderation", "rating", "manage"],
+      "file": "domains/frontend/pages.md",
+      "anchor": "#organizationreviewstsx",
+      "summary": "Review management and moderation interface",
+      "references": {
+        "route": "/dashboard/organization/reviews",
+        "api": ["reviewsService.listOrganizationReviews", "reviewsService.moderateReview"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "page-org-qr",
+      "domain": "frontend",
+      "type": "page",
+      "name": "OrganizationQr.tsx",
+      "keywords": ["qr", "code", "analytics", "scan", "stats"],
+      "file": "domains/frontend/pages.md",
+      "anchor": "#organizationqrtsx",
+      "summary": "QR code management and analytics",
+      "references": {
+        "route": "/dashboard/organization/qr",
+        "api": ["authService.listQrCodes", "authService.getQrCodeDetailedStats"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "page-admin",
+      "domain": "frontend",
+      "type": "page",
+      "name": "AdminPanel.tsx",
+      "keywords": ["admin", "panel", "manage", "users", "organizations"],
+      "file": "domains/frontend/pages.md",
+      "anchor": "#adminpaneltsx",
+      "summary": "Platform admin control panel",
+      "references": {
+        "route": "/admin",
+        "api": ["authService.listAllUsers", "authService.listAllOrganizations"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "auth-flow-email",
+      "domain": "auth",
+      "type": "workflow",
+      "name": "Email/Password Login",
+      "keywords": ["login", "email", "password", "session", "cookie"],
+      "file": "domains/auth/flows.md",
+      "anchor": "#emailpassword-login-flow",
+      "summary": "Email/password authentication with session cookies",
+      "references": {
+        "backend": ["backend/app/api/routes/auth_v2.py"],
+        "frontend": ["frontend/src/auth/AuthProviderV2.tsx"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "auth-flow-oauth",
+      "domain": "auth",
+      "type": "workflow",
+      "name": "OAuth Login",
+      "keywords": ["oauth", "google", "yandex", "social", "login"],
+      "file": "domains/auth/flows.md",
+      "anchor": "#google-oauth-flow",
+      "summary": "Google/Yandex OAuth authentication flow",
+      "references": {
+        "backend": ["backend/app/api/routes/auth_v2.py"],
+        "config": ["YANDEX_CLIENT_ID", "YANDEX_CLIENT_SECRET"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "workflow-verification",
+      "domain": "business",
+      "type": "workflow",
+      "name": "Organization Verification",
+      "keywords": ["verification", "moderation", "approve", "reject", "pending"],
+      "file": "domains/business/workflows.md",
+      "anchor": "#verification-workflow",
+      "summary": "Organization verification by platform moderators",
+      "references": {
+        "frontend": ["frontend/src/pages/ModerationDashboard.tsx"],
+        "backend": ["backend/app/api/routes/moderation.py"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "workflow-onboarding",
+      "domain": "business",
+      "type": "workflow",
+      "name": "Organization Onboarding",
+      "keywords": ["onboarding", "checklist", "progress", "setup"],
+      "file": "domains/business/workflows.md",
+      "anchor": "#organization-onboarding-flow",
+      "summary": "Step-by-step organization setup process",
+      "references": {
+        "frontend": ["frontend/src/pages/OrganizationOnboarding.tsx"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "integration-supabase",
+      "domain": "integrations",
+      "type": "integration",
+      "name": "Supabase",
+      "keywords": ["supabase", "database", "auth", "storage", "postgresql"],
+      "file": "domains/integrations/supabase.md",
+      "anchor": "#overview",
+      "summary": "Supabase integration for DB, auth, and storage",
+      "references": {
+        "backend": ["backend/app/core/db.py", "backend/app/core/supabase.py"],
+        "frontend": ["frontend/src/lib/supabaseClient.ts"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "deploy-railway",
+      "domain": "deployment",
+      "type": "config",
+      "name": "Railway Deployment",
+      "keywords": ["railway", "deploy", "production", "hosting", "docker"],
+      "file": "domains/deployment/infrastructure.md",
+      "anchor": "#railway-configuration",
+      "summary": "Railway deployment configuration and workflow",
+      "references": {
+        "files": ["railway.json", "railway.toml", "start.sh", "Dockerfile"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-product_variants",
+      "domain": "database",
+      "type": "table",
+      "name": "product_variant_attributes",
+      "keywords": ["variant", "attribute", "size", "color", "sku", "barcode"],
+      "file": "domains/products/catalog.md",
+      "anchor": "#product-variants-system",
+      "summary": "Product variant attributes (size, color, etc.) with parent-child relationships",
+      "references": {
+        "backend": ["backend/app/services/products.py", "backend/app/api/routes/products.py"],
+        "frontend": ["frontend/src/api/importService.ts"],
+        "migrations": ["supabase/migrations/0024_product_variants.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "db-import_jobs",
+      "domain": "database",
+      "type": "table",
+      "name": "import_jobs",
+      "keywords": ["import", "bulk", "csv", "xlsx", "wildberries", "ozon", "1c"],
+      "file": "domains/products/catalog.md",
+      "anchor": "#bulk-import-system",
+      "summary": "Bulk import job tracking for products from various sources",
+      "references": {
+        "backend": ["backend/app/services/bulk_import.py", "backend/app/api/routes/bulk_import.py"],
+        "frontend": ["frontend/src/pages/OrganizationProductImport.tsx"],
+        "migrations": ["supabase/migrations/0025_bulk_imports.sql"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "svc-bulk_import",
+      "domain": "backend",
+      "type": "service",
+      "name": "bulk_import.py",
+      "keywords": ["import", "bulk", "csv", "xlsx", "parser", "mapping", "validation"],
+      "file": "domains/products/catalog.md",
+      "anchor": "#bulk-import-system",
+      "summary": "Bulk import orchestration for products from CSV/XLSX/marketplace exports",
+      "references": {
+        "routes": ["backend/app/api/routes/bulk_import.py"],
+        "parsers": ["backend/app/services/import_parsers/"],
+        "tables": ["import_jobs", "import_image_queue", "products"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "svc-image_downloader",
+      "domain": "backend",
+      "type": "service",
+      "name": "image_downloader.py",
+      "keywords": ["image", "download", "thumbnail", "webp", "supabase", "storage"],
+      "file": "domains/products/catalog.md",
+      "anchor": "#image-downloader-service",
+      "summary": "Async image download, processing, and Supabase upload service",
+      "references": {
+        "tables": ["import_image_queue", "products"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "page-org-product-import",
+      "domain": "frontend",
+      "type": "page",
+      "name": "OrganizationProductImport.tsx",
+      "keywords": ["import", "wizard", "bulk", "csv", "xlsx", "upload"],
+      "file": "domains/products/catalog.md",
+      "anchor": "#frontend-files",
+      "summary": "Multi-step import wizard for bulk product creation",
+      "references": {
+        "route": "/dashboard/organization/products/import",
+        "components": ["ImportWizard.tsx", "ImportSourceSelector.tsx", "ImportFieldMapper.tsx"],
+        "api": ["importService.uploadImportFile", "importService.executeImport"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "comp-admin-layout",
+      "domain": "frontend",
+      "type": "component",
+      "name": "AdminLayout.tsx",
+      "keywords": ["admin", "layout", "sidebar", "navigation", "menu"],
+      "file": "domains/admin/panel.md",
+      "anchor": "#admin-layout-component",
+      "summary": "Dedicated admin layout with collapsible sidebar navigation",
+      "references": {
+        "usedBy": ["App.tsx"],
+        "routes": ["/admin", "/admin/db", "/admin/imports"]
+      },
+      "createdAt": "2026-01-18"
+    },
+    {
+      "id": "page-admin-imports",
+      "domain": "frontend",
+      "type": "page",
+      "name": "AdminImports.tsx",
+      "keywords": ["admin", "import", "catalog", "jobs"],
+      "file": "domains/admin/panel.md",
+      "anchor": "#admin-imports-section",
+      "summary": "Admin view of all import jobs across platform",
+      "references": {
+        "route": "/admin/imports",
+        "api": ["authService.listAdminImports"]
+      },
+      "createdAt": "2026-01-18"
+    }
+  ]
+}

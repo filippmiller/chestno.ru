@@ -20,6 +20,12 @@ class ProductBase(BaseModel):
     main_image_url: Optional[str] = None
     gallery: Optional[List[dict]] = None
     external_url: Optional[str] = None
+    # Variant fields
+    parent_product_id: Optional[str] = None
+    is_variant: bool = False
+    sku: Optional[str] = None
+    barcode: Optional[str] = None
+    stock_quantity: Optional[int] = 0
 
 
 class ProductCreate(ProductBase):
@@ -40,6 +46,12 @@ class ProductUpdate(BaseModel):
     main_image_url: Optional[str] = None
     gallery: Optional[List[dict]] = None
     external_url: Optional[str] = None
+    # Variant fields
+    parent_product_id: Optional[str] = None
+    is_variant: Optional[bool] = None
+    sku: Optional[str] = None
+    barcode: Optional[str] = None
+    stock_quantity: Optional[int] = None
 
 
 class Product(ProductBase):
@@ -61,5 +73,73 @@ class PublicProduct(BaseModel):
     currency: Optional[str] = 'RUB'
     main_image_url: Optional[str] = None
     external_url: Optional[str] = None
+    # Variant fields for public display
+    sku: Optional[str] = None
+    is_variant: bool = False
+
+
+# Variant-specific schemas
+class VariantAttribute(BaseModel):
+    id: Optional[str] = None
+    attribute_name: str
+    attribute_value: str
+    display_order: int = 0
+
+
+class VariantAttributeCreate(BaseModel):
+    attribute_name: str
+    attribute_value: str
+    display_order: int = 0
+
+
+class ProductVariantCreate(BaseModel):
+    """Create a variant of an existing product."""
+    name: str
+    slug: Optional[str] = None
+    sku: Optional[str] = None
+    barcode: Optional[str] = None
+    price_cents: Optional[int] = None
+    stock_quantity: Optional[int] = 0
+    attributes: List[VariantAttributeCreate] = Field(default_factory=list)
+
+
+class ProductWithVariants(Product):
+    """Product with its variants and attributes."""
+    variants: List['Product'] = Field(default_factory=list)
+    attributes: List[VariantAttribute] = Field(default_factory=list)
+    variant_count: int = 0
+
+
+class AttributeTemplate(BaseModel):
+    """Organization-level attribute template."""
+    id: str
+    organization_id: str
+    attribute_name: str
+    possible_values: List[str] = Field(default_factory=list)
+    is_required: bool = False
+    display_order: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
+class AttributeTemplateCreate(BaseModel):
+    attribute_name: str
+    possible_values: List[str] = Field(default_factory=list)
+    is_required: bool = False
+    display_order: int = 0
+
+
+class AttributeTemplateUpdate(BaseModel):
+    attribute_name: Optional[str] = None
+    possible_values: Optional[List[str]] = None
+    is_required: Optional[bool] = None
+    display_order: Optional[int] = None
+
+
+class BulkVariantCreate(BaseModel):
+    """Create multiple variants at once (e.g., size × color matrix)."""
+    attribute_combinations: List[List[VariantAttributeCreate]]
+    base_price_cents: Optional[int] = None
+    base_stock_quantity: Optional[int] = 0
 
 

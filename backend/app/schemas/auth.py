@@ -69,6 +69,18 @@ class SocialLink(BaseModel):
     url: str
 
 
+class CertificationItem(BaseModel):
+    name: str
+    issuer: str | None = None
+    valid_until: str | None = None  # ISO date string
+    link: str | None = None
+
+
+class BuyLinkItem(BaseModel):
+    label: str
+    url: str
+
+
 class OrganizationProfile(BaseModel):
     id: str
     organization_id: str
@@ -80,6 +92,15 @@ class OrganizationProfile(BaseModel):
     gallery: list[GalleryItem] = Field(default_factory=list)
     tags: str | None = None
     language: str = 'ru'
+    # Advanced metadata
+    founded_year: int | None = None
+    employee_count: int | None = None
+    factory_size: str | None = None
+    category: str | None = None
+    certifications: list[CertificationItem] = Field(default_factory=list)
+    sustainability_practices: str | None = None
+    quality_standards: str | None = None
+    buy_links: list[BuyLinkItem] = Field(default_factory=list)
     # Contacts
     contact_email: str | None = None
     contact_phone: str | None = None
@@ -101,6 +122,15 @@ class OrganizationProfileUpdate(BaseModel):
     gallery: list[GalleryItem] | None = None
     tags: str | None = None
     language: str | None = None
+    # Advanced metadata
+    founded_year: int | None = None
+    employee_count: int | None = None
+    factory_size: str | None = None
+    category: str | None = None
+    certifications: list[CertificationItem] | None = None
+    sustainability_practices: str | None = None
+    quality_standards: str | None = None
+    buy_links: list[BuyLinkItem] | None = None
     # Contacts
     contact_email: str | None = None
     contact_phone: str | None = None

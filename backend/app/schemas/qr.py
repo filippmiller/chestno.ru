@@ -27,3 +27,24 @@ class QRCodeStats(BaseModel):
     last_7_days: int
     last_30_days: int
 
+
+class GeoBreakdownItem(BaseModel):
+    country: str | None
+    city: str | None
+    count: int
+
+
+class UTMBreakdownItem(BaseModel):
+    utm_source: str | None
+    utm_medium: str | None
+    utm_campaign: str | None
+    count: int
+
+
+class QRCodeDetailedStats(BaseModel):
+    total: int
+    last_7_days: int
+    last_30_days: int
+    geo_breakdown: list[GeoBreakdownItem]
+    utm_breakdown: list[UTMBreakdownItem]
+

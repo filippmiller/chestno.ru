@@ -8,12 +8,12 @@ from fastapi import HTTPException, status
 from psycopg.rows import dict_row
 
 from app.core.db import get_connection
-from app.schemas.auth import OrganizationProfile, OrganizationProfileUpdate, PublicOrganizationProfile, GalleryItem
+from app.schemas.auth import OrganizationProfile, OrganizationProfileUpdate, PublicOrganizationProfile, GalleryItem, CertificationItem, BuyLinkItem
 from app.schemas.public import (
     PublicOrganizationSummary,
     PublicOrganizationDetails,
-    CertificationItem,
-    BuyLinkItem,
+    CertificationItem as PublicCertificationItem,
+    BuyLinkItem as PublicBuyLinkItem,
 )
 from app.schemas.products import PublicProduct
 
@@ -63,6 +63,8 @@ def get_organization_profile(organization_id: str, user_id: str) -> Organization
                 '''
                 SELECT id, organization_id, short_description, long_description, production_description,
                        safety_and_quality, video_url, gallery, tags, language,
+                       founded_year, employee_count, factory_size, category,
+                       certifications, sustainability_practices, quality_standards, buy_links,
                        contact_email, contact_phone, contact_website, contact_address,
                        contact_telegram, contact_whatsapp, social_links,
                        created_at, updated_at
@@ -74,8 +76,11 @@ def get_organization_profile(organization_id: str, user_id: str) -> Organization
             row = cur.fetchone()
             if not row:
                 return None
-            if row.get('gallery') is None:
-                row['gallery'] = []
+            # Deserialize JSONB fields
+            row['gallery'] = _deserialize_list(row.get('gallery'))
+            row['certifications'] = _deserialize_list(row.get('certifications'))
+            row['buy_links'] = _deserialize_list(row.get('buy_links'))
+            row['social_links'] = _deserialize_list(row.get('social_links'))
             return OrganizationProfile(**row)
 
 
@@ -89,9 +94,13 @@ def upsert_organization_profile(
             _require_role(cur, organization_id, user_id, EDIT_ROLES)
             data = payload.model_dump(exclude_unset=True)
             data = _serialize_gallery(data)
-            # Сериализация social_links если есть
-            if 'social_links' in data and data['social_links'] is not None:
-                data['social_links'] = json.dumps([item.model_dump() if hasattr(item, 'model_dump') else item for item in data['social_links']])
+            # Serialize JSONB list fields
+            for field in ['social_links', 'certifications', 'buy_links']:
+                if field in data and data[field] is not None:
+                    data[field] = json.dumps([
+                        item.model_dump() if hasattr(item, 'model_dump') else item
+                        for item in data[field]
+                    ])
             now = datetime.now(timezone.utc)
             columns = ['organization_id']
             values = [organization_id]
@@ -117,6 +126,8 @@ def upsert_organization_profile(
                     {set_clause}
                 RETURNING id, organization_id, short_description, long_description, production_description,
                           safety_and_quality, video_url, gallery, tags, language,
+                          founded_year, employee_count, factory_size, category,
+                          certifications, sustainability_practices, quality_standards, buy_links,
                           contact_email, contact_phone, contact_website, contact_address,
                           contact_telegram, contact_whatsapp, social_links,
                           created_at, updated_at
@@ -124,16 +135,11 @@ def upsert_organization_profile(
                 values,
             )
             row = cur.fetchone()
-            if row.get('gallery') is None:
-                row['gallery'] = []
-            elif isinstance(row['gallery'], str):
-                row['gallery'] = json.loads(row['gallery'])
-            # Десериализация social_links
-            if row.get('social_links'):
-                if isinstance(row['social_links'], str):
-                    row['social_links'] = json.loads(row['social_links'])
-            else:
-                row['social_links'] = []
+            # Deserialize JSONB fields
+            row['gallery'] = _deserialize_list(row.get('gallery'))
+            row['certifications'] = _deserialize_list(row.get('certifications'))
+            row['buy_links'] = _deserialize_list(row.get('buy_links'))
+            row['social_links'] = _deserialize_list(row.get('social_links'))
             conn.commit()
             return OrganizationProfile(**row)
 
@@ -267,12 +273,12 @@ def get_public_organization_details_by_id(organization_id: str) -> PublicOrganiz
         cur.execute(
             '''
             SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
-                   o.verification_status, p.tags,  -- Fixed: use p.tags instead of o.tags
+                   o.verification_status, p.tags,
                    p.short_description, p.long_description, p.production_description,
-                   p.safety_and_quality, p.video_url, p.gallery, 
-                   NULL as category, NULL as founded_year,
-                   NULL as employee_count, NULL as factory_size, NULL as certifications, NULL as sustainability_practices,
-                   NULL as quality_standards, NULL as buy_links,
+                   p.safety_and_quality, p.video_url, p.gallery,
+                   p.category, p.founded_year,
+                   p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
+                   p.quality_standards, p.buy_links,
                    p.contact_email, p.contact_phone, p.contact_website, p.contact_address,
                    p.contact_telegram, p.contact_whatsapp, p.social_links
             FROM organizations o
@@ -346,10 +352,10 @@ def get_public_organization_details_by_slug(slug: str) -> PublicOrganizationDeta
             SELECT o.id, o.name, o.slug, o.country, o.city, o.website_url, o.is_verified,
                    o.verification_status, p.tags,
                    p.short_description, p.long_description, p.production_description,
-                   p.safety_and_quality, p.video_url, p.gallery, 
-                   NULL as category, NULL as founded_year,
-                   NULL as employee_count, NULL as factory_size, NULL as certifications, NULL as sustainability_practices,
-                   NULL as quality_standards, NULL as buy_links,
+                   p.safety_and_quality, p.video_url, p.gallery,
+                   p.category, p.founded_year,
+                   p.employee_count, p.factory_size, p.certifications, p.sustainability_practices,
+                   p.quality_standards, p.buy_links,
                    p.contact_email, p.contact_phone, p.contact_website, p.contact_address,
                    p.contact_telegram, p.contact_whatsapp, p.social_links
             FROM organizations o

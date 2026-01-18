@@ -11,6 +11,7 @@ from app.schemas.posts import (
 )
 from app.services.posts import (
     create_organization_post,
+    delete_organization_post,
     get_organization_post,
     get_public_organization_post,
     list_organization_posts,
@@ -92,6 +93,24 @@ async def update_post(
             post_id,
             current_user_id,
             payload,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.delete('/{organization_id}/posts/{post_id}', status_code=204)
+async def delete_post(
+    organization_id: str,
+    post_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> None:
+    """Удалить пост."""
+    try:
+        await run_in_threadpool(
+            delete_organization_post,
+            organization_id,
+            post_id,
+            current_user_id,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

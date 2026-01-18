@@ -108,6 +108,40 @@ export async function uploadPostImage(organizationId: string, postId: string, fi
 }
 
 /**
+ * Загружает изображение продукта (главное фото)
+ */
+export async function uploadProductImage(organizationId: string, productId: string, file: File): Promise<string> {
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+  const path = `org-${organizationId}/products/${productId}/main/${fileName}`
+
+  const result = await uploadFile({
+    bucket: 'org-media',
+    path,
+    file,
+  })
+
+  return result.url
+}
+
+/**
+ * Загружает изображение в галерею продукта
+ */
+export async function uploadProductGalleryImage(organizationId: string, productId: string, file: File): Promise<string> {
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+  const path = `org-${organizationId}/products/${productId}/gallery/${fileName}`
+
+  const result = await uploadFile({
+    bucket: 'org-media',
+    path,
+    file,
+  })
+
+  return result.url
+}
+
+/**
  * Загружает медиа для отзыва
  */
 export async function uploadReviewMedia(
