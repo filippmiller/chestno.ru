@@ -22,14 +22,19 @@ def _plan_from_row(row) -> SubscriptionPlan:
 
 
 def list_plans(include_inactive: bool = False) -> list[SubscriptionPlan]:
-    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
-        if include_inactive:
-            cur.execute('SELECT * FROM subscription_plans ORDER BY price_monthly_cents ASC NULLS LAST')
-        else:
-            cur.execute(
-                'SELECT * FROM subscription_plans WHERE is_active = true ORDER BY price_monthly_cents ASC NULLS LAST'
-            )
-        return [_plan_from_row(row) for row in cur.fetchall()]
+    try:
+        with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+            if include_inactive:
+                cur.execute('SELECT * FROM subscription_plans ORDER BY price_monthly_cents ASC NULLS LAST')
+            else:
+                cur.execute(
+                    'SELECT * FROM subscription_plans WHERE is_active = true ORDER BY price_monthly_cents ASC NULLS LAST'
+                )
+            rows = cur.fetchall()
+            return [_plan_from_row(row) for row in rows]
+    except Exception as e:
+        print(f'[subscriptions.list_plans] Error: {e}')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Database error: {str(e)}')
 
 
 def create_plan(payload: SubscriptionPlanCreate, actor_user_id: str) -> SubscriptionPlan:

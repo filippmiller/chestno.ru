@@ -126,57 +126,61 @@ def _update_delivery(user_id: str, delivery_id: str, *, set_read: bool, set_dism
 
 
 def list_notification_settings(user_id: str) -> list[NotificationSetting]:
-    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
-        cur.execute(
-            '''
-            SELECT
-                nt.id AS notification_type_id,
-                nt.key,
-                nt.category,
-                nt.severity,
-                nt.title_template,
-                nt.body_template,
-                nt.default_channels,
-                nt.created_at,
-                uns.id AS user_setting_id,
-                uns.channels,
-                uns.muted,
-                uns.created_at AS user_created_at,
-                uns.updated_at AS user_updated_at
-            FROM notification_types nt
-            LEFT JOIN user_notification_settings uns
-              ON uns.notification_type_id = nt.id AND uns.user_id = %s
-            ORDER BY nt.key
-            ''',
-            (user_id,),
-        )
-        rows = cur.fetchall()
-
-    settings: list[NotificationSetting] = []
-    for row in rows:
-        nt = NotificationType(
-            id=row['notification_type_id'],
-            key=row['key'],
-            category=row['category'],
-            severity=row['severity'],
-            title_template=row['title_template'],
-            body_template=row['body_template'],
-            default_channels=row['default_channels'],
-            created_at=row['created_at'],
-        )
-        channels = row['channels'] or row['default_channels']
-        settings.append(
-            NotificationSetting(
-                id=row['user_setting_id'],
-                notification_type_id=nt.id,
-                notification_type=nt,
-                channels=channels,
-                muted=row['muted'] if row['muted'] is not None else False,
-                created_at=row['user_created_at'],
-                updated_at=row['user_updated_at'],
+    try:
+        with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                SELECT
+                    nt.id AS notification_type_id,
+                    nt.key,
+                    nt.category,
+                    nt.severity,
+                    nt.title_template,
+                    nt.body_template,
+                    nt.default_channels,
+                    nt.created_at,
+                    uns.id AS user_setting_id,
+                    uns.channels,
+                    uns.muted,
+                    uns.created_at AS user_created_at,
+                    uns.updated_at AS user_updated_at
+                FROM notification_types nt
+                LEFT JOIN user_notification_settings uns
+                  ON uns.notification_type_id = nt.id AND uns.user_id = %s
+                ORDER BY nt.key
+                ''',
+                (user_id,),
             )
-        )
-    return settings
+            rows = cur.fetchall()
+
+        settings: list[NotificationSetting] = []
+        for row in rows:
+            nt = NotificationType(
+                id=row['notification_type_id'],
+                key=row['key'],
+                category=row['category'],
+                severity=row['severity'],
+                title_template=row['title_template'],
+                body_template=row['body_template'],
+                default_channels=row['default_channels'],
+                created_at=row['created_at'],
+            )
+            channels = row['channels'] or row['default_channels']
+            settings.append(
+                NotificationSetting(
+                    id=row['user_setting_id'],
+                    notification_type_id=nt.id,
+                    notification_type=nt,
+                    channels=channels,
+                    muted=row['muted'] if row['muted'] is not None else False,
+                    created_at=row['user_created_at'],
+                    updated_at=row['user_updated_at'],
+                )
+            )
+        return settings
+    except Exception as e:
+        print(f'[notifications.list_notification_settings] Error: {e}')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Database error: {str(e)}')
 
 
 def update_notification_settings(user_id: str, updates: list[NotificationSettingUpdate]) -> list[NotificationSetting]:
