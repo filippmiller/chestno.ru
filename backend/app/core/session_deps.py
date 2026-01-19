@@ -71,10 +71,10 @@ async def get_current_user_id_from_session(
 ) -> str:
     """
     Get current user ID from session cookie.
-    
+
     Returns:
         User ID (UUID string)
     """
     user = await get_current_user_from_session(request, session_id)
-    return user['id']
+    return str(user['id'])
 

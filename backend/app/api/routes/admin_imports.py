@@ -13,28 +13,39 @@ from app.services.admin_guard import assert_platform_admin
 
 def require_platform_role(user_id: str, allowed_roles: list[str]) -> None:
     """Check if user has one of the allowed platform roles."""
-    with get_connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            # Check app_profiles.role (Auth V2)
-            cur.execute(
-                'SELECT 1 FROM app_profiles WHERE id = %s AND role = %s',
-                (user_id, 'admin'),
-            )
-            if cur.fetchone() and 'platform_admin' in allowed_roles:
-                return
+    try:
+        with get_connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                # Check app_profiles.role (Auth V2)
+                cur.execute(
+                    'SELECT 1 FROM app_profiles WHERE id = %s AND role = %s',
+                    (user_id, 'admin'),
+                )
+                if cur.fetchone() and 'platform_admin' in allowed_roles:
+                    return
 
-            # Check platform_roles table (legacy)
-            cur.execute(
-                'SELECT 1 FROM platform_roles WHERE user_id = %s AND role = ANY(%s)',
-                (user_id, allowed_roles),
-            )
-            if cur.fetchone():
-                return
+                # Check platform_roles table (legacy)
+                # Filter to valid roles only (platform_admin, moderator, support)
+                valid_roles = [r for r in allowed_roles if r in ('platform_admin', 'moderator', 'support')]
+                if valid_roles:
+                    cur.execute(
+                        'SELECT 1 FROM platform_roles WHERE user_id = %s AND role = ANY(%s)',
+                        (user_id, valid_roles),
+                    )
+                    if cur.fetchone():
+                        return
 
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail='Admin access required'
-            )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail='Admin access required'
+                )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'Error checking admin permissions: {str(e)}'
+        )
 
 
 router = APIRouter(prefix='/api/admin/imports', tags=['admin-imports'])

@@ -18,7 +18,10 @@ from app.services.admin_guard import assert_platform_admin
 
 
 def _plan_from_row(row) -> SubscriptionPlan:
-    return SubscriptionPlan(**row)
+    # Convert UUID to string for Pydantic model
+    data = dict(row)
+    data['id'] = str(data['id'])
+    return SubscriptionPlan(**data)
 
 
 def list_plans(include_inactive: bool = False) -> list[SubscriptionPlan]:
