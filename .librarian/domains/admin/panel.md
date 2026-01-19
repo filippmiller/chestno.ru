@@ -1,6 +1,6 @@
 # Admin Panel
 
-> Last updated: 2026-01-18
+> Last updated: 2026-01-19
 > Domain: admin
 > Keywords: admin, panel, dashboard, moderation, user, management, platform
 
@@ -374,7 +374,7 @@ All admin route files updated to use cookie-based auth:
 
 ## Common Gotchas (Bug Fixes Log)
 
-> Updated: 2026-01-18
+> Updated: 2026-01-19
 
 ### 1. Admin Role Checks Must Check Both Tables
 
@@ -430,3 +430,74 @@ cur.execute("SELECT role FROM platform_roles WHERE user_id = %s AND role = ANY(%
 async def serve_service_worker():
     return Response(content=sw_content, media_type='application/javascript')
 ```
+
+### 6. psycopg3 UUID Serialization
+
+**Problem:** Admin endpoints returning 500 errors when listing organizations or subscription plans.
+
+**Root Cause:** psycopg3 returns `uuid.UUID` objects from database queries, but:
+1. `get_current_user_id_from_session()` returned UUID object instead of string
+2. Pydantic models expected `id: str` but received UUID objects
+
+**Fix:**
+```python
+# In session_deps.py - always convert to string
+return str(user['id'])
+
+# In services - convert before Pydantic validation
+def _plan_from_row(row) -> SubscriptionPlan:
+    data = dict(row)
+    data['id'] = str(data['id'])
+    return SubscriptionPlan(**data)
+```
+
+**Files affected:**
+- `backend/app/core/session_deps.py`
+- `backend/app/services/subscriptions.py`
+
+### 7. Invalid platform_roles Values
+
+**Problem:** `ALLOWED_ADMIN_ROLES` included `'platform_owner'` which doesn't exist.
+
+**Root Cause:** The `platform_roles` table CHECK constraint only allows:
+- `platform_admin`
+- `moderator`
+- `support`
+
+The code was checking for `'platform_owner'` which would never match.
+
+**Fix:** Update `admin_guard.py`:
+```python
+# Wrong
+ALLOWED_ADMIN_ROLES = ('platform_owner', 'platform_admin')
+
+# Correct
+ALLOWED_ADMIN_ROLES = ('platform_admin',)
+```
+
+### 8. Admin Service Error Handling
+
+**Problem:** Database errors in admin services caused unhandled 500s with no useful error message.
+
+**Root Cause:** Admin guard and role check functions didn't wrap database operations in try-except.
+
+**Fix:** Add proper error handling pattern:
+```python
+def assert_platform_admin(user_id: str) -> None:
+    try:
+        with get_connection() as conn:
+            # ... database queries ...
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f'[admin_guard] Error: {e}')
+        raise HTTPException(
+            status_code=500,
+            detail=f'Error checking admin permissions: {str(e)}'
+        )
+```
+
+**Files updated:**
+- `backend/app/services/admin_guard.py`
+- `backend/app/services/moderation.py`
+- `backend/app/api/routes/admin_imports.py`

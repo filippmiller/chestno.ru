@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-01-18",
+  "lastUpdated": "2026-01-19",
   "description": "Knowledge base index for Chestno.ru platform",
   "domains": {
     "database": {
@@ -814,6 +814,49 @@
         "backend": ["backend/app/services/admin_organizations.py"]
       },
       "createdAt": "2026-01-18"
+    },
+    {
+      "id": "gotcha-psycopg3-uuid",
+      "domain": "admin",
+      "type": "gotcha",
+      "name": "psycopg3 UUID Serialization",
+      "keywords": ["uuid", "psycopg3", "pydantic", "500", "serialization", "str"],
+      "file": "domains/admin/panel.md",
+      "anchor": "#6-psycopg3-uuid-serialization",
+      "summary": "psycopg3 returns UUID objects, must convert to str for Pydantic models",
+      "references": {
+        "backend": ["backend/app/core/session_deps.py", "backend/app/services/subscriptions.py"]
+      },
+      "createdAt": "2026-01-19"
+    },
+    {
+      "id": "gotcha-platform-roles-values",
+      "domain": "admin",
+      "type": "gotcha",
+      "name": "Valid platform_roles Values",
+      "keywords": ["platform_roles", "platform_admin", "platform_owner", "moderator", "support"],
+      "file": "domains/admin/panel.md",
+      "anchor": "#7-invalid-platform_roles-values",
+      "summary": "platform_roles only allows: platform_admin, moderator, support (not platform_owner)",
+      "references": {
+        "backend": ["backend/app/services/admin_guard.py"],
+        "migrations": ["supabase/migrations/0001_init.sql"]
+      },
+      "createdAt": "2026-01-19"
+    },
+    {
+      "id": "gotcha-admin-error-handling",
+      "domain": "admin",
+      "type": "gotcha",
+      "name": "Admin Service Error Handling Pattern",
+      "keywords": ["error", "exception", "try-except", "HTTPException", "500", "logging"],
+      "file": "domains/admin/panel.md",
+      "anchor": "#8-admin-service-error-handling",
+      "summary": "Admin services must wrap DB operations in try-except, re-raise HTTPException, log others",
+      "references": {
+        "backend": ["backend/app/services/admin_guard.py", "backend/app/services/moderation.py", "backend/app/api/routes/admin_imports.py"]
+      },
+      "createdAt": "2026-01-19"
     }
   ]
 }
