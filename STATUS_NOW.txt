@@ -1,0 +1,112 @@
+═══════════════════════════════════════════════════════════════════════
+  CHESTNO.RU - PROJECT STATUS AFTER COMMIT ed9f18e (2026-01-27)
+═══════════════════════════════════════════════════════════════════════
+
+✅ COMPLETED & COMMITTED
+├─ Status Levels System (100%) - 923 lines, 14 functions, 25+ tests
+├─ QR Core Generation (100%) - PIL-based, logo support
+└─ Payments Scaffolding (20%) - Files created, NOT functional yet
+
+🔄 READY TO IMPLEMENT
+├─ Payments Integration (27h, 2 devs) - CRITICAL PATH, blocks Stories
+└─ QR Improvements (12h, 1 dev) - INDEPENDENT, quick win
+
+⏸️ BLOCKED
+└─ Stories MVP (205h, 3 devs) - Needs Payments complete first
+
+───────────────────────────────────────────────────────────────────────
+AFTER RESTART - READ ONE OF THESE:
+───────────────────────────────────────────────────────────────────────
+
+📄 RESTART_HANDOFF_2026-01-27.md  ← Full context (recommended)
+📄 QUICK_START_AFTER_RESTART.md   ← Copy-paste prompts only
+📄 STATUS_NOW.txt                 ← This file
+
+───────────────────────────────────────────────────────────────────────
+GIT STATUS
+───────────────────────────────────────────────────────────────────────
+
+Branch: main
+Commits ahead: 2 (ed9f18e, 4792903)
+Working tree: Clean
+Ready to push: Yes (optional backup)
+
+───────────────────────────────────────────────────────────────────────
+NEXT ACTION - CHOOSE ONE:
+───────────────────────────────────────────────────────────────────────
+
+[1] Deploy Status Levels (2-3h) - Test what we built
+    → Validate completed work before new features
+
+[2] Payments Integration (2 days) - Critical path
+    → Required for Stories feature (subscription gating)
+
+[3] QR Improvements (1 day) - Quick win
+    → Analytics, customization, batch operations
+
+[4] Both [2] + [3] in parallel - Maximum speed
+    → QR done Day 1, Payments done Day 3
+
+───────────────────────────────────────────────────────────────────────
+RECOMMENDED: Option [4] (maximum throughput)
+SAFEST:      Option [1] (validate first)
+CRITICAL:    Option [2] (unblock Stories)
+───────────────────────────────────────────────────────────────────────
+
+Database Migrations Ready:
+  0027_status_levels_tables.sql     ✅ Tested
+  0028_status_levels_rls.sql        ✅ Tested
+  0029_status_levels_functions.sql  ✅ Tested
+  0030_qr_timeline_index.sql        ✅ Ready
+  0031_payments_integration.sql     ⚠️ Not tested
+  0032_qr_customization.sql         ✅ Ready
+
+───────────────────────────────────────────────────────────────────────
+FILES CREATED (Committed):
+───────────────────────────────────────────────────────────────────────
+
+Backend Services:
+  status_levels.py                  ✅ 923 lines, production-ready
+  status_notification_service.py    ✅ Complete
+  qr_generator.py                   ✅ Complete
+  payments.py                       🔄 Scaffolded (needs implementation)
+  payment_provider.py               🔄 Scaffolded (needs implementation)
+  webhooks.py                       🔄 Scaffolded (needs implementation)
+
+Frontend Components:
+  StatusBadge.tsx                   ✅ Complete
+  UpgradeRequestForm.tsx            ✅ Complete
+  StatusLevelsInfo.tsx              ✅ Complete
+  OrganizationStatus.tsx            ✅ Complete
+
+API Routes:
+  /api/v1/status-levels             ✅ Complete (public, auth, admin)
+  /api/v1/payments/...              🔄 Scaffolded (needs implementation)
+  /api/v1/webhooks/yukassa          🔄 Scaffolded (needs implementation)
+
+───────────────────────────────────────────────────────────────────────
+WARNINGS:
+───────────────────────────────────────────────────────────────────────
+
+⚠️ Payments files exist but are NOT functional yet
+⚠️ Do NOT deploy payments routes to production
+⚠️ Railway secrets needed: YUKASSA_SHOP_ID, YUKASSA_SECRET_KEY
+⚠️ Webhook must be registered with ЮKassa after deployment
+
+───────────────────────────────────────────────────────────────────────
+TIMELINE TO MVP:
+───────────────────────────────────────────────────────────────────────
+
+Week 1:  Payments (2-3 days) + QR (1 day parallel)
+Week 2:  Payments testing + deployment
+Week 3-5: Stories backend + frontend
+Week 6-8: Stories pages + testing
+Week 9:  Integration + launch
+
+MVP Launch: ~March 2026 (11 weeks)
+
+═══════════════════════════════════════════════════════════════════════
+Last updated: 2026-01-27 (before restart)
+Commit: ed9f18e, 4792903
+Next: Read QUICK_START_AFTER_RESTART.md
+═══════════════════════════════════════════════════════════════════════
