@@ -47,3 +47,4 @@ service-account*.json
 sessions/
 logs/
 *.log
+nul
