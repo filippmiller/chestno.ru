@@ -38,3 +38,12 @@ thumbs.db
 supabase/.branches/
 supabase/.temp/
 
+*.pem
+*.p12
+*.key
+*.crt
+credentials*.json
+service-account*.json
+sessions/
+logs/
+*.log

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результат проверки запроса</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .header .tagline {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .status-banner-approved {
+            background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #10B981;
+        }
+        .status-banner-rejected {
+            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #EF4444;
+        }
+        .status-banner .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .status-banner h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+        .status-banner-approved h2 {
+            color: #065F46;
+        }
+        .status-banner-rejected h2 {
+            color: #991B1B;
+        }
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            margin: 15px 0;
+        }
+        .content {
+            padding: 30px;
+        }
+        .content p {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #4b5563;
+        }
+        .review-box {
+            background-color: #f9fafb;
+            border-left: 4px solid #4F46E5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        .review-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .review-box p {
+            margin: 0;
+            color: #4b5563;
+        }
+        .rejection-box {
+            background-color: #FEF2F2;
+            border-left: 4px solid #EF4444;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        .rejection-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #991B1B;
+        }
+        .rejection-box p {
+            margin: 0;
+            color: #7F1D1D;
+        }
+        .next-steps {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .next-steps h3 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .next-steps ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin-bottom: 10px;
+            color: #4b5563;
+        }
+        .metadata {
+            background-color: #F3F4F6;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #6B7280;
+            margin: 20px 0;
+        }
+        .cta-button-approved {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #10B981;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: background-color 0.2s;
+        }
+        .cta-button-approved:hover {
+            background-color: #059669;
+        }
+        .cta-button-rejected {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #4F46E5;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: background-color 0.2s;
+        }
+        .cta-button-rejected:hover {
+            background-color: #4338CA;
+        }
+        .cta-container {
+            text-align: center;
+            padding: 20px 30px;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        .footer p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .footer a {
+            color: #4F46E5;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e5e7eb;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Работаем Честно!</h1>
+            <p class="tagline">Платформа прозрачного бизнеса</p>
+        </div>
+
+        <!-- Status Banner (Conditional: Approved or Rejected) -->
+        {{#is_approved}}
+        <div class="status-banner-approved">
+            <div class="icon">✅</div>
+            <h2>Запрос одобрен!</h2>
+            <div class="badge" style="background-color: {{level_color}};">
+                {{level_name}}
+            </div>
+        </div>
+        {{/is_approved}}
+
+        {{^is_approved}}
+        <div class="status-banner-rejected">
+            <div class="icon">❌</div>
+            <h2>Запрос отклонён</h2>
+            <div class="badge" style="background-color: {{level_color}}; opacity: 0.5;">
+                {{level_name}}
+            </div>
+        </div>
+        {{/is_approved}}
+
+        <!-- Content -->
+        <div class="content">
+            <p>Здравствуйте, {{recipient_name}}!</p>
+
+            {{#is_approved}}
+            <p>
+                Отличная новость! Ваш запрос на получение статуса <strong>«{{level_name}}»</strong>
+                для организации <strong>«{{org_name}}»</strong> был рассмотрен и одобрен!
+            </p>
+
+            {{#review_notes}}
+            <div class="review-box">
+                <h3>Комментарий проверяющего:</h3>
+                <p>{{review_notes}}</p>
+            </div>
+            {{/review_notes}}
+
+            <p>
+                Значок статуса теперь отображается в вашем профиле организации,
+                а все связанные преимущества активированы.
+            </p>
+
+            <div class="next-steps">
+                <h3>Преимущества вашего нового статуса:</h3>
+                <ul>
+                    <li><strong>Видимый значок</strong> в профиле организации</li>
+                    <li><strong>Повышенное доверие</strong> со стороны клиентов</li>
+                    <li><strong>Приоритет в поисковой выдаче</strong> на платформе</li>
+                    <li><strong>Эксклюзивный доступ</strong> к аналитике и инструментам</li>
+                </ul>
+            </div>
+
+            <p>
+                Поздравляем! Теперь ваша компания выделяется среди других
+                и демонстрирует приверженность принципам открытого бизнеса.
+            </p>
+            {{/is_approved}}
+
+            {{^is_approved}}
+            <p>
+                К сожалению, ваш запрос на получение статуса <strong>«{{level_name}}»</strong>
+                для организации <strong>«{{org_name}}»</strong> был отклонён.
+            </p>
+
+            <div class="rejection-box">
+                <h3>Причина отклонения:</h3>
+                <p>{{rejection_reason}}</p>
+            </div>
+
+            {{#review_notes}}
+            <div class="review-box">
+                <h3>Дополнительный комментарий:</h3>
+                <p>{{review_notes}}</p>
+            </div>
+            {{/review_notes}}
+
+            <div class="next-steps">
+                <h3>Как получить статус:</h3>
+                <ul>
+                    <li>Внимательно изучите причину отклонения</li>
+                    <li>Устраните указанные замечания</li>
+                    <li>Убедитесь, что ваша компания соответствует всем требованиям</li>
+                    <li>Подайте новый запрос после устранения недочётов</li>
+                </ul>
+            </div>
+
+            <p>
+                Мы всегда готовы помочь компаниям, стремящимся к открытости.
+                Если у вас есть вопросы о требованиях к статусу,
+                обращайтесь в нашу службу поддержки.
+            </p>
+            {{/is_approved}}
+
+            <div class="divider"></div>
+
+            <div class="metadata">
+                <strong>Детали проверки:</strong><br>
+                Рассмотрено: {{reviewed_at}}<br>
+                Организация: {{org_name}}<br>
+                Запрошенный статус: {{level_name}}
+            </div>
+
+            <p style="font-size: 14px; color: #6b7280;">
+                Нужна помощь? Обратитесь в
+                <a href="https://chestno.ru/support" style="color: #4F46E5;">службу поддержки</a>.
+            </p>
+        </div>
+
+        <!-- CTA Button -->
+        <div class="cta-container">
+            {{#is_approved}}
+            <a href="https://chestno.ru/org/{{org_slug}}" class="cta-button-approved">
+                Посмотреть мой профиль →
+            </a>
+            {{/is_approved}}
+            {{^is_approved}}
+            <a href="https://chestno.ru/org/{{org_slug}}/settings/status" class="cta-button-rejected">
+                Подать новый запрос →
+            </a>
+            {{/is_approved}}
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Работаем Честно!</strong></p>
+            <p>Платформа для прозрачного и честного бизнеса</p>
+            <p style="margin-top: 15px;">
+                <a href="https://chestno.ru">chestno.ru</a> |
+                <a href="https://chestno.ru/help">Помощь</a> |
+                <a href="https://chestno.ru/settings/notifications">Настройки уведомлений</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 11px;">
+                Это автоматическое уведомление. Пожалуйста, не отвечайте на это письмо.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

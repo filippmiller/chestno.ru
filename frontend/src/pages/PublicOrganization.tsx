@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 
 import { Link } from 'react-router-dom'
-import { fetchPublicOrganizationDetailsById } from '@/api/authService'
+import { fetchPublicOrganizationDetailsById, getOrganizationStatus } from '@/api/authService'
 import { listPublicOrganizationPostsById } from '@/api/postsService'
 import { listPublicOrganizationReviewsById } from '@/api/reviewsService'
+import { StatusBadge } from '@/components/StatusBadge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useUserStore } from '@/store/userStore'
-import type { PublicOrganizationDetails } from '@/types/auth'
+import type { PublicOrganizationDetails, StatusLevel } from '@/types/auth'
 import type { PublicOrganizationPost } from '@/types/posts'
 import type { PublicReview } from '@/types/reviews'
 
@@ -23,6 +24,7 @@ export const PublicOrganizationPage = () => {
   const [avgRating, setAvgRating] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [statusLevel, setStatusLevel] = useState<StatusLevel | null>(null)
 
   const handleLeaveReview = () => {
     if (!user) {
@@ -38,16 +40,24 @@ export const PublicOrganizationPage = () => {
     setLoading(true)
     setError(null)
     try {
-      const [orgData, postsData, reviewsData] = await Promise.all([
+      const [orgData, postsData, reviewsData, statusData] = await Promise.all([
         fetchPublicOrganizationDetailsById(id),
         listPublicOrganizationPostsById(id, { limit: 5, offset: 0 }),
         listPublicOrganizationReviewsById(id, { limit: 5, offset: 0 }),
+        getOrganizationStatus(id).catch(() => null), // Don't fail if status not available
       ])
       setData(orgData)
       setPosts(postsData.items)
       setReviews(reviewsData.items)
       setAvgRating(reviewsData.average_rating || null)
-      
+
+      // Set status level if available and active
+      if (statusData?.status && statusData.status.level !== 0) {
+        setStatusLevel(statusData.status.level)
+      } else {
+        setStatusLevel(null)
+      }
+
       // Note: QR scan tracking happens automatically on backend when user visits /qr/b/{slug}
       // The redirect endpoint logs the event before redirecting here with ?src=qr_business_main
     } catch (err) {
@@ -107,7 +117,12 @@ export const PublicOrganizationPage = () => {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
       <div className="space-y-3">
         <p className="text-sm uppercase text-muted-foreground">Производитель</p>
-        <h1 className="text-4xl font-semibold">{data.name}</h1>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <h1 className="text-4xl font-semibold">{data.name}</h1>
+          {statusLevel && statusLevel !== 0 && (
+            <StatusBadge level={statusLevel as 'A' | 'B' | 'C'} size="lg" showTooltip />
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span>
             {data.city ? `${data.city}, ` : ''}

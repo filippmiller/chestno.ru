@@ -4,8 +4,9 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Plus, Trash2 } from 'lucide-react'
 
-import { getOrganizationProfile, upsertOrganizationProfile } from '@/api/authService'
+import { getOrganizationProfile, upsertOrganizationProfile, getOrganizationStatus } from '@/api/authService'
 import { MediaUploader } from '@/components/MediaUploader'
+import { StatusBadge } from '@/components/StatusBadge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useUserStore } from '@/store/userStore'
+import type { StatusLevel } from '@/types/auth'
 
 // Types for complex fields
 interface SocialLink {
@@ -84,6 +86,9 @@ export const OrganizationProfilePage = () => {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [certifications, setCertifications] = useState<CertificationItem[]>([])
   const [buyLinks, setBuyLinks] = useState<BuyLinkItem[]>([])
+  // Status level state
+  const [statusLevel, setStatusLevel] = useState<StatusLevel | null>(null)
+  const [statusLoading, setStatusLoading] = useState(false)
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -124,8 +129,13 @@ export const OrganizationProfilePage = () => {
     if (!organizationId) return
     setLoading(true)
     setError(null)
-    getOrganizationProfile(organizationId)
-      .then((profile) => {
+
+    // Fetch both profile and status in parallel
+    Promise.all([
+      getOrganizationProfile(organizationId),
+      getOrganizationStatus(organizationId).catch(() => null), // Don't fail if status not available
+    ])
+      .then(([profile, statusData]) => {
         form.reset({
           short_description: profile?.short_description ?? '',
           long_description: profile?.long_description ?? '',
@@ -155,6 +165,13 @@ export const OrganizationProfilePage = () => {
         setSocialLinks(profile?.social_links || [])
         setCertifications(profile?.certifications || [])
         setBuyLinks(profile?.buy_links || [])
+
+        // Set status level if available and active
+        if (statusData?.status && statusData.status.level !== 0) {
+          setStatusLevel(statusData.status.level)
+        } else {
+          setStatusLevel(null)
+        }
       })
       .catch((err) => {
         console.error(err)
@@ -310,7 +327,14 @@ export const OrganizationProfilePage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>{selectedOrganization.name}</CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <CardTitle className="text-2xl">{selectedOrganization.name}</CardTitle>
+              {statusLevel && statusLevel !== 0 && (
+                <StatusBadge level={statusLevel as 'A' | 'B' | 'C'} size="md" showTooltip />
+              )}
+            </div>
+          </div>
           <CardDescription>
             Роль: <span className="font-medium">{membership.role}</span>.{' '}
             {canEdit ? 'Вы можете редактировать профиль.' : 'У вас доступ только для просмотра.'}

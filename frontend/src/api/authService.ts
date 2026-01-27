@@ -34,6 +34,9 @@ import type {
   QRCodePayload,
   QRCodeStats,
   QRCodeDetailedStats,
+  QRCodeTimeline,
+  QRCustomizationSettings,
+  QRCustomizationUpdate,
   QROverviewResponse,
   SessionPayload,
   SubscriptionPlan,
@@ -42,6 +45,9 @@ import type {
   AdminUsersResponse,
   AdminOrganization,
   AdminOrganizationsResponse,
+  OrganizationStatusResponse,
+  StatusHistoryResponse,
+  StatusLevel,
 } from '@/types/auth'
 
 import { httpClient } from './httpClient'
@@ -219,6 +225,58 @@ export const getQrCodeDetailedStats = async (organizationId: string, qrCodeId: s
     `/api/organizations/${organizationId}/qr-codes/${qrCodeId}/detailed-stats`,
   )
   return data
+}
+
+export const getQrTimeline = async (
+  organizationId: string,
+  qrCodeId: string,
+  period: '7d' | '30d' | '90d' | '1y' = '30d'
+) => {
+  const { data } = await httpClient.get<QRCodeTimeline>(
+    `/api/organizations/${organizationId}/qr-codes/${qrCodeId}/timeline`,
+    { params: { period } }
+  )
+  return data
+}
+
+export const getQrCustomization = async (organizationId: string, qrCodeId: string) => {
+  const { data } = await httpClient.get<QRCustomizationSettings | null>(
+    `/api/organizations/${organizationId}/qr-codes/${qrCodeId}/customization`
+  )
+  return data
+}
+
+export const updateQrCustomization = async (
+  organizationId: string,
+  qrCodeId: string,
+  payload: QRCustomizationUpdate
+) => {
+  const { data } = await httpClient.put<QRCustomizationSettings>(
+    `/api/organizations/${organizationId}/qr-codes/${qrCodeId}/customization`,
+    payload
+  )
+  return data
+}
+
+export const deleteQrCustomization = async (organizationId: string, qrCodeId: string) => {
+  await httpClient.delete(`/api/organizations/${organizationId}/qr-codes/${qrCodeId}/customization`)
+}
+
+export const bulkCreateQrCodes = async (organizationId: string, labels: string[]) => {
+  const { data } = await httpClient.post<QRCode[]>(
+    `/api/organizations/${organizationId}/qr-codes/bulk`,
+    { labels }
+  )
+  return data
+}
+
+export const exportQrCodes = async (organizationId: string, qrIds: string[]) => {
+  const idsParam = qrIds.join(',')
+  const response = await httpClient.get(
+    `/api/organizations/${organizationId}/qr-codes/export`,
+    { params: { qr_ids: idsParam }, responseType: 'blob' }
+  )
+  return response.data
 }
 
 export const listAiIntegrations = async () => {
@@ -535,5 +593,34 @@ export const getAdminOrganizationDetails = async (organizationId: string) => {
 
 export const updateAdminOrganizationDetails = async (organizationId: string, payload: any) => {
   const { data } = await httpClient.patch(`/api/admin/organizations/${organizationId}/details`, payload)
+  return data
+}
+
+// Organization Status API Functions
+export const getOrganizationStatus = async (organizationId: string) => {
+  const { data } = await httpClient.get<OrganizationStatusResponse>(`/api/organizations/${organizationId}/status`)
+  return data
+}
+
+export const getOrganizationStatusHistory = async (
+  organizationId: string,
+  params?: {
+    limit?: number
+    offset?: number
+    level?: StatusLevel
+    action?: string
+  },
+) => {
+  const { data } = await httpClient.get<StatusHistoryResponse>(
+    `/api/organizations/${organizationId}/status/history`,
+    { params },
+  )
+  return data
+}
+
+export const requestStatusUpgrade = async (organizationId: string, targetLevel: StatusLevel) => {
+  const { data } = await httpClient.post(`/api/organizations/${organizationId}/status/request-upgrade`, {
+    target_level: targetLevel,
+  })
   return data
 }

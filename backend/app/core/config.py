@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     vapid_subject: str = 'mailto:noreply@chestno.ru'
     # GeoIP settings
     geoip_db_path: str | None = None  # Path to GeoLite2-City.mmdb
+    # YooKassa (Payment) settings
+    yukassa_shop_id: str | None = None
+    yukassa_secret_key: str | None = None
+    yukassa_webhook_secret: str | None = None
+    yukassa_sandbox_mode: bool = True
+    payment_currency: str = 'RUB'
+    payment_return_url: str | None = None
+    payment_cancel_url: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=('.env', 'backend/.env'),
@@ -64,6 +72,22 @@ class Settings(BaseSettings):
     @property
     def yandex_oauth_enabled(self) -> bool:
         return bool(self.yandex_client_id and self.yandex_client_secret and self.yandex_redirect_uri)
+
+    @property
+    def yukassa_enabled(self) -> bool:
+        return bool(self.yukassa_shop_id and self.yukassa_secret_key)
+
+    @property
+    def payment_return_url_full(self) -> str:
+        if self.payment_return_url:
+            return self.payment_return_url
+        return f'{self.frontend_base}/subscription/success'
+
+    @property
+    def payment_cancel_url_full(self) -> str:
+        if self.payment_cancel_url:
+            return self.payment_cancel_url
+        return f'{self.frontend_base}/subscription/canceled'
 
 
 @lru_cache

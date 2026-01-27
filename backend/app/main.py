@@ -40,6 +40,9 @@ from app.api.routes.reviews import router as reviews_router, public_router as pu
 from app.api.routes.marketing import router as marketing_router, org_router as marketing_org_router, admin_router as marketing_admin_router
 from app.api.routes.bulk_import import router as bulk_import_router
 from app.api.routes.admin_imports import router as admin_imports_router
+from app.api.routes.webhooks import router as webhooks_router
+from app.api.routes.payments import router as payments_router
+from app.api.routes.status_levels import router as status_levels_router
 from app.core.config import get_settings
 
 
@@ -106,7 +109,10 @@ def create_app() -> FastAPI:
     app.include_router(marketing_admin_router)
     app.include_router(bulk_import_router)
     app.include_router(admin_imports_router)
-    
+    app.include_router(webhooks_router)
+    app.include_router(payments_router)
+    app.include_router(status_levels_router)
+
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей
     backend_path = Path(__file__).parent.parent.parent  # /app/backend или /app

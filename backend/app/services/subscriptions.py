@@ -194,3 +194,64 @@ def ensure_org_member(user_id: str, organization_id: str) -> None:
         if cur.fetchone() is None:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Недостаточно прав для просмотра подписки')
 
+
+def update_subscription_status(
+    subscription_id: str,
+    new_status: str,
+    grace_period_days: Optional[int] = None,
+    actor_user_id: Optional[str] = None
+) -> dict:
+    """
+    Update subscription status and trigger status level changes.
+    Integrates with status_levels service for automatic level A management.
+
+    Args:
+        subscription_id: Subscription UUID
+        new_status: New status ('active', 'past_due', 'cancelled', etc.)
+        grace_period_days: Grace period duration (default 14 for level A)
+        actor_user_id: User who triggered the change
+
+    Returns:
+        dict with updated subscription and status level actions
+    """
+    from app.services import status_levels
+
+    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        # Get subscription details
+        cur.execute(
+            'SELECT organization_id, status FROM organization_subscriptions WHERE id = %s',
+            (subscription_id,)
+        )
+        sub = cur.fetchone()
+
+        if not sub:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Подписка не найдена'
+            )
+
+        old_status = sub['status']
+        org_id = str(sub['organization_id'])
+
+        # Update subscription status
+        cur.execute(
+            'UPDATE organization_subscriptions SET status = %s, updated_at = now() WHERE id = %s',
+            (new_status, subscription_id)
+        )
+        conn.commit()
+
+    # Trigger status level changes
+    status_result = status_levels.handle_subscription_status_change(
+        subscription_id=subscription_id,
+        new_status=new_status,
+        organization_id=org_id,
+        actor_user_id=actor_user_id
+    )
+
+    return {
+        'subscription_id': subscription_id,
+        'old_status': old_status,
+        'new_status': new_status,
+        'status_levels': status_result
+    }
+

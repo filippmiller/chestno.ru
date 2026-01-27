@@ -229,6 +229,50 @@ export interface QRCodeDetailedStats {
   utm_breakdown: UTMBreakdownItem[]
 }
 
+export interface TimelineDataPoint {
+  date: string
+  count: number
+}
+
+export interface QRCodeTimeline {
+  period: '7d' | '30d' | '90d' | '1y'
+  data_points: TimelineDataPoint[]
+  total_scans: number
+}
+
+export interface QRCustomizationSettings {
+  id: string
+  qr_code_id: string
+  foreground_color: string
+  background_color: string
+  logo_url: string | null
+  logo_size_percent: number
+  style: 'squares' | 'dots' | 'rounded'
+  contrast_ratio: number | null
+  is_valid: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface QRCustomizationUpdate {
+  foreground_color?: string
+  background_color?: string
+  logo_url?: string | null
+  logo_size_percent?: number
+  style?: 'squares' | 'dots' | 'rounded'
+}
+
+export type StatusLevel = 'A' | 'B' | 'C' | 0
+
+export interface OrganizationStatus {
+  organization_id: string
+  level: StatusLevel
+  level_name?: string | null
+  level_description?: string | null
+  granted_at?: string | null
+  expires_at?: string | null
+}
+
 export interface PublicOrganizationProfile {
   name: string
   slug: string
@@ -584,5 +628,60 @@ export interface LoginResponse extends SessionPayload {
   expires_in?: number
   token_type: string
   supabase_user?: any
+}
+
+// Organization Status Types
+export type StatusLevel = 'A' | 'B' | 'C'
+
+export interface LevelDetail {
+  level: StatusLevel
+  valid_from: string
+  valid_until?: string | null
+  expires_at?: string | null
+  days_until_expiry?: number | null
+  is_active: boolean
+}
+
+export interface LevelCCriterion {
+  key: string
+  label: string
+  current_value: number | boolean | string
+  required_value: number | boolean | string
+  is_met: boolean
+  progress_percent?: number
+}
+
+export interface NextLevelProgress {
+  next_level: StatusLevel
+  overall_progress_percent: number
+  criteria: LevelCCriterion[]
+  is_eligible: boolean
+}
+
+export interface StatusHistoryEntry {
+  id: string
+  level: StatusLevel
+  action: 'granted' | 'revoked' | 'expired' | 'upgraded' | 'downgraded'
+  performed_at: string
+  performed_by?: string | null
+  reason?: string | null
+  valid_from?: string | null
+  valid_until?: string | null
+}
+
+export interface OrganizationStatusResponse {
+  organization_id: string
+  current_level: StatusLevel
+  active_levels: LevelDetail[]
+  next_level_progress?: NextLevelProgress | null
+  can_request_upgrade: boolean
+  upgrade_blocked_reason?: string | null
+}
+
+export interface StatusHistoryResponse {
+  items: StatusHistoryEntry[]
+  total: number
+  limit: number
+  offset: number
 }
 

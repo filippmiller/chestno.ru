@@ -4,11 +4,12 @@ Simple QR codes for business main pages.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 
 from app.core.session_deps import get_current_user_id_from_session
 from app.core.config import get_settings
 from app.services.qr_business import get_business_public_url, get_business_qr_url_for_admin, log_qr_scan_event
+from app.services.qr_generator import generate_qr_image, generate_etag
 
 settings = get_settings()
 
@@ -33,6 +34,65 @@ async def get_public_url(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Failed to get public URL: {str(e)}')
+
+
+@router.get('/{organization_id}/qr-business/image')
+async def generate_business_qr_image(
+    request: Request,
+    organization_id: str,
+    format: str = Query(default="png", regex="^(png|svg)$"),
+    size: int = Query(default=500, ge=100, le=2000),
+    error_correction: str = Query(default="Q", regex="^(L|M|Q|H)$"),
+    current_user_id: str | None = Depends(get_current_user_id_from_session),
+) -> Response:
+    """
+    Generate QR code image for business public page.
+    Uses higher default error correction (Q) and size (500) for print materials.
+
+    Query Parameters:
+    - format: "png" or "svg" (default: png)
+    - size: Image size in pixels, 100-2000 (default: 500)
+    - error_correction: "L", "M", "Q", or "H" (default: Q - recommended for print)
+    """
+    # Get business public URL (validates org membership)
+    try:
+        url_data = await run_in_threadpool(get_business_public_url, organization_id, current_user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    # Extract target URL (with QR tracking parameter)
+    target_url = url_data["public_url"]
+    slug = url_data["slug"]
+
+    # Generate ETag for caching
+    etag = generate_etag(slug, format, size, error_correction)
+
+    # Check If-None-Match header for cache validation
+    if_none_match = request.headers.get("if-none-match")
+    if if_none_match == etag:
+        return Response(status_code=304)  # Not Modified
+
+    # Generate QR image
+    try:
+        image_data = await run_in_threadpool(
+            generate_qr_image, target_url, format, size, error_correction
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Determine content type
+    content_type = "image/png" if format == "png" else "image/svg+xml; charset=utf-8"
+
+    # Return image with caching headers
+    return Response(
+        content=image_data,
+        media_type=content_type,
+        headers={
+            "ETag": etag,
+            "Cache-Control": "public, max-age=86400",  # 24 hours
+            "Content-Disposition": f'inline; filename="qr-business-{slug}.{format}"',
+        }
+    )
 
 
 @public_router.get('/qr/b/{slug}')

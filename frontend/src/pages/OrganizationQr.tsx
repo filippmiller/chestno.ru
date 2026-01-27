@@ -3,16 +3,20 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { createQrCode, getQrCodeStats, getQrCodeDetailedStats, getBusinessPublicUrl, listQrCodes } from '@/api/authService'
+import { createQrCode, getQrCodeStats, getQrCodeDetailedStats, getBusinessPublicUrl, listQrCodes, getQrTimeline, getQrCustomization, updateQrCustomization, bulkCreateQrCodes, exportQrCodes } from '@/api/authService'
 import { BusinessQrCode } from '@/components/qr/BusinessQrCode'
 import { QRGeoMap } from '@/components/qr/QRGeoMap'
+import { QRTimelineChart } from '@/components/qr/QRTimelineChart'
+import { QRCustomizer } from '@/components/qr/QRCustomizer'
+import { BulkCreateModal } from '@/components/qr/BulkCreateModal'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { useUserStore } from '@/store/userStore'
-import type { QRCode, QRCodePayload, QRCodeStats, QRCodeDetailedStats } from '@/types/auth'
+import type { QRCode, QRCodePayload, QRCodeStats, QRCodeDetailedStats, QRCodeTimeline, QRCustomizationSettings, QRCustomizationUpdate } from '@/types/auth'
 
 const qrSchema = z.object({
   label: z.string().min(2, 'Введите название'),
@@ -31,6 +35,13 @@ export const OrganizationQrPage = () => {
   const [detailedStatsMap, setDetailedStatsMap] = useState<Record<string, QRCodeDetailedStats>>({})
   const [expandedQrId, setExpandedQrId] = useState<string | null>(null)
   const [businessPublicUrl, setBusinessPublicUrl] = useState<string | null>(null)
+  const [timelineMap, setTimelineMap] = useState<Record<string, QRCodeTimeline>>({})
+  const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d')
+  const [customizationMap, setCustomizationMap] = useState<Record<string, QRCustomizationSettings | null>>({})
+  const [editingCustomizationQrId, setEditingCustomizationQrId] = useState<string | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedQrIds, setSelectedQrIds] = useState<Set<string>>(new Set())
+  const [bulkCreateModalOpen, setBulkCreateModalOpen] = useState(false)
   const form = useForm<QRFormValues>({ resolver: zodResolver(qrSchema), defaultValues: { label: '' } })
   const backendUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) ?? 'http://localhost:8000'
 
@@ -118,6 +129,116 @@ export const OrganizationQrPage = () => {
     }
   }
 
+  const loadTimeline = async (code: QRCode, period: '7d' | '30d' | '90d' | '1y') => {
+    if (!organizationId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const timeline = await getQrTimeline(organizationId, code.id, period)
+      setTimelineMap((prev) => ({ ...prev, [code.id]: timeline }))
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить данные временной шкалы')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openCustomizer = async (code: QRCode) => {
+    if (!organizationId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const customization = await getQrCustomization(organizationId, code.id)
+      setCustomizationMap((prev) => ({ ...prev, [code.id]: customization }))
+      setEditingCustomizationQrId(code.id)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось загрузить настройки')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveCustomization = async (payload: QRCustomizationUpdate) => {
+    if (!organizationId || !editingCustomizationQrId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const updated = await updateQrCustomization(organizationId, editingCustomizationQrId, payload)
+      setCustomizationMap((prev) => ({ ...prev, [editingCustomizationQrId]: updated }))
+      setEditingCustomizationQrId(null)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось сохранить настройки')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBulkCreate = async (labels: string[]) => {
+    if (!organizationId) return
+    setLoading(true)
+    setError(null)
+    try {
+      await bulkCreateQrCodes(organizationId, labels)
+      const list = await listQrCodes(organizationId)
+      setQrCodes(list)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось создать QR-коды')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleExportSelected = async () => {
+    if (!organizationId || selectedQrIds.size === 0) return
+    setLoading(true)
+    setError(null)
+    try {
+      const blob = await exportQrCodes(organizationId, Array.from(selectedQrIds))
+      // Trigger download
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'qr-codes-export.zip'
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      setSelectedQrIds(new Set())
+      setSelectionMode(false)
+    } catch (err) {
+      console.error(err)
+      setError('Не удалось экспортировать QR-коды')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleSelection = (qrId: string) => {
+    setSelectedQrIds((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(qrId)) {
+        newSet.delete(qrId)
+      } else {
+        newSet.add(qrId)
+      }
+      return newSet
+    })
+  }
+
+  const selectAll = () => {
+    setSelectedQrIds(new Set(qrCodes.map((qr) => qr.id)))
+  }
+
+  const deselectAll = () => {
+    setSelectedQrIds(new Set())
+  }
+
   const toggleDetailedStats = (code: QRCode) => {
     if (expandedQrId === code.id) {
       setExpandedQrId(null)
@@ -166,8 +287,45 @@ export const OrganizationQrPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Список QR-кодов</CardTitle>
-          <CardDescription>Используйте эти ссылки на упаковке или в презентациях.</CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>Список QR-кодов</CardTitle>
+              <CardDescription>Используйте эти ссылки на упаковке или в презентациях.</CardDescription>
+            </div>
+            {canCreate && qrCodes.length > 0 && (
+              <div className="flex gap-2">
+                {!selectionMode ? (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => setBulkCreateModalOpen(true)}>
+                      Массовое создание
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setSelectionMode(true)}>
+                      Выбрать несколько
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="outline" onClick={selectAll}>
+                      Выбрать все
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={deselectAll}>
+                      Снять выбор
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleExportSelected}
+                      disabled={selectedQrIds.size === 0 || loading}
+                    >
+                      Экспортировать ({selectedQrIds.size})
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setSelectionMode(false); deselectAll() }}>
+                      Отмена
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {loading && <p className="text-sm text-muted-foreground">Загружаем…</p>}
@@ -177,9 +335,20 @@ export const OrganizationQrPage = () => {
           {!loading &&
             qrCodes.map((code) => (
               <div key={code.id} className="rounded-md border border-border p-4">
-                <div className="flex flex-col gap-1">
-                  <p className="text-lg font-semibold">{code.label ?? code.code}</p>
-                  <p className="text-sm text-muted-foreground">{qrLink(code.code)}</p>
+                <div className="flex gap-3">
+                  {selectionMode && (
+                    <div className="flex items-start pt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedQrIds.has(code.id)}
+                        onChange={() => toggleSelection(code.id)}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 flex flex-col gap-1">
+                    <p className="text-lg font-semibold">{code.label ?? code.code}</p>
+                    <p className="text-sm text-muted-foreground">{qrLink(code.code)}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(qrLink(code.code))}>
                       Скопировать URL
@@ -187,6 +356,11 @@ export const OrganizationQrPage = () => {
                     <Button size="sm" onClick={() => loadStats(code)} disabled={loading}>
                       Показать статистику
                     </Button>
+                    {canCreate && (
+                      <Button size="sm" variant="outline" onClick={() => openCustomizer(code)} disabled={loading}>
+                        Настроить вид
+                      </Button>
+                    )}
                   </div>
                   {statsMap[code.id] && (
                     <div className="mt-2 rounded-md border border-dashed border-border p-2 text-sm text-muted-foreground">
@@ -236,8 +410,46 @@ export const OrganizationQrPage = () => {
                           </div>
                         </div>
                       )}
+                      <div>
+                        <div className="mb-3 flex items-center justify-between">
+                          <h4 className="text-sm font-medium">Временная шкала</h4>
+                          <div className="flex gap-1">
+                            {(['7d', '30d', '90d', '1y'] as const).map((period) => (
+                              <Button
+                                key={period}
+                                size="sm"
+                                variant={selectedPeriod === period ? 'default' : 'outline'}
+                                onClick={() => {
+                                  setSelectedPeriod(period)
+                                  loadTimeline(code, period)
+                                }}
+                                disabled={loading}
+                              >
+                                {period === '7d' && '7 дней'}
+                                {period === '30d' && '30 дней'}
+                                {period === '90d' && '90 дней'}
+                                {period === '1y' && '1 год'}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                        {timelineMap[code.id] ? (
+                          <QRTimelineChart timeline={timelineMap[code.id]} />
+                        ) : (
+                          <div className="flex h-80 items-center justify-center border border-dashed">
+                            <Button
+                              variant="outline"
+                              onClick={() => loadTimeline(code, selectedPeriod)}
+                              disabled={loading}
+                            >
+                              Загрузить временную шкалу
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -279,6 +491,33 @@ export const OrganizationQrPage = () => {
           <AlertDescription>Обратитесь к администратору организации.</AlertDescription>
         </Alert>
       )}
+
+      {/* Customizer Dialog */}
+      <Dialog open={editingCustomizationQrId !== null} onOpenChange={(open) => !open && setEditingCustomizationQrId(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Настройка внешнего вида QR-кода</DialogTitle>
+            <DialogDescription>
+              Измените цвета и стиль QR-кода. Убедитесь, что контрастность достаточна для хорошей сканируемости.
+            </DialogDescription>
+          </DialogHeader>
+          {editingCustomizationQrId && (
+            <QRCustomizer
+              qrUrl={qrLink(qrCodes.find((c) => c.id === editingCustomizationQrId)?.code || '')}
+              currentSettings={customizationMap[editingCustomizationQrId] || null}
+              onSave={handleSaveCustomization}
+              onCancel={() => setEditingCustomizationQrId(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Create Modal */}
+      <BulkCreateModal
+        open={bulkCreateModalOpen}
+        onClose={() => setBulkCreateModalOpen(false)}
+        onSubmit={handleBulkCreate}
+      />
     </div>
   )
 }

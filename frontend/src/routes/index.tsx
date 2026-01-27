@@ -42,6 +42,8 @@ import { PublicOrganizationPostsPage } from '@/pages/PublicOrganizationPosts'
 import { StoriesPage } from '@/pages/StoriesPage'
 import { AboutPage } from '@/pages/AboutPage'
 import { PricingPage } from '@/pages/PricingPage'
+import { StatusLevelsInfo } from '@/pages/StatusLevelsInfo'
+import { OrganizationStatusPage } from '@/pages/OrganizationStatus'
 
 export const AppRoutes = () => (
   <Routes>
@@ -51,6 +53,7 @@ export const AppRoutes = () => (
     <Route path="/stories" element={<StoriesPage />} />
     <Route path="/about" element={<AboutPage />} />
     <Route path="/pricing" element={<PricingPage />} />
+    <Route path="/levels" element={<StatusLevelsInfo />} />
     <Route path="/org/:id" element={<PublicOrganizationPage />} />
     <Route path="/org/:slug/posts" element={<PublicOrganizationPostsPage />} />
     <Route path="/org/:slug/posts/:postSlug" element={<PublicOrganizationPostsPage />} />
@@ -161,6 +164,14 @@ export const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <OrganizationAnalyticsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/status"
+      element={
+        <ProtectedRoute>
+          <OrganizationStatusPage />
         </ProtectedRoute>
       }
     />

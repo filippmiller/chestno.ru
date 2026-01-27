@@ -41,6 +41,9 @@ export const Navbar = ({ userEmail, onLogout, isAdmin = false }: NavbarProps) =>
           <NavLink to="/orgs" className={({ isActive }) => (isActive ? 'text-primary' : '')}>
             Производители
           </NavLink>
+          <NavLink to="/levels" className={({ isActive }) => (isActive ? 'text-primary' : '')}>
+            Уровни доверия
+          </NavLink>
           <NavLink to="/register" className={({ isActive }) => (isActive ? 'text-primary' : '')}>
             Регистрация
           </NavLink>

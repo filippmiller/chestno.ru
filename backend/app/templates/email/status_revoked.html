@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статус отозван</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .header .tagline {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .notice-banner {
+            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #EF4444;
+        }
+        .notice-banner .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .notice-banner h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #991B1B;
+        }
+        .badge-removed {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            margin: 15px 0;
+            position: relative;
+            opacity: 0.5;
+        }
+        .badge-removed::after {
+            content: "✗";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: #DC2626;
+        }
+        .content {
+            padding: 30px;
+        }
+        .content p {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #4b5563;
+        }
+        .reason-box {
+            background-color: #FEF2F2;
+            border-left: 4px solid #EF4444;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        .reason-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #991B1B;
+        }
+        .reason-box p {
+            margin: 0;
+            color: #7F1D1D;
+        }
+        .next-steps {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .next-steps h3 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .next-steps ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin-bottom: 10px;
+            color: #4b5563;
+        }
+        .info-note {
+            background-color: #EFF6FF;
+            border-left: 4px solid #3B82F6;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        .info-note p {
+            margin: 0;
+            color: #1E40AF;
+            font-size: 14px;
+        }
+        .cta-button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #4F46E5;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: background-color 0.2s;
+        }
+        .cta-button:hover {
+            background-color: #4338CA;
+        }
+        .cta-container {
+            text-align: center;
+            padding: 20px 30px;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        .footer p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .footer a {
+            color: #4F46E5;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e5e7eb;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Работаем Честно!</h1>
+            <p class="tagline">Платформа прозрачного бизнеса</p>
+        </div>
+
+        <!-- Notice Banner -->
+        <div class="notice-banner">
+            <div class="icon">⚠️</div>
+            <h2>Статус отозван</h2>
+            <div class="badge-removed" style="background-color: {{level_color}};">
+                {{level_name}}
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p>Здравствуйте, {{recipient_name}}!</p>
+
+            <p>
+                Уведомляем вас, что статус <strong>«{{level_name}}»</strong>
+                для организации <strong>«{{org_name}}»</strong> был отозван.
+            </p>
+
+            <div class="reason-box">
+                <h3>Причина отзыва:</h3>
+                <p>{{reason}}</p>
+            </div>
+
+            <p>
+                Это означает, что значок статуса больше не отображается в вашем профиле,
+                а связанные с ним преимущества (приоритет в поиске, расширенная аналитика)
+                временно недоступны.
+            </p>
+
+            <div class="next-steps">
+                <h3>Что делать дальше:</h3>
+                <ul>
+                    <li>Ознакомьтесь с причиной отзыва и устраните указанные замечания</li>
+                    <li>Проверьте, соответствует ли ваша компания требованиям статуса</li>
+                    <li>При необходимости свяжитесь со службой поддержки для уточнения деталей</li>
+                    <li>После устранения замечаний подайте новый запрос на получение статуса</li>
+                </ul>
+            </div>
+
+            <div class="info-note">
+                <p>
+                    <strong>💡 Важно:</strong> Отзыв статуса не влияет на работу вашего аккаунта.
+                    Вы можете продолжать использовать платформу в обычном режиме.
+                </p>
+            </div>
+
+            <p>
+                Мы всегда рады помочь компаниям, стремящимся к открытости и честности.
+                Если у вас есть вопросы или вы готовы восстановить статус,
+                обращайтесь в нашу службу поддержки.
+            </p>
+
+            <div class="divider"></div>
+
+            <p style="font-size: 14px; color: #6b7280;">
+                Нужна помощь? Напишите нам на
+                <a href="mailto:support@chestno.ru" style="color: #4F46E5;">support@chestno.ru</a>
+                или воспользуйтесь <a href="https://chestno.ru/support" style="color: #4F46E5;">формой обратной связи</a>.
+            </p>
+        </div>
+
+        <!-- CTA Button -->
+        <div class="cta-container">
+            <a href="https://chestno.ru/org/{{org_slug}}/settings/status" class="cta-button">
+                Подать новый запрос →
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Работаем Честно!</strong></p>
+            <p>Платформа для прозрачного и честного бизнеса</p>
+            <p style="margin-top: 15px;">
+                <a href="https://chestno.ru">chestno.ru</a> |
+                <a href="https://chestno.ru/help">Помощь</a> |
+                <a href="https://chestno.ru/settings/notifications">Настройки уведомлений</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 11px;">
+                Это автоматическое уведомление. Пожалуйста, не отвечайте на это письмо.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
