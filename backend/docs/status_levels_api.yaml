@@ -1,0 +1,603 @@
+openapi: 3.0.0
+info:
+  title: Status Levels API
+  version: 1.0.0
+  description: |
+    API endpoints for managing organization status levels (A/B/C badges).
+
+    ## Overview
+    Organizations can have three status levels:
+    - **Level A (Self-Declaration)**: Paid subscription, self-declared honesty
+    - **Level B (Platform Verified)**: Platform conducted verification
+    - **Level C (Highest Reputation)**: Earned through excellent service metrics
+
+    ## Authentication
+    - Public endpoints: No authentication required
+    - Authenticated endpoints: Require valid session cookie
+    - Admin endpoints: Require platform_admin role
+
+servers:
+  - url: https://api.chestno.ru
+    description: Production API
+  - url: http://localhost:8000
+    description: Development API
+
+tags:
+  - name: Public
+    description: Public endpoints (no auth required)
+  - name: Organizations
+    description: Organization-scoped endpoints
+  - name: Admin
+    description: Platform admin endpoints
+
+paths:
+  /api/status-levels/info:
+    get:
+      tags:
+        - Public
+      summary: Get public information about status levels
+      description: Returns details about all three status levels including pricing, features, and criteria
+      operationId: getStatusLevelsInfo
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusLevelsInfo'
+              example:
+                levels:
+                  A:
+                    name: "Самодекларация"
+                    description: "Self-declared honesty"
+                    price:
+                      monthly: 990
+                      yearly: 9900
+                    features:
+                      - "Level A badge on profile"
+                      - "Basic analytics"
+                  B:
+                    name: "Проверено платформой"
+                    description: "Platform verified"
+                    price:
+                      production: 5000
+                      subscription: 2990
+                    features:
+                      - "Verified badge"
+                      - "Priority in search"
+                  C:
+                    name: "Высшая репутация"
+                    description: "Highest reputation"
+                    price: "FREE"
+                    criteria:
+                      - "Active level B"
+                      - "50+ approved reviews"
+                    features:
+                      - "Premium badge"
+                      - "Top catalog positions"
+
+  /api/organizations/{organization_id}/status:
+    get:
+      tags:
+        - Organizations
+      summary: Get organization status levels
+      description: |
+        Returns current status levels for an organization.
+
+        **Public view** (no auth): Shows only current_level and basic info
+        **Authenticated view** (org member): Shows full details and progress toward Level C
+      operationId: getOrganizationStatus
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Organization UUID
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationStatus'
+              examples:
+                public:
+                  summary: Public view (no auth)
+                  value:
+                    organization_id: "123e4567-e89b-12d3-a456-426614174000"
+                    current_level: "B"
+                    active_levels:
+                      - level: "B"
+                        granted_at: "2025-01-01T00:00:00Z"
+                        is_active: true
+                        can_use_badge: true
+                    can_manage: false
+                authenticated:
+                  summary: Authenticated view (org member)
+                  value:
+                    organization_id: "123e4567-e89b-12d3-a456-426614174000"
+                    current_level: "B"
+                    active_levels:
+                      - level: "B"
+                        granted_at: "2025-01-01T00:00:00Z"
+                        is_active: true
+                        can_use_badge: true
+                    can_manage: true
+                    level_c_progress:
+                      has_active_b: true
+                      review_count: 45
+                      review_count_needed: 50
+                      response_rate: 0.93
+                      response_rate_needed: 0.95
+
+  /api/organizations/{organization_id}/status-upgrade-request:
+    post:
+      tags:
+        - Organizations
+      summary: Request upgrade to higher status level
+      description: |
+        Create a request to upgrade to level B or C.
+
+        **Requirements:**
+        - Must be organization admin or owner
+        - Rate limit: 1 request per 30 days
+        - Level C requires active Level B
+      operationId: createUpgradeRequest
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUpgradeRequest'
+            example:
+              target_level: "B"
+              message: "We have 3 years of operation with excellent reviews"
+              evidence_urls:
+                - "https://example.com/certificate.pdf"
+                - "https://example.com/testimonials.html"
+      responses:
+        '200':
+          description: Request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpgradeRequest'
+        '403':
+          description: Not authorized (not org admin)
+        '422':
+          description: Business rule violation (e.g., requesting C without B)
+        '429':
+          description: Rate limit exceeded (1 request per 30 days)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                      next_allowed_at:
+                        type: string
+                        format: date-time
+
+  /api/organizations/{organization_id}/status-history:
+    get:
+      tags:
+        - Organizations
+      summary: Get status change history
+      description: |
+        Returns paginated history of status level changes.
+
+        **Accessible by:**
+        - Organization members (all roles)
+        - Platform admins
+      operationId: getStatusHistory
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (1-indexed)
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page (max 100)
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusHistoryResponse'
+        '403':
+          description: Not authorized (not org member or admin)
+
+  /api/admin/organizations/{organization_id}/status-levels:
+    post:
+      tags:
+        - Admin
+      summary: Grant status level to organization
+      description: |
+        Grant a status level (platform admin only).
+
+        **Business Rules:**
+        - Level C requires active Level B
+        - Cannot grant duplicate active level
+        - Level B defaults to 18 months validity
+      operationId: grantStatusLevel
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantStatusLevelRequest'
+            example:
+              level: "B"
+              valid_until: "2026-07-01T00:00:00Z"
+              notes: "Verified business registration and documentation"
+              subscription_id: null
+      responses:
+        '200':
+          description: Status level granted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusLevel'
+        '403':
+          description: Not authorized (not platform admin)
+        '409':
+          description: Level already active for this organization
+        '422':
+          description: Business rule violation (e.g., granting C without B)
+
+  /api/admin/organizations/{organization_id}/status-levels/{level}:
+    delete:
+      tags:
+        - Admin
+      summary: Revoke status level from organization
+      description: |
+        Revoke a status level (platform admin only).
+        Optionally send notification to organization.
+      operationId: revokeStatusLevel
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: level
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [A, B, C]
+        - name: reason
+          in: query
+          schema:
+            type: string
+            maxLength: 500
+          description: Reason for revocation
+        - name: notify
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Whether to send notification to organization
+      responses:
+        '200':
+          description: Status level revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeStatusLevelResponse'
+        '403':
+          description: Not authorized (not platform admin)
+        '404':
+          description: Level not found or already inactive
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session_id
+      description: Session cookie from authentication
+
+  schemas:
+    StatusLevelsInfo:
+      type: object
+      properties:
+        levels:
+          type: object
+          properties:
+            A:
+              $ref: '#/components/schemas/LevelInfo'
+            B:
+              $ref: '#/components/schemas/LevelInfo'
+            C:
+              $ref: '#/components/schemas/LevelInfoC'
+
+    LevelInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: object
+          additionalProperties: true
+        features:
+          type: array
+          items:
+            type: string
+
+    LevelInfoC:
+      allOf:
+        - $ref: '#/components/schemas/LevelInfo'
+        - type: object
+          properties:
+            criteria:
+              type: array
+              items:
+                type: string
+
+    OrganizationStatus:
+      type: object
+      required:
+        - organization_id
+        - current_level
+        - active_levels
+        - can_manage
+      properties:
+        organization_id:
+          type: string
+          format: uuid
+        current_level:
+          type: string
+          enum: ['0', 'A', 'B', 'C']
+          description: Highest active level
+        active_levels:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusLevel'
+        can_manage:
+          type: boolean
+          description: Whether current user can manage this org
+        level_c_progress:
+          $ref: '#/components/schemas/LevelCProgress'
+          nullable: true
+          description: Progress toward Level C (org members only)
+
+    StatusLevel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        level:
+          type: string
+          enum: [A, B, C]
+        granted_at:
+          type: string
+          format: date-time
+        granted_by:
+          type: string
+          format: uuid
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+        can_use_badge:
+          type: boolean
+        subscription_id:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    LevelCProgress:
+      type: object
+      properties:
+        has_active_b:
+          type: boolean
+        review_count:
+          type: integer
+        review_count_needed:
+          type: integer
+          default: 50
+        response_rate:
+          type: number
+          format: float
+        response_rate_needed:
+          type: number
+          format: float
+          default: 0.95
+        avg_response_hours:
+          type: number
+          format: float
+        avg_response_hours_max:
+          type: number
+          format: float
+          default: 48.0
+        public_cases:
+          type: integer
+        public_cases_needed:
+          type: integer
+          default: 30
+        meets_criteria:
+          type: boolean
+
+    CreateUpgradeRequest:
+      type: object
+      required:
+        - target_level
+      properties:
+        target_level:
+          type: string
+          enum: [B, C]
+        message:
+          type: string
+          maxLength: 2000
+          nullable: true
+        evidence_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+          maxItems: 10
+
+    UpgradeRequest:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending]
+        target_level:
+          type: string
+          enum: [B, C]
+        submitted_at:
+          type: string
+          format: date-time
+        estimated_review_time:
+          type: string
+          default: "3-5 business days"
+
+    StatusHistoryResponse:
+      type: object
+      properties:
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusHistoryEntry'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    StatusHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        level:
+          type: string
+          enum: [A, B, C]
+        action:
+          type: string
+          enum: [granted, renewed, suspended, revoked, degraded]
+        reason:
+          type: string
+          nullable: true
+        performed_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    GrantStatusLevelRequest:
+      type: object
+      required:
+        - level
+      properties:
+        level:
+          type: string
+          enum: [A, B, C]
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          maxLength: 1000
+          nullable: true
+        subscription_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    RevokeStatusLevelResponse:
+      type: object
+      properties:
+        revoked:
+          type: boolean
+        level:
+          type: string
+          enum: [A, B, C]
+        organization_id:
+          type: string
+          format: uuid
+        revoked_at:
+          type: string
+          format: date-time
+        revoked_by:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          nullable: true
+        notification_sent:
+          type: boolean
