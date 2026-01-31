@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "build:typecheck": "tsc -b && vite build",
     "lint": "eslint .",
     "format": "prettier --check .",
     "preview": "vite preview",
@@ -46,6 +47,7 @@
     "react-colorful": "^5.6.1",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.54.2",
+    "react-is": "^19.2.4",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^7.0.2",
     "recharts": "^3.7.0",
