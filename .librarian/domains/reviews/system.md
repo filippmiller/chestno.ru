@@ -255,3 +255,70 @@ emit_notification(
 **Update (moderate):** Organization managers only
 **Update (edit):** Authors can edit pending reviews
 **Delete:** Authors can delete pending; managers can delete any
+
+---
+
+## AI Response Assistant
+
+### Overview
+AI-powered response generation for reviews. Uses rule-based sentiment analysis
+and template-based Russian language responses. No external AI APIs required.
+
+### Backend Service
+**File:** `backend/app/services/ai_response.py`
+
+```python
+generate_ai_responses(review_id, rating, title, body)
+# Analyzes review and generates response suggestions
+# Returns: AIResponseResult with sentiment, topics, suggestions
+
+analyze_sentiment(rating, text)
+# Combines rating with keyword analysis
+# Returns: 'positive' | 'neutral' | 'negative'
+
+extract_topics(text)
+# Detects discussed topics (quality, service, delivery, price, etc.)
+# Returns: list of topic display names in Russian
+```
+
+### API Endpoint
+| Method | Endpoint | Purpose | Role |
+|--------|----------|---------|------|
+| POST | `/api/organizations/{org_id}/reviews/{id}/ai-response` | Generate AI responses | Manager+ |
+
+### Response Format
+```typescript
+interface AIResponseResult {
+  sentiment: 'positive' | 'neutral' | 'negative';
+  topics: string[];  // e.g., ['Качество продукции', 'Доставка']
+  suggestions: AIResponseSuggestion[];
+}
+
+interface AIResponseSuggestion {
+  tone: 'professional' | 'friendly' | 'apologetic';
+  text: string;
+  confidence: number;  // 0.0 - 1.0
+}
+```
+
+### Response Tones
+- **professional** - Formal, business-appropriate
+- **friendly** - Warm, conversational
+- **apologetic** - Empathetic for negative reviews
+
+### Frontend Component
+**File:** `frontend/src/components/reviews/AIResponseModal.tsx`
+
+Features:
+- Modal dialog with Sparkles icon button
+- Shows sentiment badge (positive/neutral/negative)
+- Displays detected topics as badges
+- 2-3 response suggestions with tone labels
+- One-click "Use" button fills response textarea
+- Copy to clipboard functionality
+- Regenerate option
+
+### Usage
+In OrganizationReviews.tsx, the AI Response button appears in the response
+form area when responding to approved reviews. Clicking "Use" fills the
+response textarea with the selected suggestion.

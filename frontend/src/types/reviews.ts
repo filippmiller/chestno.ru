@@ -84,3 +84,19 @@ export interface ReviewStats {
   }
 }
 
+// AI Response Generation Types
+export type ResponseTone = 'professional' | 'friendly' | 'apologetic'
+export type ReviewSentiment = 'positive' | 'neutral' | 'negative'
+
+export interface AIResponseSuggestion {
+  tone: ResponseTone
+  text: string
+  confidence: number
+}
+
+export interface AIResponseResult {
+  sentiment: ReviewSentiment
+  topics: string[]
+  suggestions: AIResponseSuggestion[]
+}
+

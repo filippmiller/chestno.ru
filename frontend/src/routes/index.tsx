@@ -44,6 +44,8 @@ import { AboutPage } from '@/pages/AboutPage'
 import { PricingPage } from '@/pages/PricingPage'
 import { StatusLevelsInfo } from '@/pages/StatusLevelsInfo'
 import { OrganizationStatusPage } from '@/pages/OrganizationStatus'
+import { WidgetConfiguratorPage } from '@/pages/WidgetConfigurator'
+import { OrganizationBenchmarksPage } from '@/pages/OrganizationBenchmarks'
 
 export const AppRoutes = () => (
   <Routes>
@@ -168,6 +170,14 @@ export const AppRoutes = () => (
       }
     />
     <Route
+      path="/dashboard/organization/benchmarks"
+      element={
+        <ProtectedRoute>
+          <OrganizationBenchmarksPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
       path="/dashboard/organization/status"
       element={
         <ProtectedRoute>
@@ -180,6 +190,14 @@ export const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <OrganizationQrPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/widget"
+      element={
+        <ProtectedRoute>
+          <WidgetConfiguratorPage />
         </ProtectedRoute>
       }
     />

@@ -885,6 +885,37 @@
         "backend": ["backend/app/main.py"]
       },
       "createdAt": "2026-01-28"
+    },
+    {
+      "id": "svc-benchmarks",
+      "domain": "backend",
+      "type": "service",
+      "name": "benchmarks.py",
+      "keywords": ["benchmark", "competitor", "comparison", "percentile", "trend", "category", "rating", "reviews"],
+      "file": "domains/backend/routes.md",
+      "anchor": "#benchmarks---competitor-comparison",
+      "summary": "Competitor benchmarking service comparing organization metrics vs category peers",
+      "references": {
+        "routes": ["backend/app/api/routes/benchmarks.py"],
+        "frontend": ["frontend/src/pages/OrganizationBenchmarks.tsx", "frontend/src/components/benchmarks/BenchmarkDashboard.tsx"],
+        "tables": ["organizations", "organization_profiles", "reviews"]
+      },
+      "createdAt": "2026-02-01"
+    },
+    {
+      "id": "comp-benchmark-dashboard",
+      "domain": "frontend",
+      "type": "component",
+      "name": "BenchmarkDashboard.tsx",
+      "keywords": ["benchmark", "competitor", "comparison", "analytics", "percentile", "trend"],
+      "file": "domains/frontend/components.md",
+      "anchor": "#benchmark-components",
+      "summary": "Dashboard widget showing organization metrics vs category averages with trends",
+      "references": {
+        "route": "/dashboard/organization/benchmarks",
+        "api": ["benchmarksService.getOrganizationBenchmarks"]
+      },
+      "createdAt": "2026-02-01"
     }
   ]
 }

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { useUserStore } from '@/store/userStore'
+import { AIResponseModal } from '@/components/reviews/AIResponseModal'
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'На модерации',
@@ -317,7 +318,18 @@ export const OrganizationReviewsPage = () => {
                     </div>
                   )}
                   {respondingTo === review.id && (
-                    <div className="mt-4 space-y-2 rounded-lg border border-border bg-muted/30 p-4">
+                    <div className="mt-4 space-y-3 rounded-lg border border-border bg-muted/30 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Ваш ответ</span>
+                        {selectedOrganizationId && (
+                          <AIResponseModal
+                            organizationId={selectedOrganizationId}
+                            reviewId={review.id}
+                            reviewTitle={review.title}
+                            onSelectResponse={(text) => setResponseText(text)}
+                          />
+                        )}
+                      </div>
                       <Textarea
                         placeholder="Введите ответ на отзыв..."
                         value={responseText}

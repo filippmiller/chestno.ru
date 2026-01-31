@@ -7,6 +7,7 @@ import type {
   ReviewsResponse,
   PublicReviewsResponse,
   ReviewStats,
+  AIResponseResult,
 } from '@/types/reviews'
 
 export async function listOrganizationReviews(
@@ -106,6 +107,20 @@ export async function listAllReviews(params?: {
 
 export async function adminModerateReview(reviewId: string, payload: ReviewModeration): Promise<Review> {
   const response = await httpClient.patch<Review>(`/api/admin/reviews/${reviewId}/moderate`, payload)
+  return response.data
+}
+
+/**
+ * Generate AI response suggestions for a review.
+ * Returns 2-3 response variants with different tones (professional, friendly, apologetic).
+ */
+export async function generateAIResponse(
+  organizationId: string,
+  reviewId: string,
+): Promise<AIResponseResult> {
+  const response = await httpClient.post<AIResponseResult>(
+    `/api/organizations/${organizationId}/reviews/${reviewId}/ai-response`,
+  )
   return response.data
 }
 

@@ -135,6 +135,49 @@ and custom feature components.
 
 ---
 
+## Widget Components
+
+### WidgetConfigurator.tsx
+**Location:** `frontend/src/pages/WidgetConfigurator.tsx`
+**Route:** `/dashboard/organization/widget`
+**Purpose:** Configure and generate embeddable trust badge widgets
+**Features:**
+- Live widget preview with iframe
+- Size selection (small, medium, large)
+- Theme selection (light, dark, auto)
+- Custom primary color picker
+- Border radius slider
+- Toggle options (logo, rating, reviews)
+- Language selection (ru, en)
+- Copy-to-clipboard for embed codes (script tag, iframe)
+- Both JavaScript and iframe embed options
+
+---
+
+## Benchmark Components
+
+**Location:** `frontend/src/components/benchmarks/`
+
+### BenchmarkDashboard.tsx
+**Purpose:** Competitor benchmarking dashboard widget
+**Route:** `/dashboard/organization/benchmarks`
+**Features:**
+- Organization metrics vs category averages
+- Percentile ranking visualization
+- Trend indicators (up/down/stable)
+- Period selector (7, 30, 90 days)
+- Metric cards for rating, reviews, response rate
+- AI-generated recommendations
+- Loading and error states
+
+**Metrics shown:**
+- Average rating with category comparison
+- Total reviews with percentile ranking
+- Response rate (% of reviews with answers)
+- Response time (if available)
+
+---
+
 ## Marketing Components
 
 **Location:** `frontend/src/components/marketing/`

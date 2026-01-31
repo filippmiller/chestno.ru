@@ -92,3 +92,23 @@ class ReviewStats(BaseModel):
     average_rating: float | None = None
     rating_distribution: dict[int, int] = Field(default_factory=dict)  # {1: count, 2: count, ...}
 
+
+# AI Response Generation Schemas
+class AIResponseSuggestion(BaseModel):
+    """Single AI-generated response suggestion."""
+    tone: Literal['professional', 'friendly', 'apologetic']
+    text: str
+    confidence: float = Field(..., ge=0.0, le=1.0, description='Confidence score 0.0-1.0')
+
+
+class AIResponseResult(BaseModel):
+    """Result of AI response generation for a review."""
+    sentiment: Literal['positive', 'neutral', 'negative']
+    topics: list[str] = Field(default_factory=list, description='Detected topics in the review')
+    suggestions: list[AIResponseSuggestion] = Field(
+        ...,
+        min_length=1,
+        max_length=3,
+        description='2-3 response suggestions with different tones'
+    )
+

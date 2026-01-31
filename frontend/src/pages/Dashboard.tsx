@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle, Package, CreditCard, ClipboardList, BarChart2, LayoutDashboard, Link2, Newspaper, MessageSquare } from 'lucide-react'
+import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle, Package, CreditCard, ClipboardList, BarChart2, LayoutDashboard, Link2, Newspaper, MessageSquare, TrendingUp } from 'lucide-react'
 
 import { fetchSession } from '@/api/authService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -278,6 +278,12 @@ export const DashboardPage = () => {
                 <Link to="/dashboard/organization/analytics">
                   <BarChart2 className="mr-2 h-4 w-4" />
                   Аналитика
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/dashboard/organization/benchmarks">
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  Конкуренты
                 </Link>
               </Button>
               {canEditProfile && (

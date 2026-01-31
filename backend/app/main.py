@@ -45,6 +45,8 @@ from app.api.routes.admin_imports import router as admin_imports_router
 from app.api.routes.webhooks import router as webhooks_router
 from app.api.routes.payments import router as payments_router
 from app.api.routes.status_levels import router as status_levels_router
+from app.api.routes.widgets import router as widgets_router, config_router as widgets_config_router
+from app.api.routes.benchmarks import router as benchmarks_router
 from app.core.config import get_settings
 
 
@@ -156,6 +158,9 @@ def create_app() -> FastAPI:
     app.include_router(webhooks_router)
     app.include_router(payments_router)
     app.include_router(status_levels_router)
+    app.include_router(widgets_router)
+    app.include_router(widgets_config_router)
+    app.include_router(benchmarks_router)
 
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей

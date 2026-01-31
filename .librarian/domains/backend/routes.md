@@ -213,6 +213,50 @@ Logs event (IP hash, UTM, geo) and redirects to organization page.
 - `GET /api/organizations/{org_id}/marketing-materials` - List materials
 - `POST /api/organizations/{org_id}/marketing-materials` - Create material
 
+### Benchmarks - Competitor Comparison
+**File:** `backend/app/api/routes/benchmarks.py`
+
+| Method | Endpoint | Purpose | Roles |
+|--------|----------|---------|-------|
+| GET | `/api/v1/organizations/{org_id}/benchmarks` | Compare org vs category peers | Member |
+
+**Query Parameters:**
+- `days`: Trend analysis period (7-90, default 30)
+
+**Response includes:**
+- Average rating vs category average
+- Total reviews vs category average
+- Response rate vs category average
+- Percentile rankings (0-100)
+- Trend data (current vs previous period)
+- Category info (name, org count, review count)
+
+### Widgets - Embeddable Trust Badges
+**File:** `backend/app/api/routes/widgets.py`
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/v1/widgets/badge/{org_slug}` | JavaScript embed code for widget |
+| GET | `/api/v1/widgets/iframe/{org_slug}` | HTML page for iframe embedding |
+| GET | `/api/v1/widgets/preview/{org_slug}` | Preview HTML for configurator |
+| GET | `/api/organizations/{org_id}/widget/embed-code` | Get embed code snippets |
+
+**Query Parameters:**
+- `size`: small, medium, large (default: medium)
+- `theme`: light, dark, auto (default: light)
+- `color`: Custom hex color without # (e.g., 3B82F6)
+- `logo`: Show Chestno.ru logo (default: true)
+- `reviews`: Show review count (default: true)
+- `rating`: Show star rating (default: true)
+- `lang`: ru, en (default: ru)
+- `radius`: Border radius 0-24 (default: 8)
+
+**Features:**
+- Full CORS support for cross-origin embedding
+- ETag caching with 5-minute max-age
+- Responsive sizing based on widget size
+- Automatic theme detection (auto mode)
+
 ---
 
 ## Role Hierarchy

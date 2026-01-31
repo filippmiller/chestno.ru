@@ -9,6 +9,7 @@ from app.schemas.reviews import (
     ReviewsResponse,
     PublicReviewsResponse,
     ReviewStats,
+    AIResponseResult,
 )
 from app.services.reviews import (
     create_review,
@@ -19,6 +20,7 @@ from app.services.reviews import (
     respond_to_review,
     delete_review,
 )
+from app.services.ai_response import get_ai_response_for_review
 
 from .auth import get_current_user_id
 
@@ -120,6 +122,53 @@ async def delete(
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
+
+
+@router.post('/{organization_id}/reviews/{review_id}/ai-response', response_model=AIResponseResult)
+async def generate_ai_response(
+    organization_id: str,
+    review_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> AIResponseResult:
+    """
+    Генерация AI-ответа на отзыв.
+
+    Анализирует отзыв и генерирует 2-3 варианта ответа с разными тонами:
+    - professional (профессиональный)
+    - friendly (дружелюбный)
+    - apologetic (извинительный, только для негативных отзывов)
+
+    Также определяет:
+    - sentiment (тональность отзыва): positive/neutral/negative
+    - topics (темы, упомянутые в отзыве)
+    """
+    from app.core.db import get_connection
+    from app.services.organization_profiles import _require_role
+    from psycopg.rows import dict_row
+
+    # Проверка доступа пользователя к организации
+    _require_role(None, organization_id, current_user_id, {'owner', 'admin', 'manager'})
+
+    # Получение отзыва из БД
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                SELECT id, rating, title, body
+                FROM reviews
+                WHERE id = %s AND organization_id = %s
+                ''',
+                (review_id, organization_id),
+            )
+            review = cur.fetchone()
+
+            if not review:
+                raise HTTPException(status_code=404, detail='Review not found')
+
+            # Генерация AI-ответов
+            result = await run_in_threadpool(get_ai_response_for_review, dict(review))
+
+            return AIResponseResult(**result)
 
 
 # ============================================
