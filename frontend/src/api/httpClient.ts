@@ -24,11 +24,23 @@ if (import.meta.env.DEV) {
   baseURL = ''
 }
 
+const httpDebugEnabled = import.meta.env.DEV || import.meta.env.VITE_HTTP_DEBUG === 'true'
+const debugLog = (...args: unknown[]) => {
+  if (httpDebugEnabled) {
+    console.log(...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (httpDebugEnabled) {
+    console.warn(...args)
+  }
+}
+
 // Log baseURL configuration for debugging
-console.log('[httpClient] Initializing httpClient')
-console.log('[httpClient] VITE_BACKEND_URL from env:', import.meta.env.VITE_BACKEND_URL)
-console.log('[httpClient] window.location.origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A (SSR)')
-console.log('[httpClient] Final baseURL:', baseURL)
+debugLog('[httpClient] Initializing httpClient')
+debugLog('[httpClient] VITE_BACKEND_URL from env:', import.meta.env.VITE_BACKEND_URL)
+debugLog('[httpClient] window.location.origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A (SSR)')
+debugLog('[httpClient] Final baseURL:', baseURL)
 
 export const httpClient = axios.create({
   baseURL,
@@ -53,7 +65,7 @@ httpClient.interceptors.request.use(
       }
     }
 
-    console.log('[httpClient] Request interceptor called:', {
+    debugLog('[httpClient] Request interceptor called:', {
       method: config.method,
       url: config.url,
       baseURL: config.baseURL || '(empty)',
@@ -63,7 +75,7 @@ httpClient.interceptors.request.use(
 
     // Убеждаемся, что baseURL установлен
     if (!config.baseURL && typeof window !== 'undefined' && config.url && !config.url.startsWith('http')) {
-      console.log('[httpClient] Setting baseURL to window.location.origin as fallback')
+      debugLog('[httpClient] Setting baseURL to window.location.origin as fallback')
       config.baseURL = window.location.origin
       fullUrl = `${window.location.origin}${config.url}`
     }
@@ -83,8 +95,8 @@ httpClient.interceptors.request.use(
     const isPublicAuthEndpoint = publicAuthEndpoints.some((endpoint) => config.url?.includes(endpoint))
 
     if (isPublicAuthEndpoint) {
-      console.log('[httpClient] Public auth endpoint detected, skipping auth token')
-      console.log('[httpClient] Final request config:', {
+      debugLog('[httpClient] Public auth endpoint detected, skipping auth token')
+      debugLog('[httpClient] Final request config:', {
         method: config.method,
         url: fullUrl,
         headers: config.headers,
@@ -104,16 +116,16 @@ httpClient.interceptors.request.use(
             Authorization: `Bearer ${token}`,
           } as typeof config.headers
         }
-        console.log('[httpClient] Added auth token to request')
+        debugLog('[httpClient] Added auth token to request')
       } else {
-        console.log('[httpClient] No auth token needed or already present')
+        debugLog('[httpClient] No auth token needed or already present')
       }
     } catch (error) {
       // If getSession fails, don't block the request - just log and continue
-      console.warn('[httpClient] Failed to get session for request interceptor:', error)
+      debugWarn('[httpClient] Failed to get session for request interceptor:', error)
     }
 
-    console.log('[httpClient] Request interceptor completed, final URL:', fullUrl)
+    debugLog('[httpClient] Request interceptor completed, final URL:', fullUrl)
     return config
   },
   (error) => {
@@ -125,7 +137,7 @@ httpClient.interceptors.request.use(
 
 httpClient.interceptors.response.use(
   (response) => {
-    console.log('[httpClient] Response received:', {
+    debugLog('[httpClient] Response received:', {
       status: response.status,
       url: response.config.url,
       method: response.config.method,

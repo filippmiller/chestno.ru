@@ -1,6 +1,6 @@
 # Frontend Components
 
-> Last updated: 2026-01-18
+> Last updated: 2026-01-28
 > Domain: frontend
 > Keywords: component, react, ui, tsx, reusable, shadcn
 
@@ -8,6 +8,14 @@
 
 Components in `frontend/src/components/`. Mix of shadcn/ui base components
 and custom feature components.
+
+---
+
+## System Components
+
+### AppErrorBoundary
+**Purpose:** Global error boundary wrapper with fallback UI and reload/home actions
+**Location:** `frontend/src/components/AppErrorBoundary.tsx`
 
 ---
 

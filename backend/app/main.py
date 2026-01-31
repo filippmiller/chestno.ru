@@ -1,10 +1,12 @@
 import os
 import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -64,6 +66,12 @@ def create_app() -> FastAPI:
         version='0.1.0',
         lifespan=lifespan,
     )
+    request_logger = logging.getLogger("app.request")
+    security_headers = {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+    }
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins_list,
@@ -71,7 +79,43 @@ def create_app() -> FastAPI:
         allow_methods=['*'],
         allow_headers=['*'],
     )
-    
+
+    @app.middleware("http")
+    async def request_context_middleware(request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request.state.request_id = request_id
+        start_time = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            duration_ms = (time.perf_counter() - start_time) * 1000
+            request_logger.exception(
+                "request.failed method=%s path=%s duration_ms=%.2f request_id=%s",
+                request.method,
+                request.url.path,
+                duration_ms,
+                request_id,
+            )
+            raise
+        duration_ms = (time.perf_counter() - start_time) * 1000
+        response.headers["X-Request-ID"] = request_id
+        request_logger.info(
+            "request.completed method=%s path=%s status=%s duration_ms=%.2f request_id=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+            request_id,
+        )
+        return response
+
+    @app.middleware("http")
+    async def security_headers_middleware(request: Request, call_next):
+        response = await call_next(request)
+        for header, value in security_headers.items():
+            if header not in response.headers:
+                response.headers[header] = value
+        return response
     # Регистрируем все API роутеры ПЕРЕД фронтендом
     app.include_router(health_router)  # Health check should be first for monitoring
     app.include_router(auth_router)  # Legacy auth (will be deprecated)
@@ -161,7 +205,7 @@ def create_app() -> FastAPI:
         if static_assets_path.exists():
             app.mount('/assets', StaticFiles(directory=str(static_assets_path)), name='assets')
 
-        # Serve service worker with correct MIME type
+    # Serve service worker with correct MIME type
         @app.get('/sw.js', include_in_schema=False)
         async def serve_service_worker():
             sw_path = frontend_dist_path / 'sw.js'
@@ -170,7 +214,7 @@ def create_app() -> FastAPI:
                     return Response(content=f.read(), media_type='application/javascript')
             return HTMLResponse(status_code=404, content='Service worker not found')
 
-        # Для всех остальных путей (кроме API) отдаем index.html (SPA routing)
+    # Для всех остальных путей (кроме API) отдаем index.html (SPA routing)
         @app.get('/{full_path:path}', include_in_schema=False)
         async def serve_frontend(full_path: str):
             # Если путь начинается с api/, но не был обработан другими роутерами -> 404
@@ -182,44 +226,44 @@ def create_app() -> FastAPI:
                 with open(index_path, 'r', encoding='utf-8') as f:
                     return HTMLResponse(content=f.read())
 
-    @app.get('/api/health-check-direct')
-    async def health_check_direct():
-        return {"status": "ok", "message": "Direct health check working"}
+    is_production = settings.environment.lower() in {"production", "prod"}
+    if not is_production:
+        @app.get('/api/health-check-direct')
+        async def health_check_direct():
+            return {"status": "ok", "message": "Direct health check working"}
 
-    @app.get('/api/debug-token-direct')
-    async def debug_token_direct(token: str):
-        from jose import jwt
-        from app.core.config import get_settings
-        settings = get_settings()
-        
-        results = {
-            "token_snippet": token[:10] + "...",
-            "settings_jwt_secret_len": len(settings.supabase_jwt_secret),
-            "settings_service_role_key_len": len(settings.supabase_service_role_key),
-            "attempts": []
-        }
-        
-        # Attempt 1: Using configured JWT Secret
-        try:
-            jwt.decode(token, settings.supabase_jwt_secret, algorithms=["HS256"], audience="authenticated")
-            results["attempts"].append({"key": "supabase_jwt_secret", "success": True})
-        except Exception as e:
-            results["attempts"].append({"key": "supabase_jwt_secret", "success": False, "error": str(e)})
-            
-        # Attempt 2: Using Service Role Key
-        try:
-            jwt.decode(token, settings.supabase_service_role_key, algorithms=["HS256"], audience="authenticated")
-            results["attempts"].append({"key": "supabase_service_role_key", "success": True})
-        except Exception as e:
-            results["attempts"].append({"key": "supabase_service_role_key", "success": False, "error": str(e)})
+        @app.get('/api/debug-token-direct')
+        async def debug_token_direct(token: str):
+            from jose import jwt
+            from app.core.config import get_settings
+            settings = get_settings()
 
-        return results
-    
-    @app.get('/api/echo')
-    async def echo(msg: str):
-        return {"message": msg}
-        
-    # Если нет собранного фронтенда, показываем заглушку на корневом пути
+            results = {
+                "token_snippet": token[:10] + "...",
+                "settings_jwt_secret_len": len(settings.supabase_jwt_secret),
+                "settings_service_role_key_len": len(settings.supabase_service_role_key),
+                "attempts": []
+            }
+
+            # Attempt 1: Using configured JWT Secret
+            try:
+                jwt.decode(token, settings.supabase_jwt_secret, algorithms=["HS256"], audience="authenticated")
+                results["attempts"].append({"key": "supabase_jwt_secret", "success": True})
+            except Exception as e:
+                results["attempts"].append({"key": "supabase_jwt_secret", "success": False, "error": str(e)})
+
+            # Attempt 2: Using Service Role Key
+            try:
+                jwt.decode(token, settings.supabase_service_role_key, algorithms=["HS256"], audience="authenticated")
+                results["attempts"].append({"key": "supabase_service_role_key", "success": True})
+            except Exception as e:
+                results["attempts"].append({"key": "supabase_service_role_key", "success": False, "error": str(e)})
+
+            return results
+
+        @app.get('/api/echo')
+        async def echo(msg: str):
+            return {"message": msg}
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
     async def root():
         # Используем тот же поиск путей
@@ -243,11 +287,11 @@ def create_app() -> FastAPI:
             if index_path.exists():
                 with open(index_path, 'r', encoding='utf-8') as f:
                     return HTMLResponse(content=f.read())
-        
-        # Fallback заглушка
+
+    # Fallback заглушка
         logger.warning("Frontend not found, showing fallback")
-        
-        # Fallback заглушка
+
+    # Fallback заглушка
         return HTMLResponse(content="""
         <!DOCTYPE html>
         <html>
@@ -287,3 +331,15 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+
+
+
+
+
+
+
+
+
+
+

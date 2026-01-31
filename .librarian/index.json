@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-01-19",
+  "lastUpdated": "2026-01-28",
   "description": "Knowledge base index for Chestno.ru platform",
   "domains": {
     "database": {
@@ -857,6 +857,34 @@
         "backend": ["backend/app/services/admin_guard.py", "backend/app/services/moderation.py", "backend/app/api/routes/admin_imports.py"]
       },
       "createdAt": "2026-01-19"
+    },
+    {
+      "id": "fe-app-error-boundary",
+      "domain": "frontend",
+      "type": "component",
+      "name": "AppErrorBoundary",
+      "keywords": ["error", "boundary", "fallback", "crash", "ui"],
+      "file": "domains/frontend/components.md",
+      "anchor": "#apperrorboundary",
+      "summary": "Global React error boundary with fallback UI and reload/home actions",
+      "references": {
+        "frontend": ["frontend/src/components/AppErrorBoundary.tsx", "frontend/src/App.tsx"]
+      },
+      "createdAt": "2026-01-28"
+    },
+    {
+      "id": "be-app-middleware-request-logging",
+      "domain": "backend",
+      "type": "middleware",
+      "name": "Request context and security headers",
+      "keywords": ["middleware", "request-id", "logging", "security-headers", "observability"],
+      "file": "domains/backend/routes.md",
+      "anchor": "#app-middleware",
+      "summary": "Adds request ID logging and basic security headers on all responses",
+      "references": {
+        "backend": ["backend/app/main.py"]
+      },
+      "createdAt": "2026-01-28"
     }
   ]
 }

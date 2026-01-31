@@ -1,12 +1,24 @@
 # Backend API Routes
 
-> Last updated: 2026-01-18
+> Last updated: 2026-01-28
 > Domain: backend
 > Keywords: api, route, endpoint, fastapi, http, rest, controller
 
 ## Overview
 
 FastAPI REST API with cookie-based authentication. All routes are in `backend/app/api/routes/`.
+
+---
+
+## App Middleware
+
+### Request Context & Security Headers
+**File:** `backend/app/main.py`
+**Purpose:** Adds `X-Request-ID` to responses, logs method/path/status/duration, and applies basic security headers.
+
+### Dev-Only Debug Routes
+**File:** `backend/app/main.py`
+**Purpose:** `health-check-direct`, `debug-token-direct`, and `echo` endpoints are only registered when environment is not production.
 
 ---
 

@@ -5,11 +5,14 @@ import { useAuthV2 } from '@/auth/AuthProviderV2'
 import { AppRoutes } from '@/routes'
 import { LandingHeader } from '@/components/landing/LandingHeader'
 import { AdminLayout } from '@/components/admin/AdminLayout'
+import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 
 function App() {
   return (
     <AuthProviderV2>
-      <AppContent />
+      <AppErrorBoundary>
+        <AppContent />
+      </AppErrorBoundary>
     </AuthProviderV2>
   )
 }
