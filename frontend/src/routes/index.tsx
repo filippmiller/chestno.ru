@@ -43,6 +43,7 @@ import { StoriesPage } from '@/pages/StoriesPage'
 import { AboutPage } from '@/pages/AboutPage'
 import { PricingPage } from '@/pages/PricingPage'
 import { StatusLevelsInfo } from '@/pages/StatusLevelsInfo'
+import { MethodologyPage } from '@/pages/MethodologyPage'
 import { OrganizationStatusPage } from '@/pages/OrganizationStatus'
 import { WidgetConfiguratorPage } from '@/pages/WidgetConfigurator'
 import { OrganizationBenchmarksPage } from '@/pages/OrganizationBenchmarks'
@@ -58,6 +59,7 @@ export const AppRoutes = () => (
     <Route path="/about" element={<AboutPage />} />
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/levels" element={<StatusLevelsInfo />} />
+    <Route path="/methodology" element={<MethodologyPage />} />
     <Route path="/org/:id" element={<PublicOrganizationPage />} />
     <Route path="/product/:slug" element={<ProductPage />} />
     <Route path="/org/:slug/posts" element={<PublicOrganizationPostsPage />} />

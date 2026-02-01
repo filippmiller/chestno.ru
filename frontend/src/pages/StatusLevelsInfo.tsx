@@ -516,8 +516,9 @@ export const StatusLevelsInfo = () => {
               </Button>
             </div>
 
-            <div className="pt-8 text-sm text-muted-foreground">
+            <div className="pt-8 text-sm text-muted-foreground space-y-2">
               <p>Уже есть аккаунт? <Link to="/auth" className="text-primary underline">Войти в кабинет</Link></p>
+              <p>Хотите узнать подробнее о нашей системе оценки? <Link to="/methodology" className="text-primary underline">Открытая методология</Link></p>
             </div>
           </div>
         </div>

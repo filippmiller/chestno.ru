@@ -39,6 +39,7 @@ from app.api.routes.social_v2 import router as social_v2_router
 from app.api.routes.subscriptions import admin_router as admin_subscriptions_router, router as subscriptions_router
 from app.api.routes.posts import router as posts_router, public_router as public_posts_router
 from app.api.routes.reviews import router as reviews_router, public_router as public_reviews_router
+from app.api.routes.review_votes import router as review_votes_router
 from app.api.routes.marketing import router as marketing_router, org_router as marketing_org_router, admin_router as marketing_admin_router
 from app.api.routes.bulk_import import router as bulk_import_router
 from app.api.routes.admin_imports import router as admin_imports_router
@@ -52,6 +53,8 @@ from app.api.routes.yandex_business import router as yandex_router, admin_router
 from app.api.routes.consumer_follows import router as consumer_follows_router
 from app.api.routes.product_pages import public_router as product_pages_public_router, journey_router as product_journey_router
 from app.api.routes.social_sharing import router as social_sharing_router
+from app.api.routes.qr_dynamic import router as qr_dynamic_router
+from app.api.anti_counterfeit import router as anti_counterfeit_router
 from app.core.config import get_settings
 
 

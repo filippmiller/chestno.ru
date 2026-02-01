@@ -29,6 +29,18 @@ def get_current_user_id(authorization: str | None = Header(default=None)) -> str
     return user_id
 
 
+def get_optional_user_id(authorization: str | None = Header(default=None)) -> str | None:
+    """Get user ID from token if present, otherwise return None (for optional auth endpoints)."""
+    if not authorization or not authorization.startswith('Bearer '):
+        return None
+    try:
+        token = authorization.split(' ', 1)[1]
+        supabase_user = supabase_admin.get_user_by_access_token(token)
+        return supabase_user.get('id')
+    except Exception:
+        return None
+
+
 @router.post('/after-signup', response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
 async def after_signup(payload: AfterSignupRequest) -> SessionResponse:
     supabase_user = supabase_admin.get_user(payload.auth_user_id)

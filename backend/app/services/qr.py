@@ -120,6 +120,15 @@ def get_qr_stats(organization_id: str, qr_code_id: str, user_id: str) -> QRCodeS
 
 
 def log_event_and_get_redirect(code: str, client_ip: str | None, user_agent: str | None, referer: str | None, raw_query: str | None) -> str:
+    """
+    Log QR scan event and return redirect URL.
+
+    Uses dynamic URL resolution with priority:
+    1. Running A/B test (with traffic splitting)
+    2. Active campaign (highest priority wins)
+    3. Default URL version
+    4. Legacy behavior (from qr_codes table)
+    """
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -135,6 +144,9 @@ def log_event_and_get_redirect(code: str, client_ip: str | None, user_agent: str
             if not row or not row['is_active']:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='QR-код не найден')
 
+            qr_code_id = row['id']
+
+            # Calculate IP hash for geo lookup and consistent A/B test assignment
             ip_hash = None
             geo = None
             if client_ip:
@@ -147,27 +159,62 @@ def log_event_and_get_redirect(code: str, client_ip: str | None, user_agent: str
             # Parse UTM parameters from query string
             utm = parse_utm_params(raw_query)
 
+            # Resolve dynamic URL (A/B test > Campaign > Default > Legacy)
+            url_version_id = None
+            campaign_id = None
+            ab_test_id = None
+            ab_variant_id = None
+            redirect_url = None
+
+            # Try dynamic URL resolution
+            cur.execute(
+                'SELECT * FROM get_active_qr_url(%s, %s)',
+                (qr_code_id, ip_hash)
+            )
+            dynamic_url = cur.fetchone()
+
+            if dynamic_url and dynamic_url['target_url']:
+                target_url = dynamic_url['target_url']
+                url_version_id = dynamic_url['url_version_id']
+                campaign_id = dynamic_url['campaign_id']
+                ab_test_id = dynamic_url['ab_test_id']
+                ab_variant_id = dynamic_url['ab_variant_id']
+
+                # Build full URL
+                if target_url.startswith('http://') or target_url.startswith('https://'):
+                    redirect_url = target_url
+                else:
+                    redirect_url = f'{settings.frontend_base}{target_url}'
+            else:
+                # Fallback to legacy behavior
+                target_slug = row['target_slug'] or row['organization_slug']
+                redirect_url = f'{settings.frontend_base}/org/{target_slug}'
+
+            # Log event with enhanced tracking
             cur.execute(
                 '''
                 INSERT INTO qr_events (
                     qr_code_id, ip_hash, user_agent, referer, raw_query,
-                    country, city, utm_source, utm_medium, utm_campaign
+                    country, city, utm_source, utm_medium, utm_campaign,
+                    url_version_id, campaign_id, ab_test_id, ab_variant_id
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''',
                 (
-                    row['id'], ip_hash, user_agent, referer, raw_query,
+                    qr_code_id, ip_hash, user_agent, referer, raw_query,
                     geo.country if geo else None,
                     geo.city if geo else None,
                     utm['utm_source'],
                     utm['utm_medium'],
                     utm['utm_campaign'],
+                    url_version_id,
+                    campaign_id,
+                    ab_test_id,
+                    ab_variant_id,
                 ),
             )
             conn.commit()
 
-            target_slug = row['target_slug'] or row['organization_slug']
-            redirect_url = f'{settings.frontend_base}/org/{target_slug}'
             return redirect_url
 
 

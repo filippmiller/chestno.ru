@@ -15,4 +15,5 @@ from . import webhooks  # noqa: F401
 from . import consumer_follows  # noqa: F401
 from . import product_journey  # noqa: F401
 from . import social_sharing  # noqa: F401
+from . import anti_counterfeit  # noqa: F401
 
