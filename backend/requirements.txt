@@ -40,3 +40,4 @@ pillow
 # Utilities
 python-dateutil
 pytz
+python-slugify
