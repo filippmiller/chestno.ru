@@ -58,6 +58,11 @@ from app.api.routes.gamification import router as gamification_router
 from app.api.routes.rewards import router as rewards_router
 from app.api.routes.business_responses import router as business_responses_router, public_router as business_responses_public_router, admin_router as business_responses_admin_router
 from app.api.anti_counterfeit import router as anti_counterfeit_router
+from app.api.routes.content_moderation import router as content_moderation_router
+from app.api.routes.retail_stores import router as retail_stores_router, analytics_router as retail_analytics_router
+from app.api.routes.retail_kiosks import router as retail_kiosks_router
+from app.api.routes.retail_staff import router as retail_staff_router, store_staff_router as store_staff_router
+from app.api.routes.pos_integration import router as pos_router, receipts_router as receipts_router, integrations_router as pos_integrations_router
 from app.core.config import get_settings
 
 
@@ -192,6 +197,17 @@ def create_app() -> FastAPI:
     app.include_router(business_responses_public_router)
     app.include_router(business_responses_admin_router)
     app.include_router(anti_counterfeit_router)
+    app.include_router(content_moderation_router)
+
+    # Retail Store Features (Session 17)
+    app.include_router(retail_stores_router)
+    app.include_router(retail_analytics_router)
+    app.include_router(retail_kiosks_router)
+    app.include_router(retail_staff_router)
+    app.include_router(store_staff_router)
+    app.include_router(pos_router)
+    app.include_router(receipts_router)
+    app.include_router(pos_integrations_router)
 
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей

@@ -13,6 +13,8 @@ import { DashboardPage } from '@/pages/Dashboard'
 import { DatabaseExplorerPage } from '@/pages/DatabaseExplorer'
 import { InviteLandingPage } from '@/pages/InviteLanding'
 import { ModerationDashboardPage } from '@/pages/ModerationDashboard'
+import { ModerationQueuePage } from '@/pages/ModerationQueuePage'
+import { ModerationPatternPage } from '@/pages/ModerationPatternPage'
 import { NotificationSettingsPage } from '@/pages/NotificationSettings'
 import { NotificationsPage } from '@/pages/Notifications'
 import { OrganizationAnalyticsPage } from '@/pages/OrganizationAnalytics'
@@ -52,6 +54,11 @@ import { MySubscriptionsPage } from '@/pages/MySubscriptions'
 import { GamificationPage } from '@/pages/GamificationPage'
 import { ProductComparisonPage } from '@/pages/ProductComparisonPage'
 import { TrustPreferencesPage } from '@/pages/TrustPreferencesPage'
+
+// Retail Store Pages
+import { RetailDashboardPage } from '@/pages/RetailDashboardPage'
+import { KioskPage } from '@/pages/KioskPage'
+import { StaffPortalPage } from '@/pages/StaffPortalPage'
 
 export const AppRoutes = () => (
   <Routes>
@@ -291,6 +298,22 @@ export const AppRoutes = () => (
       }
     />
     <Route
+      path="/admin/moderation"
+      element={
+        <ProtectedRoute>
+          <ModerationQueuePage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin/moderation/patterns"
+      element={
+        <ProtectedRoute>
+          <ModerationPatternPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
       path="/dashboard/admin"
       element={
         <ProtectedRoute>
@@ -333,6 +356,27 @@ export const AppRoutes = () => (
 
     {/* Invite landing (public) */}
     <Route path="/invite/:code" element={<InviteLandingPage />} />
+
+    {/* Kiosk mode (public, device-authenticated) */}
+    <Route path="/kiosk" element={<KioskPage />} />
+
+    {/* Retail Dashboard routes (protected) */}
+    <Route
+      path="/retail"
+      element={
+        <ProtectedRoute>
+          <RetailDashboardPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/retail/staff"
+      element={
+        <ProtectedRoute>
+          <StaffPortalPage />
+        </ProtectedRoute>
+      }
+    />
 
     {/* Catch-all */}
     <Route path="*" element={<Navigate to="/" replace />} />

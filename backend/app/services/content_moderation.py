@@ -28,6 +28,10 @@ from app.schemas.content_moderation import (
     ViolationRecord,
     ModerationStats,
     AIFlagResult,
+    AIModerationPattern,
+    AIModerationPatternCreate,
+    AIModerationPatternUpdate,
+    ImageAnalysisResult,
 )
 from app.services.admin_guard import assert_platform_admin, assert_moderator
 
@@ -110,9 +114,73 @@ class AIContentModerator:
             recommended_action='flag_for_review' if flags else None,
         )
     
+    def analyze_image(self, image_url: str, content_type: str) -> ImageAnalysisResult:
+        """
+        Analyze image content for policy violations.
+
+        Currently implements basic pattern matching.
+        For production, integrate with external image moderation APIs
+        (e.g., AWS Rekognition, Google Vision, Azure Content Moderator).
+        """
+        patterns = self._load_patterns()
+        flags = []
+        max_confidence = 0.0
+        detected_objects = []
+        is_offensive = False
+        is_duplicate = False
+        duplicate_hash = None
+
+        for pattern in patterns:
+            if pattern['pattern_type'] != 'image_hash':
+                continue
+
+            # Image hash pattern - check for duplicate/banned images
+            pattern_data = pattern['pattern_data']
+            banned_hashes = pattern_data.get('banned_hashes', [])
+
+            # In production: compute perceptual hash of the image
+            # and compare with banned_hashes
+            # For now, we'll check if URL matches known bad patterns
+            url_patterns = pattern_data.get('url_patterns', [])
+            for url_pattern in url_patterns:
+                if url_pattern.lower() in image_url.lower():
+                    flags.append({
+                        'pattern_id': str(pattern['id']),
+                        'pattern_name': pattern['name'],
+                        'detects': pattern['detects'],
+                        'action': pattern['action_on_match'],
+                    })
+                    max_confidence = max(max_confidence, float(pattern['confidence_weight']))
+                    break
+
+        # Check for offensive content patterns in URL/filename
+        offensive_terms = ['nude', 'xxx', 'porn', 'violence', 'gore']
+        image_lower = image_url.lower()
+        for term in offensive_terms:
+            if term in image_lower:
+                is_offensive = True
+                flags.append({
+                    'pattern_id': 'builtin_offensive',
+                    'pattern_name': 'Offensive Content Detection',
+                    'detects': 'potentially offensive image',
+                    'action': 'flag_for_review',
+                })
+                max_confidence = max(max_confidence, 0.8)
+                break
+
+        return ImageAnalysisResult(
+            flags=flags,
+            confidence_score=max_confidence if flags else 0.0,
+            detected_objects=detected_objects,
+            detected_text=None,
+            is_offensive=is_offensive,
+            is_duplicate=is_duplicate,
+            duplicate_hash=duplicate_hash,
+        )
+
     def check_for_auto_flag(
-        self, 
-        content_type: str, 
+        self,
+        content_type: str,
         content_id: str,
         text_content: Optional[str] = None,
     ) -> Optional[str]:
@@ -925,5 +993,271 @@ def get_violation_history(
                     notes=row['notes'],
                     created_at=row['created_at'],
                 ))
-            
+
             return violations
+
+
+# =============================================================================
+# AI MODERATION PATTERNS
+# =============================================================================
+
+def list_patterns(
+    user_id: str,
+    is_active: Optional[bool] = None,
+    pattern_type: Optional[str] = None,
+) -> list[AIModerationPattern]:
+    """List AI moderation patterns (moderator only)."""
+    assert_moderator(user_id)
+
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            where_clauses = ['1=1']
+            params = []
+
+            if is_active is not None:
+                where_clauses.append('is_active = %s')
+                params.append(is_active)
+
+            if pattern_type:
+                where_clauses.append('pattern_type = %s')
+                params.append(pattern_type)
+
+            where_sql = ' AND '.join(where_clauses)
+
+            cur.execute(f'''
+                SELECT * FROM ai_moderation_patterns
+                WHERE {where_sql}
+                ORDER BY created_at DESC
+            ''', params)
+
+            patterns = []
+            for row in cur.fetchall():
+                patterns.append(AIModerationPattern(
+                    id=str(row['id']),
+                    name=row['name'],
+                    pattern_type=row['pattern_type'],
+                    pattern_data=row['pattern_data'],
+                    detects=row['detects'],
+                    action_on_match=row['action_on_match'],
+                    priority_boost=row['priority_boost'],
+                    confidence_weight=float(row['confidence_weight']),
+                    is_active=row['is_active'],
+                    created_at=row['created_at'],
+                    updated_at=row['updated_at'],
+                    created_by=str(row['created_by']) if row.get('created_by') else None,
+                ))
+
+            return patterns
+
+
+def create_pattern(user_id: str, pattern: AIModerationPatternCreate) -> AIModerationPattern:
+    """Create a new AI moderation pattern (admin only)."""
+    assert_platform_admin(user_id)
+
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute('''
+                INSERT INTO ai_moderation_patterns
+                (name, pattern_type, pattern_data, detects, action_on_match,
+                 priority_boost, confidence_weight, is_active, created_by)
+                VALUES (%s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)
+                RETURNING *
+            ''', (
+                pattern.name,
+                pattern.pattern_type,
+                json.dumps(pattern.pattern_data),
+                pattern.detects,
+                pattern.action_on_match,
+                pattern.priority_boost,
+                pattern.confidence_weight,
+                pattern.is_active,
+                user_id,
+            ))
+            row = cur.fetchone()
+            conn.commit()
+
+            return AIModerationPattern(
+                id=str(row['id']),
+                name=row['name'],
+                pattern_type=row['pattern_type'],
+                pattern_data=row['pattern_data'],
+                detects=row['detects'],
+                action_on_match=row['action_on_match'],
+                priority_boost=row['priority_boost'],
+                confidence_weight=float(row['confidence_weight']),
+                is_active=row['is_active'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at'],
+                created_by=str(row['created_by']) if row.get('created_by') else None,
+            )
+
+
+def update_pattern(
+    user_id: str,
+    pattern_id: str,
+    updates: AIModerationPatternUpdate,
+) -> AIModerationPattern:
+    """Update an AI moderation pattern (admin only)."""
+    assert_platform_admin(user_id)
+
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Build dynamic update
+            set_clauses = ['updated_at = now()']
+            params = []
+
+            if updates.name is not None:
+                set_clauses.append('name = %s')
+                params.append(updates.name)
+
+            if updates.pattern_type is not None:
+                set_clauses.append('pattern_type = %s')
+                params.append(updates.pattern_type)
+
+            if updates.pattern_data is not None:
+                set_clauses.append('pattern_data = %s::jsonb')
+                params.append(json.dumps(updates.pattern_data))
+
+            if updates.detects is not None:
+                set_clauses.append('detects = %s')
+                params.append(updates.detects)
+
+            if updates.action_on_match is not None:
+                set_clauses.append('action_on_match = %s')
+                params.append(updates.action_on_match)
+
+            if updates.priority_boost is not None:
+                set_clauses.append('priority_boost = %s')
+                params.append(updates.priority_boost)
+
+            if updates.confidence_weight is not None:
+                set_clauses.append('confidence_weight = %s')
+                params.append(updates.confidence_weight)
+
+            if updates.is_active is not None:
+                set_clauses.append('is_active = %s')
+                params.append(updates.is_active)
+
+            set_sql = ', '.join(set_clauses)
+            params.append(pattern_id)
+
+            cur.execute(f'''
+                UPDATE ai_moderation_patterns
+                SET {set_sql}
+                WHERE id = %s
+                RETURNING *
+            ''', params)
+
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail='Pattern not found')
+
+            conn.commit()
+
+            return AIModerationPattern(
+                id=str(row['id']),
+                name=row['name'],
+                pattern_type=row['pattern_type'],
+                pattern_data=row['pattern_data'],
+                detects=row['detects'],
+                action_on_match=row['action_on_match'],
+                priority_boost=row['priority_boost'],
+                confidence_weight=float(row['confidence_weight']),
+                is_active=row['is_active'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at'],
+                created_by=str(row['created_by']) if row.get('created_by') else None,
+            )
+
+
+def get_pattern(user_id: str, pattern_id: str) -> AIModerationPattern:
+    """Get a single AI moderation pattern (moderator only)."""
+    assert_moderator(user_id)
+
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute('SELECT * FROM ai_moderation_patterns WHERE id = %s', (pattern_id,))
+            row = cur.fetchone()
+
+            if not row:
+                raise HTTPException(status_code=404, detail='Pattern not found')
+
+            return AIModerationPattern(
+                id=str(row['id']),
+                name=row['name'],
+                pattern_type=row['pattern_type'],
+                pattern_data=row['pattern_data'],
+                detects=row['detects'],
+                action_on_match=row['action_on_match'],
+                priority_boost=row['priority_boost'],
+                confidence_weight=float(row['confidence_weight']),
+                is_active=row['is_active'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at'],
+                created_by=str(row['created_by']) if row.get('created_by') else None,
+            )
+
+
+# =============================================================================
+# USER'S OWN REPORTS
+# =============================================================================
+
+def get_my_reports(
+    user_id: str,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple[list[ContentReport], int]:
+    """Get reports submitted by the current user."""
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Count total
+            cur.execute(
+                'SELECT COUNT(*) as total FROM content_reports WHERE reporter_user_id = %s',
+                (user_id,)
+            )
+            total = cur.fetchone()['total']
+
+            # Fetch reports
+            cur.execute('''
+                SELECT * FROM content_reports
+                WHERE reporter_user_id = %s
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+            ''', (user_id, limit, offset))
+
+            reports = []
+            for row in cur.fetchall():
+                reports.append(ContentReport(
+                    id=str(row['id']),
+                    content_type=row['content_type'],
+                    content_id=str(row['content_id']),
+                    reporter_user_id=str(row['reporter_user_id']) if row['reporter_user_id'] else None,
+                    reason=row['reason'],
+                    reason_details=row['reason_details'],
+                    evidence_urls=row['evidence_urls'] or [],
+                    status=row['status'],
+                    linked_queue_item=str(row['linked_queue_item']) if row.get('linked_queue_item') else None,
+                    reviewed_by=str(row['reviewed_by']) if row['reviewed_by'] else None,
+                    reviewed_at=row['reviewed_at'],
+                    review_notes=row['review_notes'],
+                    created_at=row['created_at'],
+                ))
+
+            return reports, total
+
+
+# =============================================================================
+# ESCALATION HELPER
+# =============================================================================
+
+def escalate_queue_item(
+    user_id: str,
+    item_id: str,
+    reason: str,
+) -> ModerationQueueItem:
+    """Escalate a queue item to a higher level (moderator only)."""
+    decision = ModerationDecision(
+        action='escalate',
+        notes=reason,
+    )
+    return make_decision(user_id, item_id, decision)

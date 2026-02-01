@@ -11,6 +11,7 @@ import { ShareModal } from '@/components/share/ShareModal'
 import { ShareCard } from '@/components/share/ShareCard'
 import { DiscoveryCard } from '@/components/share/DiscoveryCard'
 import { BetterAlternativesWidget } from '@/components/alternatives/BetterAlternativesWidget'
+import { ReportContentButton } from '@/components/moderation/ReportContentButton'
 import { EcoBadge } from '@/components/eco/EcoBadge'
 import type { PublicProductDetails } from '@/types/product'
 import type { EcoGrade } from '@/types/eco'
@@ -467,6 +468,17 @@ export function ProductPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Report Product */}
+        <div className="flex justify-end pt-4 border-t">
+          <ReportContentButton
+            contentType="product"
+            contentId={product.id}
+            contentTitle={product.name}
+            variant="ghost"
+            size="sm"
+          />
+        </div>
 
       {/* Share Modal */}
       <ShareModal

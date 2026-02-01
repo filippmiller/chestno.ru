@@ -16,6 +16,7 @@ import type { PublicOrganizationDetails, StatusLevel } from '@/types/auth'
 import type { PublicOrganizationPost } from '@/types/posts'
 import type { PublicReview } from '@/types/reviews'
 import { ReviewVoteButton } from '@/components/reviews/ReviewVoteButton'
+import { ReportContentButton, ReportContentLink } from '@/components/moderation/ReportContentButton'
 
 export const PublicOrganizationPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -447,6 +448,11 @@ export const PublicOrganizationPage = () => {
                       upvotes={review.upvote_count || 0}
                       downvotes={review.downvote_count || 0}
                     />
+                    <ReportContentLink
+                      contentType="review"
+                      contentId={review.id}
+                      contentTitle={review.title || 'Отзыв'}
+                    />
                   </div>
                 </div>
               ))}
@@ -466,6 +472,17 @@ export const PublicOrganizationPage = () => {
           ))}
         </div>
       )}
+
+      {/* Report Organization */}
+      <div className="flex justify-end pt-4 border-t">
+        <ReportContentButton
+          contentType="organization"
+          contentId={id}
+          contentTitle={data.name}
+          variant="ghost"
+          size="sm"
+        />
+      </div>
     </div>
   )
 }

@@ -217,3 +217,58 @@ class ModerationGuideline(BaseModel):
     auto_flag: bool = False
     auto_reject: bool = False
     is_active: bool = True
+
+
+# =============================================================================
+# AI MODERATION PATTERNS
+# =============================================================================
+
+class AIModerationPatternCreate(BaseModel):
+    """Request to create an AI moderation pattern."""
+    name: str
+    pattern_type: str  # text_keywords, text_regex, behavioral, image_hash, document_fingerprint
+    pattern_data: dict  # Type-specific configuration
+    detects: str  # What this pattern detects
+    action_on_match: str = 'flag_for_review'  # flag_for_review, auto_reject, warn
+    priority_boost: int = Field(default=10, ge=0, le=50)
+    confidence_weight: float = Field(default=0.7, ge=0.0, le=1.0)
+    is_active: bool = True
+
+
+class AIModerationPatternUpdate(BaseModel):
+    """Request to update an AI moderation pattern."""
+    name: Optional[str] = None
+    pattern_type: Optional[str] = None
+    pattern_data: Optional[dict] = None
+    detects: Optional[str] = None
+    action_on_match: Optional[str] = None
+    priority_boost: Optional[int] = Field(default=None, ge=0, le=50)
+    confidence_weight: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    is_active: Optional[bool] = None
+
+
+class AIModerationPattern(BaseModel):
+    """An AI moderation pattern."""
+    id: str
+    name: str
+    pattern_type: str
+    pattern_data: dict
+    detects: str
+    action_on_match: str
+    priority_boost: int
+    confidence_weight: float
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[str] = None
+
+
+class ImageAnalysisResult(BaseModel):
+    """Result from AI image analysis."""
+    flags: list[dict] = Field(default_factory=list)
+    confidence_score: float = 0.0
+    detected_objects: list[str] = Field(default_factory=list)
+    detected_text: Optional[str] = None
+    is_offensive: bool = False
+    is_duplicate: bool = False
+    duplicate_hash: Optional[str] = None

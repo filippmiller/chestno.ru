@@ -20,6 +20,9 @@ from app.schemas.content_moderation import (
     ModeratorNoteCreate,
     ViolationRecord,
     ModerationStats,
+    AIModerationPattern,
+    AIModerationPatternCreate,
+    AIModerationPatternUpdate,
 )
 from app.services import content_moderation as moderation_service
 
@@ -101,6 +104,41 @@ async def make_decision(
     """Make a moderation decision on a queue item (moderator only)."""
     return await run_in_threadpool(
         moderation_service.make_decision, current_user_id, item_id, decision
+    )
+
+
+@router.post('/queue/{item_id}/claim', response_model=ModerationQueueItem)
+async def claim_queue_item(
+    item_id: str,
+    current_user_id: str = Depends(get_current_user_id_from_session),
+) -> ModerationQueueItem:
+    """Claim a queue item for review (assigns to current user)."""
+    return await run_in_threadpool(
+        moderation_service.assign_queue_item, current_user_id, item_id, None
+    )
+
+
+@router.post('/queue/{item_id}/resolve', response_model=ModerationQueueItem)
+async def resolve_queue_item(
+    item_id: str,
+    decision: ModerationDecision,
+    current_user_id: str = Depends(get_current_user_id_from_session),
+) -> ModerationQueueItem:
+    """Resolve a queue item with a decision (alias for /decide)."""
+    return await run_in_threadpool(
+        moderation_service.make_decision, current_user_id, item_id, decision
+    )
+
+
+@router.post('/queue/{item_id}/escalate', response_model=ModerationQueueItem)
+async def escalate_queue_item(
+    item_id: str,
+    reason: str = Query(..., description='Reason for escalation'),
+    current_user_id: str = Depends(get_current_user_id_from_session),
+) -> ModerationQueueItem:
+    """Escalate a queue item to a higher level."""
+    return await run_in_threadpool(
+        moderation_service.escalate_queue_item, current_user_id, item_id, reason
     )
 
 
@@ -284,3 +322,70 @@ async def get_violation_history(
     return await run_in_threadpool(
         moderation_service.get_violation_history, current_user_id, violator_type, violator_id
     )
+
+
+# =============================================================================
+# AI MODERATION PATTERNS
+# =============================================================================
+
+@router.get('/patterns', response_model=list[AIModerationPattern])
+async def list_patterns(
+    is_active: Optional[bool] = Query(default=None),
+    pattern_type: Optional[str] = Query(default=None),
+    current_user_id: str = Depends(get_current_user_id_from_session),
+) -> list[AIModerationPattern]:
+    """List AI moderation patterns (moderator only)."""
+    return await run_in_threadpool(
+        moderation_service.list_patterns, current_user_id, is_active, pattern_type
+    )
+
+
+@router.get('/patterns/{pattern_id}', response_model=AIModerationPattern)
+async def get_pattern(
+    pattern_id: str,
+    current_user_id: str = Depends(get_current_user_id_from_session),
+) -> AIModerationPattern:
+    """Get a single AI moderation pattern (moderator only)."""
+    return await run_in_threadpool(
+        moderation_service.get_pattern, current_user_id, pattern_id
+    )
+
+
+@router.post('/patterns', response_model=AIModerationPattern)
+async def create_pattern(
+    pattern: AIModerationPatternCreate,
+    current_user_id: str = Depends(get_current_user_id_from_session),
+) -> AIModerationPattern:
+    """Create a new AI moderation pattern (admin only)."""
+    return await run_in_threadpool(
+        moderation_service.create_pattern, current_user_id, pattern
+    )
+
+
+@router.put('/patterns/{pattern_id}', response_model=AIModerationPattern)
+async def update_pattern(
+    pattern_id: str,
+    updates: AIModerationPatternUpdate,
+    current_user_id: str = Depends(get_current_user_id_from_session),
+) -> AIModerationPattern:
+    """Update an AI moderation pattern (admin only)."""
+    return await run_in_threadpool(
+        moderation_service.update_pattern, current_user_id, pattern_id, updates
+    )
+
+
+# =============================================================================
+# USER'S OWN REPORTS
+# =============================================================================
+
+@router.get('/reports/my', response_model=dict)
+async def get_my_reports(
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    current_user_id: str = Depends(get_current_user_id_from_session),
+) -> dict:
+    """Get reports submitted by the current user."""
+    reports, total = await run_in_threadpool(
+        moderation_service.get_my_reports, current_user_id, limit, offset
+    )
+    return {'items': reports, 'total': total}
