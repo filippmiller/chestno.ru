@@ -35,4 +35,4 @@ WORKDIR /app/backend
 ENTRYPOINT ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0"]
 CMD ["--port", "8080"]
 
-# Force rebuild
+# Force rebuild: 2026-02-01T12:40:00Z
