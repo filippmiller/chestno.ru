@@ -1,6 +1,6 @@
 // API functions for Better Alternatives recommendation engine
 
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabaseClient'
 import type {
   AlternativesRequest,
   AlternativesResponse,

@@ -1,5 +1,7 @@
 // Product types for the public product page
 
+import type { EcoGrade } from './eco'
+
 export interface ProductJourneyStep {
   id: string
   stage: 'sourcing' | 'production' | 'quality_check' | 'packaging' | 'distribution' | 'retail'
@@ -49,6 +51,10 @@ export interface PublicProductDetails {
   // Social
   follower_count: number
   is_followed?: boolean
+  // Eco metrics
+  eco_grade?: EcoGrade | null
+  eco_score?: number | null
+  co2_reduction_percent?: number | null
 }
 
 export interface FollowedItem {

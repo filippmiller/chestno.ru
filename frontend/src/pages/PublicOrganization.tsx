@@ -5,14 +5,17 @@ import { Link } from 'react-router-dom'
 import { fetchPublicOrganizationDetailsById, getOrganizationStatus } from '@/api/authService'
 import { listPublicOrganizationPostsById } from '@/api/postsService'
 import { listPublicOrganizationReviewsById } from '@/api/reviewsService'
+import { getOrganizationStoryVideos, type StoryVideo } from '@/api/storyVideosService'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { StoryVideoPlayer } from '@/components/story-video/StoryVideoPlayer'
 import { useUserStore } from '@/store/userStore'
 import type { PublicOrganizationDetails, StatusLevel } from '@/types/auth'
 import type { PublicOrganizationPost } from '@/types/posts'
 import type { PublicReview } from '@/types/reviews'
+import { ReviewVoteButton } from '@/components/reviews/ReviewVoteButton'
 
 export const PublicOrganizationPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -21,6 +24,7 @@ export const PublicOrganizationPage = () => {
   const [data, setData] = useState<PublicOrganizationDetails | null>(null)
   const [posts, setPosts] = useState<PublicOrganizationPost[]>([])
   const [reviews, setReviews] = useState<PublicReview[]>([])
+  const [storyVideos, setStoryVideos] = useState<StoryVideo[]>([])
   const [avgRating, setAvgRating] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -40,15 +44,17 @@ export const PublicOrganizationPage = () => {
     setLoading(true)
     setError(null)
     try {
-      const [orgData, postsData, reviewsData, statusData] = await Promise.all([
+      const [orgData, postsData, reviewsData, statusData, videosData] = await Promise.all([
         fetchPublicOrganizationDetailsById(id),
         listPublicOrganizationPostsById(id, { limit: 5, offset: 0 }),
         listPublicOrganizationReviewsById(id, { limit: 5, offset: 0 }),
         getOrganizationStatus(id).catch(() => null), // Don't fail if status not available
+        getOrganizationStoryVideos(id, { limit: 3 }).catch(() => []), // Don't fail if no videos
       ])
       setData(orgData)
       setPosts(postsData.items)
       setReviews(reviewsData.items)
+      setStoryVideos(videosData)
       setAvgRating(reviewsData.average_rating || null)
 
       // Set status level if available and active
@@ -173,6 +179,35 @@ export const PublicOrganizationPage = () => {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Story Videos Section */}
+      {storyVideos.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Истории производителя</CardTitle>
+            <CardDescription>Узнайте больше о производстве и людях за продуктами</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {storyVideos.map((video) => (
+                <StoryVideoPlayer
+                  key={video.id}
+                  videoId={video.id}
+                  videoUrl={video.videoUrl}
+                  thumbnailUrl={video.thumbnailUrl ?? undefined}
+                  duration={video.durationSeconds}
+                  title={video.title}
+                  subtitles={video.subtitles}
+                  autoplayOnHover={video.autoplayOnHover}
+                  loop={video.loopPlayback}
+                  mutedByDefault={video.mutedByDefault}
+                  aspectRatio="video"
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -406,6 +441,13 @@ export const PublicOrganizationPage = () => {
                       <p className="text-sm text-foreground">{review.response}</p>
                     </div>
                   )}
+                  <div className="mt-3 flex items-center gap-4">
+                    <ReviewVoteButton
+                      reviewId={review.id}
+                      upvotes={review.upvote_count || 0}
+                      downvotes={review.downvote_count || 0}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

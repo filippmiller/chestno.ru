@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Award, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Award, ShieldCheck, Leaf, ArrowRightLeft } from 'lucide-react'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,10 @@ import { ProductJourney } from '@/components/product/ProductJourney'
 import { ShareModal } from '@/components/share/ShareModal'
 import { ShareCard } from '@/components/share/ShareCard'
 import { DiscoveryCard } from '@/components/share/DiscoveryCard'
+import { BetterAlternativesWidget } from '@/components/alternatives/BetterAlternativesWidget'
+import { EcoBadge } from '@/components/eco/EcoBadge'
 import type { PublicProductDetails } from '@/types/product'
+import type { EcoGrade } from '@/types/eco'
 
 // Mock data for demonstration - will be replaced with API calls
 const mockProduct: PublicProductDetails = {
@@ -103,6 +106,10 @@ const mockProduct: PublicProductDetails = {
   ],
   follower_count: 234,
   is_followed: false,
+  // Eco data for demonstration
+  eco_grade: 'A' as EcoGrade,
+  eco_score: 82,
+  co2_reduction_percent: 45,
 }
 
 // Mock related products
@@ -271,6 +278,18 @@ export function ProductPage() {
         onShare={() => setIsShareModalOpen(true)}
       />
 
+      {/* Better Alternatives Widget - shows if current product has low transparency */}
+      <BetterAlternativesWidget
+        productId={product.id}
+        sourceScore={product.trust_score}
+        config={{
+          position: 'below-hero',
+          maxAlternatives: 3,
+          showOnlyIfLowScore: true,
+          lowScoreThreshold: 60,
+        }}
+      />
+
       {/* Content Sections */}
       <div className="mx-auto max-w-7xl px-4 pb-16 space-y-8">
         {/* Product Journey */}
@@ -295,6 +314,64 @@ export function ProductPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Eco Rating */}
+        {product.eco_grade && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Leaf className="h-5 w-5 text-green-600" />
+                Экологический рейтинг
+              </CardTitle>
+              <CardDescription>Влияние на окружающую среду</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <EcoBadge
+                  grade={product.eco_grade}
+                  score={product.eco_score}
+                  co2ReductionPercent={product.co2_reduction_percent}
+                  size="xl"
+                  showLabel
+                  variant="card"
+                />
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>
+                    Этот товар произведен с учетом экологических стандартов.
+                    Местное производство сокращает углеродный след от транспортировки.
+                  </p>
+                  {product.co2_reduction_percent && product.co2_reduction_percent > 0 && (
+                    <p className="text-green-600 dark:text-green-400 font-medium">
+                      На {product.co2_reduction_percent}% меньше выбросов CO2, чем у импортных аналогов
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Compare with alternatives button */}
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <ArrowRightLeft className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Сравните с аналогами</p>
+                  <p className="text-sm text-muted-foreground">
+                    Найдите похожие товары и сравните прозрачность
+                  </p>
+                </div>
+              </div>
+              <Button asChild variant="outline">
+                <Link to={`/compare/${product.id}`}>
+                  Сравнить товары
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Certifications */}
         {product.certifications.length > 0 && (
