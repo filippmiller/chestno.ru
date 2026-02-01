@@ -657,10 +657,12 @@ SELECT
     AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600)
         FILTER (WHERE status = 'resolved' AND resolved_at > now() - interval '7 days') as avg_resolution_hours_7d,
     COUNT(*) FILTER (WHERE escalation_level >= 2) as high_escalation_count,
-    jsonb_object_agg(
-        content_type,
-        COUNT(*) FILTER (WHERE status IN ('pending', 'in_review', 'escalated'))
-    ) as pending_by_type
+    (SELECT jsonb_object_agg(content_type, cnt) FROM (
+        SELECT content_type, COUNT(*) as cnt
+        FROM moderation_queue
+        WHERE status IN ('pending', 'in_review', 'escalated')
+        GROUP BY content_type
+    ) sub) as pending_by_type
 FROM moderation_queue;
 
 COMMENT ON VIEW moderation_queue_stats IS 'Real-time statistics for the moderation queue';

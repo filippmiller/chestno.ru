@@ -426,13 +426,13 @@ RETURNS TABLE (
     store_id UUID,
     store_name TEXT,
     employee_id TEXT,
-    position TEXT,
+    staff_position TEXT,
     is_certified BOOLEAN,
     certification_level TEXT,
     customer_assists INTEGER,
     scans_assisted INTEGER,
     staff_points INTEGER,
-    rank BIGINT
+    staff_rank BIGINT
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -442,13 +442,13 @@ BEGIN
         rs.store_id,
         rst.name as store_name,
         rs.employee_id,
-        rs.position,
+        rs."position" as staff_position,
         rs.is_certified,
         rs.certification_level,
         rs.customer_assists,
         rs.scans_assisted,
         rs.staff_points,
-        ROW_NUMBER() OVER (ORDER BY rs.staff_points DESC, rs.customer_assists DESC)::BIGINT as rank
+        ROW_NUMBER() OVER (ORDER BY rs.staff_points DESC, rs.customer_assists DESC)::BIGINT as staff_rank
     FROM public.retail_staff rs
     JOIN public.retail_stores rst ON rst.id = rs.store_id
     WHERE rs.is_active = true
