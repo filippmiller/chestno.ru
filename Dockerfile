@@ -1,9 +1,17 @@
 # Multi-stage build for frontend + backend
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
+
+# Copy package files
 COPY frontend/package*.json ./
-RUN npm install --legacy-peer-deps
+
+# Install dependencies with fix for Rollup platform-specific modules
+# See: https://github.com/npm/cli/issues/4828
+RUN rm -f package-lock.json && npm install --legacy-peer-deps
+
+# Copy source files
 COPY frontend/ ./
+
 # Build args for Vite environment variables
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
@@ -11,6 +19,8 @@ ARG VITE_BACKEND_URL
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+
+# Build frontend
 RUN npm run build
 
 FROM python:3.11-slim
