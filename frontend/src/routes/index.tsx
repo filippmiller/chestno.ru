@@ -49,6 +49,9 @@ import { WidgetConfiguratorPage } from '@/pages/WidgetConfigurator'
 import { OrganizationBenchmarksPage } from '@/pages/OrganizationBenchmarks'
 import { ProductPage } from '@/pages/ProductPage'
 import { MySubscriptionsPage } from '@/pages/MySubscriptions'
+import { GamificationPage } from '@/pages/GamificationPage'
+import { ProductComparisonPage } from '@/pages/ProductComparisonPage'
+import { TrustPreferencesPage } from '@/pages/TrustPreferencesPage'
 
 export const AppRoutes = () => (
   <Routes>
@@ -60,6 +63,7 @@ export const AppRoutes = () => (
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/levels" element={<StatusLevelsInfo />} />
     <Route path="/methodology" element={<MethodologyPage />} />
+    <Route path="/compare/:productId" element={<ProductComparisonPage />} />
     <Route path="/org/:id" element={<PublicOrganizationPage />} />
     <Route path="/product/:slug" element={<ProductPage />} />
     <Route path="/org/:slug/posts" element={<PublicOrganizationPostsPage />} />
@@ -259,6 +263,22 @@ export const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <MySubscriptionsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/gamification"
+      element={
+        <ProtectedRoute>
+          <GamificationPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/settings/trust-preferences"
+      element={
+        <ProtectedRoute>
+          <TrustPreferencesPage />
         </ProtectedRoute>
       }
     />

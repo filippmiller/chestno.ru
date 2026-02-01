@@ -1,7 +1,7 @@
 // Product Comparison Service for chestno.ru
 // Handles all comparison-related API calls to Supabase
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 import type {
   ComparisonProduct,
   SimilarProduct,
