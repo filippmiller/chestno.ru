@@ -49,3 +49,4 @@ logs/
 *.log
 nul
 .playwright-mcp/
+frontend/cypress/screenshots/
