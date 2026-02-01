@@ -37,6 +37,9 @@ py-vapid
 # Image processing (optional)
 pillow
 
+# QR Code generation
+segno
+
 # Utilities
 python-dateutil
 pytz
