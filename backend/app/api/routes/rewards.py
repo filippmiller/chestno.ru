@@ -37,7 +37,7 @@ from app.services.rewards import (
     redeem_reward,
 )
 
-router = APIRouter(prefix="/rewards", tags=["rewards"])
+router = APIRouter(prefix="/api/rewards", tags=["rewards"])
 
 
 # =============================================================================

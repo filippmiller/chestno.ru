@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from app.auth.dependencies import get_current_user, get_optional_user
 from app.services import gamification
 
-router = APIRouter(prefix="/gamification", tags=["gamification"])
+router = APIRouter(prefix="/api/gamification", tags=["gamification"])
 
 
 # =============================================================================
