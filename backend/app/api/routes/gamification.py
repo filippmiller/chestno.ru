@@ -10,7 +10,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
-from app.auth.dependencies import get_current_user, get_optional_user
+from app.core.auth import get_current_user, get_optional_user
 from app.services import gamification
 
 router = APIRouter(prefix="/api/gamification", tags=["gamification"])
