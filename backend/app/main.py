@@ -54,6 +54,9 @@ from app.api.routes.consumer_follows import router as consumer_follows_router
 from app.api.routes.product_pages import public_router as product_pages_public_router, journey_router as product_journey_router
 from app.api.routes.social_sharing import router as social_sharing_router
 from app.api.routes.qr_dynamic import router as qr_dynamic_router
+from app.api.routes.gamification import router as gamification_router
+from app.api.routes.rewards import router as rewards_router
+from app.api.routes.business_responses import router as business_responses_router, public_router as business_responses_public_router, admin_router as business_responses_admin_router
 from app.api.anti_counterfeit import router as anti_counterfeit_router
 from app.core.config import get_settings
 
@@ -179,6 +182,16 @@ def create_app() -> FastAPI:
     app.include_router(product_pages_public_router)
     app.include_router(product_journey_router)
     app.include_router(social_sharing_router)
+
+    # New feature routers (Iteration 2)
+    app.include_router(qr_dynamic_router)
+    app.include_router(review_votes_router)
+    app.include_router(gamification_router)
+    app.include_router(rewards_router)
+    app.include_router(business_responses_router)
+    app.include_router(business_responses_public_router)
+    app.include_router(business_responses_admin_router)
+    app.include_router(anti_counterfeit_router)
 
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей
