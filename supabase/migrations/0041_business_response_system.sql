@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS business_verification_documents (
 );
 
 CREATE INDEX idx_verification_requests_org ON business_verification_requests(organization_id);
-CREATE INDEX idx_verification_requests_status ON business_verification_requests(status);
+CREATE INDEX IF NOT EXISTS idx_verification_requests_status ON business_verification_requests(status);
 CREATE INDEX idx_verification_documents_request ON business_verification_documents(request_id);
 
 -- ============================================
@@ -690,12 +690,12 @@ ALTER TABLE organizations
 -- 9. Notification types for responses
 -- ============================================
 
-INSERT INTO notification_types (key, name, default_enabled, user_configurable, category)
+INSERT INTO notification_types (key, title_template, body_template, category, severity)
 VALUES
-    ('consumer.review_response', 'Business responded to your review', true, true, 'reviews'),
-    ('business.pending_reviews', 'Reviews awaiting response', true, true, 'reviews'),
-    ('business.verification_approved', 'Business verification approved', true, false, 'account'),
-    ('business.verification_rejected', 'Business verification rejected', true, false, 'account')
+    ('consumer.review_response', 'Business responded to your review', 'Your review has received a response from the business.', 'reviews', 'info'),
+    ('business.pending_reviews', 'Reviews awaiting response', 'You have reviews waiting for a response.', 'reviews', 'info'),
+    ('business.verification_approved', 'Business verification approved', 'Your business verification has been approved.', 'account', 'success'),
+    ('business.verification_rejected', 'Business verification rejected', 'Your business verification was not approved.', 'account', 'warning')
 ON CONFLICT (key) DO NOTHING;
 
 -- ============================================

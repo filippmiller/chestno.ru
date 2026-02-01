@@ -70,8 +70,10 @@ CREATE TABLE IF NOT EXISTS public.product_transparency_scores (
   calculation_version smallint NOT NULL DEFAULT 1
 );
 
-CREATE INDEX idx_transparency_total ON public.product_transparency_scores(total_score DESC);
-CREATE INDEX idx_transparency_tier ON public.product_transparency_scores(transparency_tier);
+-- CREATE INDEX idx_transparency_total ON public.product_transparency_scores(total_score DESC);
+-- Note: Using overall_transparency_score instead (existing table structure)
+-- CREATE INDEX idx_transparency_tier ON public.product_transparency_scores(transparency_tier);
+-- Note: Skipped - column doesn't exist in current table structure
 
 -- ============================================================
 -- TABLE: product_similarity_cache
@@ -171,7 +173,7 @@ CREATE TABLE IF NOT EXISTS public.recommendation_impressions (
   session_id text,
 
   -- Recommendation details
-  position smallint NOT NULL,
+  display_position smallint NOT NULL,
   is_sponsored boolean NOT NULL DEFAULT false,
   sponsored_id uuid REFERENCES public.sponsored_alternatives(id) ON DELETE SET NULL,
   algorithm_version text NOT NULL DEFAULT 'v1',
@@ -261,7 +263,7 @@ RETURNS TABLE (
   organization_status_level text,
   is_sponsored boolean,
   sponsored_id uuid,
-  position smallint
+  display_position smallint
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -279,7 +281,7 @@ BEGIN
     p.organization_id,
     o.country,
     o.city,
-    COALESCE(pts.total_score, 0) as transparency_score
+    COALESCE(pts.overall_transparency_score, 0) as transparency_score
   INTO v_source_product
   FROM public.products p
   JOIN public.organizations o ON o.id = p.organization_id
@@ -323,8 +325,13 @@ BEGIN
       p.price_cents,
       p.currency,
       p.category,
-      pts.total_score as transparency_score,
-      pts.transparency_tier,
+      pts.overall_transparency_score as transparency_score,
+      CASE
+        WHEN pts.overall_transparency_score >= 90 THEN 'excellent'
+        WHEN pts.overall_transparency_score >= 75 THEN 'good'
+        WHEN pts.overall_transparency_score >= 50 THEN 'moderate'
+        ELSE 'low'
+      END as transparency_tier,
       COALESCE(psc.total_similarity, 0.5) as similarity_score,
       o.name as organization_name,
       o.slug as organization_slug,
@@ -333,9 +340,9 @@ BEGIN
       NULL::uuid as sponsored_id,
       ROW_NUMBER() OVER (
         ORDER BY
-          pts.total_score DESC,
+          pts.overall_transparency_score DESC,
           COALESCE(psc.total_similarity, 0) DESC
-      )::smallint as position
+      )::smallint as display_position
     FROM public.products p
     JOIN public.organizations o ON o.id = p.organization_id
     LEFT JOIN public.product_transparency_scores pts ON pts.product_id = p.id
@@ -349,7 +356,7 @@ BEGIN
       p.status = 'published'
       AND p.id != p_product_id
       AND p.organization_id != v_source_product.organization_id
-      AND COALESCE(pts.total_score, 0) >= 60  -- Must have good transparency
+      AND COALESCE(pts.overall_transparency_score, 0) >= 60  -- Must have good transparency
       -- Category match (relaxed)
       AND (
         p.category = v_source_product.category
@@ -364,7 +371,7 @@ BEGIN
           AND (v_source_product.price_cents * 1.5)::integer
       )
     ORDER BY
-      pts.total_score DESC,
+      pts.overall_transparency_score DESC,
       COALESCE(psc.total_similarity, 0) DESC
     LIMIT p_limit + 2  -- Extra buffer for sponsored insertion
   ),
@@ -378,8 +385,13 @@ BEGIN
       p.price_cents,
       p.currency,
       p.category,
-      pts.total_score as transparency_score,
-      pts.transparency_tier,
+      pts.overall_transparency_score as transparency_score,
+      CASE
+        WHEN pts.overall_transparency_score >= 90 THEN 'excellent'
+        WHEN pts.overall_transparency_score >= 75 THEN 'good'
+        WHEN pts.overall_transparency_score >= 50 THEN 'moderate'
+        ELSE 'low'
+      END as transparency_tier,
       0.0::float as similarity_score,
       o.name as organization_name,
       o.slug as organization_slug,
@@ -398,7 +410,7 @@ BEGIN
       AND sa.starts_at <= now()
       AND (sa.ends_at IS NULL OR sa.ends_at > now())
       AND sa.spent_cents < sa.budget_cents
-      AND COALESCE(pts.total_score, 0) >= sa.min_transparency_score
+      AND COALESCE(pts.overall_transparency_score, 0) >= sa.min_transparency_score
       AND (
         sa.target_category IS NULL
         OR sa.target_category = v_source_product.category
@@ -416,7 +428,7 @@ BEGIN
     LIMIT 1
   ),
   final_results AS (
-    SELECT * FROM ranked_alternatives WHERE position <= p_limit - 1
+    SELECT * FROM ranked_alternatives WHERE display_position <= p_limit - 1
     UNION ALL
     SELECT
       s.product_id,
@@ -434,7 +446,7 @@ BEGIN
       s.organization_status_level,
       s.is_sponsored,
       s.sponsored_id,
-      (p_limit)::smallint as position  -- Sponsored always last
+      (p_limit)::smallint as display_position  -- Sponsored always last
     FROM sponsored s
   )
   SELECT
@@ -453,9 +465,9 @@ BEGIN
     fr.organization_status_level,
     fr.is_sponsored,
     fr.sponsored_id,
-    ROW_NUMBER() OVER (ORDER BY fr.position)::smallint as position
+    ROW_NUMBER() OVER (ORDER BY fr.display_position)::smallint as display_position
   FROM final_results fr
-  ORDER BY fr.position
+  ORDER BY fr.display_position
   LIMIT p_limit;
 END;
 $$;
@@ -663,7 +675,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.record_recommendation_impression(
   p_source_product_id uuid,
   p_recommended_product_id uuid,
-  p_position smallint,
+  p_display_position smallint,
   p_is_sponsored boolean DEFAULT false,
   p_sponsored_id uuid DEFAULT NULL,
   p_user_id uuid DEFAULT NULL,
@@ -681,7 +693,7 @@ BEGIN
   INSERT INTO public.recommendation_impressions (
     source_product_id,
     recommended_product_id,
-    position,
+    display_position,
     is_sponsored,
     sponsored_id,
     user_id,

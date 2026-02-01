@@ -82,8 +82,8 @@ CREATE INDEX idx_verified_purchases_product ON verified_purchases(product_id);
 -- Where p = positive / total, n = total votes
 
 CREATE OR REPLACE FUNCTION calculate_wilson_score(
-    positive INTEGER,
-    negative INTEGER
+    positive BIGINT,
+    negative BIGINT
 ) RETURNS NUMERIC(10,8) AS $$
 DECLARE
     n INTEGER;

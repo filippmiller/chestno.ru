@@ -75,7 +75,9 @@ CREATE INDEX idx_scan_history_user ON qr_scan_history(user_id);
 CREATE INDEX idx_scan_history_user_date ON qr_scan_history(user_id, scanned_at DESC);
 CREATE INDEX idx_scan_history_org ON qr_scan_history(organization_id);
 CREATE INDEX idx_scan_history_product ON qr_scan_history(product_id);
-CREATE INDEX idx_scan_history_month ON qr_scan_history(user_id, date_trunc('month', scanned_at));
+-- Note: Using regular index instead of expression index with date_trunc
+-- because date_trunc is STABLE not IMMUTABLE
+CREATE INDEX idx_scan_history_date ON qr_scan_history(user_id, scanned_at);
 
 -- =============================================================================
 -- ACHIEVEMENTS SYSTEM

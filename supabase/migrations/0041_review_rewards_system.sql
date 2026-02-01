@@ -406,7 +406,7 @@ RETURNS JSONB AS $$
 DECLARE
     limits user_review_rate_limits%ROWTYPE;
     config review_quality_config%ROWTYPE;
-    user_profile profiles%ROWTYPE;
+    user_profile app_profiles%ROWTYPE;
     account_age_days INTEGER;
     result JSONB;
 BEGIN
@@ -477,7 +477,7 @@ BEGIN
     END IF;
 
     -- Check account age
-    SELECT * INTO user_profile FROM profiles WHERE id = p_user_id;
+    SELECT * INTO user_profile FROM app_profiles WHERE id = p_user_id;
     IF user_profile.created_at IS NOT NULL THEN
         account_age_days := EXTRACT(DAY FROM now() - user_profile.created_at);
         IF account_age_days < config.min_account_age_days THEN

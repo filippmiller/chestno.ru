@@ -70,12 +70,9 @@ CREATE TABLE IF NOT EXISTS qr_campaigns (
     -- Metadata
     created_by UUID NOT NULL REFERENCES app_users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    -- Ensure URL version belongs to same QR code
-    CONSTRAINT campaign_url_version_check CHECK (
-        (SELECT qr_code_id FROM qr_url_versions WHERE id = url_version_id) = qr_code_id
-    )
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    -- Note: URL version consistency is enforced by RLS and application logic
+    -- PostgreSQL doesn't allow subqueries in CHECK constraints
 );
 
 -- Index for finding active campaigns

@@ -206,7 +206,7 @@ AS $$
     SELECT
         p.id AS product_id,
         p.name AS product_name,
-        o.display_name AS organization_name,
+        o.name AS organization_name,
         -- Similarity scoring
         (
             CASE WHEN pa.primary_category = tp.primary_category THEN 30 ELSE 0 END +
@@ -437,7 +437,7 @@ AS $$
         p.id AS product_id,
         p.name AS product_name,
         p.slug AS product_slug,
-        o.display_name AS organization_name,
+        o.name AS organization_name,
         p.main_image_url,
         p.price_cents,
         -- Transparency scores
