@@ -916,6 +916,21 @@
         "api": ["benchmarksService.getOrganizationBenchmarks"]
       },
       "createdAt": "2026-02-01"
+    },
+    {
+      "id": "brainstorm-retail-features",
+      "domain": "business",
+      "type": "specification",
+      "name": "Retail In-Store Features",
+      "keywords": ["retail", "store", "kiosk", "pos", "shelf", "staff", "training", "receipt", "signage", "scanner"],
+      "file": "docs/brainstorm/SESSION_17_RETAIL_FEATURES.md",
+      "anchor": "#executive-summary",
+      "summary": "5 concrete retail features: store registry, kiosk mode, shelf talkers, staff training, POS integration",
+      "references": {
+        "extends": ["qr_codes", "qr_scan_events", "loyalty_points", "products"],
+        "newTables": ["retail_stores", "store_products", "store_scan_events", "retail_kiosks", "kiosk_sessions", "staff_training_modules", "retail_staff", "pos_integrations", "purchase_transactions"]
+      },
+      "createdAt": "2026-02-01"
     }
   ]
 }

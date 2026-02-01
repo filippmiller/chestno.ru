@@ -49,6 +49,9 @@ from app.api.routes.widgets import router as widgets_router, config_router as wi
 from app.api.routes.benchmarks import router as benchmarks_router
 from app.api.routes.loyalty import router as loyalty_router, public_router as loyalty_public_router, admin_router as loyalty_admin_router
 from app.api.routes.yandex_business import router as yandex_router, admin_router as yandex_admin_router
+from app.api.routes.consumer_follows import router as consumer_follows_router
+from app.api.routes.product_pages import public_router as product_pages_public_router, journey_router as product_journey_router
+from app.api.routes.social_sharing import router as social_sharing_router
 from app.core.config import get_settings
 
 
@@ -168,6 +171,11 @@ def create_app() -> FastAPI:
     app.include_router(loyalty_admin_router)
     app.include_router(yandex_router)
     app.include_router(yandex_admin_router)
+    # New v1 API endpoints
+    app.include_router(consumer_follows_router)
+    app.include_router(product_pages_public_router)
+    app.include_router(product_journey_router)
+    app.include_router(social_sharing_router)
 
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей

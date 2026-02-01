@@ -12,4 +12,7 @@ from . import status_levels  # noqa: F401
 from . import payment_provider  # noqa: F401
 from . import payments  # noqa: F401
 from . import webhooks  # noqa: F401
+from . import consumer_follows  # noqa: F401
+from . import product_journey  # noqa: F401
+from . import social_sharing  # noqa: F401
 

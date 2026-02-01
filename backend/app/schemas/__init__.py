@@ -54,4 +54,25 @@ from .status_levels import (  # noqa: F401
     UpgradeRequest,
     CreateUpgradeRequest,
 )
+from .consumer_follows import (  # noqa: F401
+    ConsumerFollow,
+    ConsumerFollowCreate,
+    ConsumerFollowUpdate,
+    ConsumerFollowsList,
+    ConsumerFollowWithTarget,
+    NotificationPreferences,
+)
+from .product_journey import (  # noqa: F401
+    JourneyStep,
+    JourneyStepCreate,
+    JourneyStepUpdate,
+    ProductJourney,
+    PublicProductPage,
+)
+from .social_sharing import (  # noqa: F401
+    ShareEvent,
+    ShareEventCreate,
+    ShareCardData,
+    ShareStats,
+)
 

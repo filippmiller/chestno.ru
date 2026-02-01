@@ -46,6 +46,8 @@ import { StatusLevelsInfo } from '@/pages/StatusLevelsInfo'
 import { OrganizationStatusPage } from '@/pages/OrganizationStatus'
 import { WidgetConfiguratorPage } from '@/pages/WidgetConfigurator'
 import { OrganizationBenchmarksPage } from '@/pages/OrganizationBenchmarks'
+import { ProductPage } from '@/pages/ProductPage'
+import { MySubscriptionsPage } from '@/pages/MySubscriptions'
 
 export const AppRoutes = () => (
   <Routes>
@@ -57,6 +59,7 @@ export const AppRoutes = () => (
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/levels" element={<StatusLevelsInfo />} />
     <Route path="/org/:id" element={<PublicOrganizationPage />} />
+    <Route path="/product/:slug" element={<ProductPage />} />
     <Route path="/org/:slug/posts" element={<PublicOrganizationPostsPage />} />
     <Route path="/org/:slug/posts/:postSlug" element={<PublicOrganizationPostsPage />} />
     <Route path="/org/:id/review" element={<CreateReviewPage />} />
@@ -246,6 +249,14 @@ export const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <LinkedAccountsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/subscriptions"
+      element={
+        <ProtectedRoute>
+          <MySubscriptionsPage />
         </ProtectedRoute>
       }
     />
