@@ -44,3 +44,6 @@ segno
 python-dateutil
 pytz
 python-slugify
+
+# Excel parsing
+openpyxl
