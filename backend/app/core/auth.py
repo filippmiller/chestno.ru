@@ -92,5 +92,7 @@ async def get_optional_user(
         return None
 
 
-# Alias for backwards compatibility
+# Aliases for backwards compatibility
 get_optional_current_user = get_optional_user
+get_current_user_id = get_current_user
+get_optional_user_id = get_optional_user
