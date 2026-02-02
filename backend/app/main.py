@@ -63,6 +63,11 @@ from app.api.routes.retail_stores import router as retail_stores_router, analyti
 from app.api.routes.retail_kiosks import router as retail_kiosks_router
 from app.api.routes.retail_staff import router as retail_staff_router, store_staff_router as store_staff_router
 from app.api.routes.pos_integration import router as pos_router, receipts_router as receipts_router, integrations_router as pos_integrations_router
+from app.api.routes.scan_notifications import router as scan_notifications_router
+from app.api.routes.geographic_anomaly import router as geo_anomaly_router
+from app.api.routes.supply_chain import router as supply_chain_router, public_router as supply_chain_public_router
+from app.api.routes.warranty import router as warranty_router, org_router as warranty_org_router
+from app.api.routes.product_stories import public_router as product_stories_public_router, consumer_router as product_stories_consumer_router, org_router as product_stories_org_router
 from app.core.config import get_settings
 
 
@@ -208,6 +213,25 @@ def create_app() -> FastAPI:
     app.include_router(pos_router)
     app.include_router(receipts_router)
     app.include_router(pos_integrations_router)
+
+    # Geographic Anomaly Detection (Gray Market)
+    app.include_router(geo_anomaly_router)
+
+    # Supply Chain Visualization
+    app.include_router(supply_chain_router)
+    app.include_router(supply_chain_public_router)
+
+    # Warranty Management System
+    app.include_router(warranty_router)
+    app.include_router(warranty_org_router)
+
+    # Real-time Scan Notifications
+    app.include_router(scan_notifications_router)
+
+    # Product Stories
+    app.include_router(product_stories_public_router)
+    app.include_router(product_stories_consumer_router)
+    app.include_router(product_stories_org_router)
 
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей

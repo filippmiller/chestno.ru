@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Award, ShieldCheck, Leaf, ArrowRightLeft } from 'lucide-react'
+import { ArrowLeft, Award, ShieldCheck, Leaf, ArrowRightLeft, GitBranch } from 'lucide-react'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -13,8 +13,11 @@ import { DiscoveryCard } from '@/components/share/DiscoveryCard'
 import { BetterAlternativesWidget } from '@/components/alternatives/BetterAlternativesWidget'
 import { ReportContentButton } from '@/components/moderation/ReportContentButton'
 import { EcoBadge } from '@/components/eco/EcoBadge'
+import { SupplyChainTimeline, SupplyChainMap } from '@/components/supply-chain'
+import * as supplyChainService from '@/api/supplyChainService'
 import type { PublicProductDetails } from '@/types/product'
 import type { EcoGrade } from '@/types/eco'
+import type { SupplyChainJourney } from '@/types/supply-chain'
 
 // Mock data for demonstration - will be replaced with API calls
 const mockProduct: PublicProductDetails = {
@@ -148,6 +151,7 @@ export function ProductPage() {
   const [error, setError] = useState<string | null>(null)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isFollowed, setIsFollowed] = useState(false)
+  const [supplyChain, setSupplyChain] = useState<SupplyChainJourney | null>(null)
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -162,6 +166,15 @@ export function ProductPage() {
         await new Promise((resolve) => setTimeout(resolve, 500)) // Simulate API delay
         setProduct(mockProduct)
         setIsFollowed(mockProduct.is_followed ?? false)
+
+        // Load supply chain data
+        try {
+          const journeyData = await supplyChainService.getProductSupplyChain(mockProduct.id)
+          setSupplyChain(journeyData)
+        } catch (err) {
+          // Supply chain is optional, don't fail if not found
+          console.log('No supply chain data found')
+        }
       } catch (err) {
         console.error(err)
         setError('Товар не найден')
@@ -293,8 +306,30 @@ export function ProductPage() {
 
       {/* Content Sections */}
       <div className="mx-auto max-w-7xl px-4 pb-16 space-y-8">
-        {/* Product Journey */}
-        {product.journey_steps.length > 0 && (
+        {/* Supply Chain Visualization (new feature) */}
+        {supplyChain && supplyChain.nodes.length > 0 && (
+          <>
+            <SupplyChainTimeline
+              journey={supplyChain}
+              title="Цепочка поставок"
+              description="Полный путь продукта от производителя до вас"
+              defaultExpanded={false}
+            />
+
+            {/* Show map if we have nodes with coordinates */}
+            {supplyChain.nodes.some((n) => n.node.coordinates) && (
+              <SupplyChainMap
+                journey={supplyChain}
+                title="География поставок"
+                description="Карта всех точек в цепочке поставок"
+                height="350px"
+              />
+            )}
+          </>
+        )}
+
+        {/* Product Journey (legacy component - shows if no supply chain data) */}
+        {(!supplyChain || supplyChain.nodes.length === 0) && product.journey_steps.length > 0 && (
           <ProductJourney
             steps={product.journey_steps}
             title="Путь продукта"

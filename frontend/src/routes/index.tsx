@@ -60,6 +60,25 @@ import { RetailDashboardPage } from '@/pages/RetailDashboardPage'
 import { KioskPage } from '@/pages/KioskPage'
 import { StaffPortalPage } from '@/pages/StaffPortalPage'
 
+// Scan Notifications
+import { OrganizationScanNotificationsPage } from '@/pages/OrganizationScanNotifications'
+
+// Geographic Security
+import { OrganizationGeoSecurityPage } from '@/pages/OrganizationGeoSecurity'
+
+// Supply Chain
+import { OrganizationSupplyChainPage } from '@/pages/OrganizationSupplyChain'
+
+// Warranty Management
+import { MyWarrantiesPage } from '@/pages/MyWarranties'
+import { OrganizationWarrantiesPage } from '@/pages/OrganizationWarranties'
+import { WarrantyDetailsPage } from '@/pages/WarrantyClaimDetails'
+
+// Product Stories
+import { ProductStoryViewerPage } from '@/pages/ProductStoryViewer'
+import { OrganizationStoriesPage } from '@/pages/OrganizationStories'
+import { OrganizationStoryEditPage } from '@/pages/OrganizationStoryEdit'
+
 export const AppRoutes = () => (
   <Routes>
     {/* Public routes */}
@@ -73,6 +92,7 @@ export const AppRoutes = () => (
     <Route path="/compare/:productId" element={<ProductComparisonPage />} />
     <Route path="/org/:id" element={<PublicOrganizationPage />} />
     <Route path="/product/:slug" element={<ProductPage />} />
+    <Route path="/product/:slug/story" element={<ProductStoryViewerPage />} />
     <Route path="/org/:slug/posts" element={<PublicOrganizationPostsPage />} />
     <Route path="/org/:slug/posts/:postSlug" element={<PublicOrganizationPostsPage />} />
     <Route path="/org/:id/review" element={<CreateReviewPage />} />
@@ -198,6 +218,30 @@ export const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <OrganizationStatusPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/scan-notifications"
+      element={
+        <ProtectedRoute>
+          <OrganizationScanNotificationsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/geo-security"
+      element={
+        <ProtectedRoute>
+          <OrganizationGeoSecurityPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/supply-chain"
+      element={
+        <ProtectedRoute>
+          <OrganizationSupplyChainPage />
         </ProtectedRoute>
       }
     />
@@ -359,6 +403,66 @@ export const AppRoutes = () => (
 
     {/* Kiosk mode (public, device-authenticated) */}
     <Route path="/kiosk" element={<KioskPage />} />
+
+    {/* Warranty Management routes (protected) */}
+    <Route
+      path="/dashboard/warranties"
+      element={
+        <ProtectedRoute>
+          <MyWarrantiesPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/warranty/:warrantyId"
+      element={
+        <ProtectedRoute>
+          <WarrantyDetailsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/warranties"
+      element={
+        <ProtectedRoute>
+          <OrganizationWarrantiesPage />
+        </ProtectedRoute>
+      }
+    />
+
+    {/* Product Stories routes (protected) */}
+    <Route
+      path="/dashboard/organization/stories"
+      element={
+        <ProtectedRoute>
+          <OrganizationStoriesPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/stories/new"
+      element={
+        <ProtectedRoute>
+          <OrganizationStoryEditPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/stories/:storyId"
+      element={
+        <ProtectedRoute>
+          <OrganizationStoryEditPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/stories/:storyId/edit"
+      element={
+        <ProtectedRoute>
+          <OrganizationStoryEditPage />
+        </ProtectedRoute>
+      }
+    />
 
     {/* Retail Dashboard routes (protected) */}
     <Route

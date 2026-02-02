@@ -199,6 +199,7 @@ def log_event_and_get_redirect(code: str, client_ip: str | None, user_agent: str
                     url_version_id, campaign_id, ab_test_id, ab_variant_id
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
                 ''',
                 (
                     qr_code_id, ip_hash, user_agent, referer, raw_query,
@@ -213,7 +214,24 @@ def log_event_and_get_redirect(code: str, client_ip: str | None, user_agent: str
                     ab_variant_id,
                 ),
             )
+            event_row = cur.fetchone()
+            scan_event_id = event_row['id'] if event_row else None
             conn.commit()
+
+            # Trigger real-time scan notification (async, non-blocking)
+            try:
+                from app.services import scan_notifications
+                if scan_notifications.check_notifications_enabled(str(row['organization_id'])):
+                    scan_notifications.send_scan_notification(
+                        organization_id=str(row['organization_id']),
+                        scan_event_id=str(scan_event_id) if scan_event_id else None,
+                        country=geo.country if geo else None,
+                        city=geo.city if geo else None,
+                    )
+            except Exception as notif_err:
+                # Log but don't fail the scan
+                import logging
+                logging.getLogger(__name__).warning(f"Failed to send scan notification: {notif_err}")
 
             return redirect_url
 
