@@ -725,3 +725,175 @@ def verify_step(step_id: str, user_id: str, notes: Optional[str] = None) -> Supp
 
         logger.info(f"[supply_chain] Verified step {step_id} by user {user_id}")
         return _row_to_step(row)
+
+
+# ============================================================
+# CARBON FOOTPRINT CALCULATION (Feature #7 Enhancement)
+# ============================================================
+
+# CO2 emissions per km by transport method (kg CO2 per ton-km)
+CARBON_EMISSIONS = {
+    'truck': 0.062,       # Average truck
+    'rail': 0.022,        # Train/rail
+    'sea': 0.008,         # Container ship
+    'air': 0.602,         # Cargo plane
+    'pipeline': 0.003,    # Oil/gas pipeline
+    'local': 0.05,        # Local delivery van
+    'unknown': 0.05,      # Default estimate
+}
+
+
+def calculate_carbon_footprint(product_id: str, weight_kg: float = 1.0) -> dict:
+    """
+    Calculate estimated carbon footprint for a product's supply chain journey.
+
+    Args:
+        product_id: Product to calculate for
+        weight_kg: Product weight in kg (for more accurate calculation)
+
+    Returns:
+        Detailed carbon footprint breakdown
+    """
+    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            '''
+            SELECT transport_method, distance_km
+            FROM supply_chain_steps
+            WHERE product_id = %s AND distance_km > 0
+            ''',
+            (product_id,)
+        )
+        steps = cur.fetchall()
+
+        if not steps:
+            return {
+                'total_co2_kg': 0,
+                'breakdown': [],
+                'comparison': None,
+                'rating': 'unknown'
+            }
+
+        breakdown = []
+        total_co2 = 0
+        total_distance = 0
+
+        for step in steps:
+            method = step['transport_method'] or 'unknown'
+            distance = step['distance_km'] or 0
+            emission_factor = CARBON_EMISSIONS.get(method.lower(), CARBON_EMISSIONS['unknown'])
+
+            # CO2 = distance * emission factor * weight (in tons)
+            co2_kg = distance * emission_factor * (weight_kg / 1000)
+            total_co2 += co2_kg
+            total_distance += distance
+
+            breakdown.append({
+                'transport_method': method,
+                'distance_km': distance,
+                'emission_factor': emission_factor,
+                'co2_kg': round(co2_kg, 3)
+            })
+
+        # Compare to common products
+        comparison = _get_carbon_comparison(total_co2)
+
+        # Rating based on distance-adjusted CO2
+        if total_distance > 0:
+            co2_per_km = total_co2 / total_distance
+            if co2_per_km < 0.02:
+                rating = 'excellent'
+            elif co2_per_km < 0.04:
+                rating = 'good'
+            elif co2_per_km < 0.06:
+                rating = 'average'
+            else:
+                rating = 'high'
+        else:
+            rating = 'unknown'
+
+        return {
+            'total_co2_kg': round(total_co2, 3),
+            'total_distance_km': total_distance,
+            'weight_kg': weight_kg,
+            'breakdown': breakdown,
+            'comparison': comparison,
+            'rating': rating
+        }
+
+
+def _get_carbon_comparison(co2_kg: float) -> dict:
+    """Get relatable comparisons for the carbon footprint."""
+    # Average car emits 0.21 kg CO2 per km
+    car_km = round(co2_kg / 0.21, 1)
+
+    # Average tree absorbs 21 kg CO2 per year
+    tree_days = round((co2_kg / 21) * 365, 1)
+
+    # Average smartphone charge = 0.008 kg CO2
+    phone_charges = round(co2_kg / 0.008)
+
+    return {
+        'equivalent_car_km': car_km,
+        'tree_absorption_days': tree_days,
+        'phone_charges': phone_charges,
+        'description_ru': f'Эквивалентно {car_km} км на автомобиле или {tree_days} дней поглощения дерева'
+    }
+
+
+def get_journey_with_carbon(product_id: str, weight_kg: float = 1.0) -> dict:
+    """
+    Get the complete supply chain journey with carbon footprint data.
+
+    This is an enhanced version of get_product_journey() that includes
+    environmental impact information.
+    """
+    journey = get_product_journey(product_id)
+    carbon = calculate_carbon_footprint(product_id, weight_kg)
+
+    return {
+        'journey': journey,
+        'carbon_footprint': carbon,
+        'environmental_score': _calculate_environmental_score(journey, carbon)
+    }
+
+
+def _calculate_environmental_score(journey, carbon: dict) -> dict:
+    """Calculate an overall environmental score for the supply chain."""
+    # Factors: verification %, carbon rating, local sourcing
+    verification_pct = 0
+    if journey.total_nodes > 0:
+        verification_pct = (journey.verified_nodes / journey.total_nodes) * 100
+
+    # Carbon rating to score
+    carbon_scores = {
+        'excellent': 100,
+        'good': 80,
+        'average': 60,
+        'high': 40,
+        'unknown': 50
+    }
+    carbon_score = carbon_scores.get(carbon.get('rating', 'unknown'), 50)
+
+    # Distance penalty (more local = better)
+    distance = carbon.get('total_distance_km', 0)
+    if distance < 100:
+        distance_score = 100
+    elif distance < 500:
+        distance_score = 80
+    elif distance < 2000:
+        distance_score = 60
+    elif distance < 10000:
+        distance_score = 40
+    else:
+        distance_score = 20
+
+    # Weighted average
+    total_score = (verification_pct * 0.3) + (carbon_score * 0.4) + (distance_score * 0.3)
+
+    return {
+        'total_score': round(total_score, 1),
+        'verification_score': round(verification_pct, 1),
+        'carbon_score': carbon_score,
+        'distance_score': distance_score,
+        'grade': 'A' if total_score >= 80 else 'B' if total_score >= 60 else 'C' if total_score >= 40 else 'D'
+    }

@@ -68,6 +68,16 @@ from app.api.routes.geographic_anomaly import router as geo_anomaly_router
 from app.api.routes.supply_chain import router as supply_chain_router, public_router as supply_chain_public_router
 from app.api.routes.warranty import router as warranty_router, org_router as warranty_org_router
 from app.api.routes.product_stories import public_router as product_stories_public_router, consumer_router as product_stories_consumer_router, org_router as product_stories_org_router
+
+# New features (10 brilliant ideas implementation)
+from app.api.routes.verification_challenges import router as challenges_router, public_router as challenges_public_router, org_router as challenges_org_router, mod_router as challenges_mod_router
+from app.api.routes.counterfeit_detection import router as counterfeit_router, public_router as counterfeit_public_router, org_router as counterfeit_org_router
+from app.api.routes.trust_score import router as trust_score_router, public_router as trust_score_public_router, org_router as trust_score_org_router
+from app.api.routes.product_portfolio import router as portfolio_router, public_router as recalls_public_router, admin_router as recalls_admin_router
+from app.api.routes.defect_detection import router as defect_router, org_router as defect_org_router
+from app.api.routes.trust_circles import router as circles_router
+from app.api.routes.review_intelligence import router as intelligence_router, org_router as intelligence_org_router
+
 from app.core.config import get_settings
 
 
@@ -232,6 +242,39 @@ def create_app() -> FastAPI:
     app.include_router(product_stories_public_router)
     app.include_router(product_stories_consumer_router)
     app.include_router(product_stories_org_router)
+
+    # New Features: 10 Brilliant Ideas Implementation
+    # Feature 1: Consumer Verification Challenges
+    app.include_router(challenges_router)
+    app.include_router(challenges_public_router)
+    app.include_router(challenges_org_router)
+    app.include_router(challenges_mod_router)
+
+    # Feature 2: AI Photo Counterfeit Detection
+    app.include_router(counterfeit_router)
+    app.include_router(counterfeit_public_router)
+    app.include_router(counterfeit_org_router)
+
+    # Feature 3: Open Trust Score Algorithm
+    app.include_router(trust_score_router)
+    app.include_router(trust_score_public_router)
+    app.include_router(trust_score_org_router)
+
+    # Feature 5: Personal Product Portfolio + Recall Alerts
+    app.include_router(portfolio_router)
+    app.include_router(recalls_public_router)
+    app.include_router(recalls_admin_router)
+
+    # Feature 6: Manufacturing Defect Early Warning
+    app.include_router(defect_router)
+    app.include_router(defect_org_router)
+
+    # Feature 8: Trust Circles
+    app.include_router(circles_router)
+
+    # Feature 10: Review Intelligence Dashboard
+    app.include_router(intelligence_router)
+    app.include_router(intelligence_org_router)
 
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей

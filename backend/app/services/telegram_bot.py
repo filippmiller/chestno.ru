@@ -746,3 +746,192 @@ def _escape_html(text: str) -> str:
         .replace('<', '&lt;')
         .replace('>', '&gt;')
     )
+
+
+# ---------------------------------------------------------------------------
+# Product Scanning & Verification
+# ---------------------------------------------------------------------------
+
+def handle_product_scan(telegram_id: int, qr_code: str) -> dict:
+    """
+    Handle a product scan from Telegram.
+    Returns product info for the bot to respond with.
+    """
+    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        # Find QR code
+        cur.execute(
+            '''
+            SELECT qc.*, p.name as product_name, p.slug as product_slug,
+                   o.name as org_name, o.slug as org_slug, o.verification_status,
+                   ots.total_score as trust_score
+            FROM qr_codes qc
+            LEFT JOIN products p ON p.id = qc.product_id
+            LEFT JOIN organizations o ON o.id = qc.organization_id
+            LEFT JOIN organization_trust_scores ots ON ots.organization_id = o.id
+            WHERE qc.code = %s OR qc.short_code = %s
+            ''',
+            (qr_code, qr_code)
+        )
+        qr = cur.fetchone()
+
+        if not qr:
+            return {
+                'found': False,
+                'message': 'Код не найден в системе'
+            }
+
+        # Log scan
+        cur.execute(
+            '''
+            INSERT INTO telegram_scan_logs (telegram_id, qr_code_id, scanned_at)
+            VALUES (%s, %s, NOW())
+            ON CONFLICT DO NOTHING
+            ''',
+            (telegram_id, qr['id'])
+        )
+
+        # Increment QR scan count
+        cur.execute(
+            'UPDATE qr_codes SET scan_count = scan_count + 1 WHERE id = %s',
+            (qr['id'],)
+        )
+
+        conn.commit()
+
+        settings = get_settings()
+        base_url = settings.frontend_url if hasattr(settings, 'frontend_url') else 'https://chestno.ru'
+        product_url = f"{base_url}/products/{qr['product_slug']}" if qr['product_slug'] else f"{base_url}/org/{qr['org_slug']}"
+
+        return {
+            'found': True,
+            'product_name': qr['product_name'] or 'Неизвестный продукт',
+            'organization_name': qr['org_name'] or 'Неизвестная организация',
+            'verification_status': qr['verification_status'],
+            'trust_score': float(qr['trust_score']) if qr['trust_score'] else None,
+            'product_url': product_url,
+            'qr_id': str(qr['id'])
+        }
+
+
+async def send_product_verification_result(
+    telegram_id: int,
+    product_name: str,
+    organization_name: str,
+    trust_score: Optional[float],
+    verification_status: str,
+    product_url: str
+) -> bool:
+    """Send product verification result to Telegram user."""
+    # Build status emoji
+    if verification_status in ('level_c', 'level_b'):
+        status_emoji = '✅'
+        status_text = 'Верифицирован'
+    elif verification_status == 'level_a':
+        status_emoji = '☑️'
+        status_text = 'Базовая верификация'
+    elif verification_status == 'pending':
+        status_emoji = '⏳'
+        status_text = 'На проверке'
+    else:
+        status_emoji = '❓'
+        status_text = 'Не верифицирован'
+
+    # Trust score badge
+    if trust_score is not None:
+        if trust_score >= 90:
+            score_badge = '🏆'
+        elif trust_score >= 80:
+            score_badge = '⭐'
+        elif trust_score >= 70:
+            score_badge = '👍'
+        else:
+            score_badge = '⚠️'
+        score_text = f"{score_badge} Рейтинг доверия: <b>{trust_score:.0f}/100</b>"
+    else:
+        score_text = "Рейтинг не рассчитан"
+
+    message = f"""
+🔍 <b>Результат проверки</b>
+
+📦 <b>{_escape_html(product_name)}</b>
+🏭 {_escape_html(organization_name)}
+
+{status_emoji} Статус: <b>{status_text}</b>
+{score_text}
+
+<a href="{product_url}">Подробнее на Честно.ру</a>
+"""
+
+    return await send_direct_message(telegram_id, message.strip())
+
+
+def add_product_to_portfolio_from_telegram(telegram_id: int, product_id: str) -> Optional[dict]:
+    """Add a product to user's portfolio from Telegram scan."""
+    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        # Get linked user
+        cur.execute(
+            'SELECT user_id FROM telegram_users WHERE telegram_id = %s',
+            (telegram_id,)
+        )
+        row = cur.fetchone()
+        if not row or not row['user_id']:
+            return None
+
+        user_id = str(row['user_id'])
+
+        # Get product info
+        cur.execute(
+            '''
+            SELECT p.id, p.name, p.image_url, o.id as org_id, o.name as org_name
+            FROM products p
+            JOIN organizations o ON o.id = p.organization_id
+            WHERE p.id = %s
+            ''',
+            (product_id,)
+        )
+        product = cur.fetchone()
+        if not product:
+            return None
+
+        # Upsert portfolio item
+        cur.execute(
+            '''
+            INSERT INTO consumer_product_portfolio (
+                user_id, product_id, organization_id,
+                product_name, product_image_url, organization_name,
+                first_scanned_at, last_scanned_at, scan_count
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW(), 1)
+            ON CONFLICT (user_id, product_id) DO UPDATE SET
+                last_scanned_at = NOW(),
+                scan_count = consumer_product_portfolio.scan_count + 1,
+                updated_at = NOW()
+            RETURNING *
+            ''',
+            (user_id, product_id, product['org_id'],
+             product['name'], product['image_url'], product['org_name'])
+        )
+        item = dict(cur.fetchone())
+        conn.commit()
+
+        logger.info(f"[telegram] Added product {product_id} to user {user_id} portfolio via Telegram")
+        return item
+
+
+def get_scan_history(telegram_id: int, limit: int = 10) -> list[dict]:
+    """Get user's recent product scans from Telegram."""
+    with get_connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            '''
+            SELECT tsl.scanned_at, qc.code, p.name as product_name, o.name as org_name
+            FROM telegram_scan_logs tsl
+            JOIN qr_codes qc ON qc.id = tsl.qr_code_id
+            LEFT JOIN products p ON p.id = qc.product_id
+            LEFT JOIN organizations o ON o.id = qc.organization_id
+            WHERE tsl.telegram_id = %s
+            ORDER BY tsl.scanned_at DESC
+            LIMIT %s
+            ''',
+            (telegram_id, limit)
+        )
+        return [dict(row) for row in cur.fetchall()]

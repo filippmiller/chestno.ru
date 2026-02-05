@@ -95,6 +95,40 @@ async def get_product_steps(product_id: str) -> List[SupplyChainStep]:
     return await run_in_threadpool(get_steps_for_product, product_id)
 
 
+@public_router.get('/product/{product_id}/carbon')
+async def get_product_carbon_footprint(
+    product_id: str,
+    weight_kg: float = Query(default=1.0, ge=0.01, le=10000),
+):
+    """
+    Get carbon footprint calculation for a product's supply chain.
+
+    Returns CO2 emissions breakdown by transport method,
+    comparisons to relatable metrics, and an environmental rating.
+    """
+    from app.services.supply_chain import calculate_carbon_footprint
+
+    return await run_in_threadpool(calculate_carbon_footprint, product_id, weight_kg)
+
+
+@public_router.get('/product/{product_id}/journey-enhanced')
+async def get_enhanced_journey(
+    product_id: str,
+    weight_kg: float = Query(default=1.0, ge=0.01, le=10000),
+):
+    """
+    Get the complete supply chain journey with carbon footprint data.
+
+    This enhanced endpoint includes:
+    - Full journey with all nodes and steps
+    - Carbon footprint calculation and breakdown
+    - Environmental score and grade
+    """
+    from app.services.supply_chain import get_journey_with_carbon
+
+    return await run_in_threadpool(get_journey_with_carbon, product_id, weight_kg)
+
+
 # ==================== Authenticated Routes - Nodes ====================
 
 @router.post('/nodes', response_model=SupplyChainNode)
