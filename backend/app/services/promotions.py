@@ -8,7 +8,9 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from app.core.supabase_client import get_supabase_client
+from psycopg.rows import dict_row
+
+from app.core.db import get_connection
 from app.schemas.promotions import (
     DiscountType,
     DistributeResponse,
@@ -55,6 +57,38 @@ def _format_platform_name(platform: str, platform_name: Optional[str]) -> str:
     return platform_names.get(platform, platform)
 
 
+def _row_to_promotion(row: dict, subscriber_count: int) -> Promotion:
+    """Convert database row to Promotion model."""
+    return Promotion(
+        id=row['id'],
+        organization_id=row['organization_id'],
+        title=row['title'],
+        description=row.get('description'),
+        discount_type=row['discount_type'],
+        discount_value=row.get('discount_value'),
+        discount_description=row.get('discount_description'),
+        min_purchase_amount=row.get('min_purchase_amount'),
+        platform=row['platform'],
+        platform_name=row.get('platform_name'),
+        platform_url=row.get('platform_url'),
+        code_prefix=row['code_prefix'],
+        starts_at=row['starts_at'],
+        ends_at=row.get('ends_at'),
+        status=row['status'],
+        distributed_at=row.get('distributed_at'),
+        total_codes_generated=row.get('total_codes_generated', 0),
+        total_codes_used=row.get('total_codes_used', 0),
+        created_at=row['created_at'],
+        updated_at=row['updated_at'],
+        subscriber_count=subscriber_count,
+        discount_display=_format_discount_display(
+            row['discount_type'],
+            row.get('discount_value'),
+            row.get('discount_description'),
+        ),
+    )
+
+
 # =============================================================================
 # PROMOTIONS
 # =============================================================================
@@ -65,68 +99,61 @@ def create_promotion(
     payload: PromotionCreate,
 ) -> Promotion:
     """Create a new promotion for an organization."""
-    supabase = get_supabase_client()
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                INSERT INTO manufacturer_promotions (
+                    organization_id, created_by, title, description,
+                    discount_type, discount_value, discount_description,
+                    min_purchase_amount, platform, platform_name, platform_url,
+                    code_prefix, starts_at, ends_at, status
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'draft')
+                RETURNING *
+                ''',
+                (
+                    organization_id,
+                    user_id,
+                    payload.title,
+                    payload.description,
+                    payload.discount_type.value,
+                    payload.discount_value,
+                    payload.discount_description,
+                    payload.min_purchase_amount,
+                    payload.platform.value,
+                    payload.platform_name,
+                    payload.platform_url,
+                    payload.code_prefix.upper(),
+                    payload.starts_at or datetime.now(timezone.utc),
+                    payload.ends_at,
+                ),
+            )
+            row = cur.fetchone()
+            conn.commit()
 
-    data = {
-        'organization_id': organization_id,
-        'created_by': user_id,
-        'title': payload.title,
-        'description': payload.description,
-        'discount_type': payload.discount_type.value,
-        'discount_value': payload.discount_value,
-        'discount_description': payload.discount_description,
-        'min_purchase_amount': payload.min_purchase_amount,
-        'platform': payload.platform.value,
-        'platform_name': payload.platform_name,
-        'platform_url': payload.platform_url,
-        'code_prefix': payload.code_prefix.upper(),
-        'starts_at': (payload.starts_at or datetime.now(timezone.utc)).isoformat(),
-        'ends_at': payload.ends_at.isoformat() if payload.ends_at else None,
-        'status': 'draft',
-    }
-
-    result = supabase.table('manufacturer_promotions').insert(data).execute()
-    row = result.data[0]
-
-    # Get subscriber count
     sub_count = get_subscriber_count(organization_id)
-
-    return Promotion(
-        **row,
-        subscriber_count=sub_count.count,
-        discount_display=_format_discount_display(
-            row['discount_type'],
-            row.get('discount_value'),
-            row.get('discount_description'),
-        ),
-    )
+    return _row_to_promotion(row, sub_count.count)
 
 
 def get_promotion(promotion_id: str, organization_id: str) -> Optional[Promotion]:
     """Get a single promotion by ID."""
-    supabase = get_supabase_client()
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                SELECT * FROM manufacturer_promotions
+                WHERE id = %s AND organization_id = %s
+                ''',
+                (promotion_id, organization_id),
+            )
+            row = cur.fetchone()
 
-    result = supabase.table('manufacturer_promotions') \
-        .select('*') \
-        .eq('id', promotion_id) \
-        .eq('organization_id', organization_id) \
-        .execute()
-
-    if not result.data:
+    if not row:
         return None
 
-    row = result.data[0]
     sub_count = get_subscriber_count(organization_id)
-
-    return Promotion(
-        **row,
-        subscriber_count=sub_count.count,
-        discount_display=_format_discount_display(
-            row['discount_type'],
-            row.get('discount_value'),
-            row.get('discount_description'),
-        ),
-    )
+    return _row_to_promotion(row, sub_count.count)
 
 
 def list_promotions(
@@ -136,37 +163,46 @@ def list_promotions(
     offset: int = 0,
 ) -> PromotionListResponse:
     """List promotions for an organization."""
-    supabase = get_supabase_client()
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Count total
+            count_query = '''
+                SELECT COUNT(*) as total
+                FROM manufacturer_promotions
+                WHERE organization_id = %s
+            '''
+            count_params = [organization_id]
 
-    query = supabase.table('manufacturer_promotions') \
-        .select('*', count='exact') \
-        .eq('organization_id', organization_id) \
-        .order('created_at', desc=True)
+            if status:
+                count_query += ' AND status = %s'
+                count_params.append(status.value)
 
-    if status:
-        query = query.eq('status', status.value)
+            cur.execute(count_query, count_params)
+            total = cur.fetchone()['total']
 
-    query = query.range(offset, offset + limit - 1)
-    result = query.execute()
+            # Get promotions
+            query = '''
+                SELECT * FROM manufacturer_promotions
+                WHERE organization_id = %s
+            '''
+            params = [organization_id]
+
+            if status:
+                query += ' AND status = %s'
+                params.append(status.value)
+
+            query += ' ORDER BY created_at DESC LIMIT %s OFFSET %s'
+            params.extend([limit, offset])
+
+            cur.execute(query, params)
+            rows = cur.fetchall()
 
     sub_count = get_subscriber_count(organization_id)
-
-    items = [
-        Promotion(
-            **row,
-            subscriber_count=sub_count.count,
-            discount_display=_format_discount_display(
-                row['discount_type'],
-                row.get('discount_value'),
-                row.get('discount_description'),
-            ),
-        )
-        for row in result.data
-    ]
+    items = [_row_to_promotion(row, sub_count.count) for row in rows]
 
     return PromotionListResponse(
         items=items,
-        total=result.count or 0,
+        total=total,
         limit=limit,
         offset=offset,
     )
@@ -178,86 +214,107 @@ def update_promotion(
     payload: PromotionUpdate,
 ) -> Optional[Promotion]:
     """Update an existing promotion."""
-    supabase = get_supabase_client()
+    # Build update fields
+    updates = []
+    params = []
 
-    # Build update data, excluding None values
-    data = {}
     if payload.title is not None:
-        data['title'] = payload.title
+        updates.append('title = %s')
+        params.append(payload.title)
     if payload.description is not None:
-        data['description'] = payload.description
+        updates.append('description = %s')
+        params.append(payload.description)
     if payload.discount_type is not None:
-        data['discount_type'] = payload.discount_type.value
+        updates.append('discount_type = %s')
+        params.append(payload.discount_type.value)
     if payload.discount_value is not None:
-        data['discount_value'] = payload.discount_value
+        updates.append('discount_value = %s')
+        params.append(payload.discount_value)
     if payload.discount_description is not None:
-        data['discount_description'] = payload.discount_description
+        updates.append('discount_description = %s')
+        params.append(payload.discount_description)
     if payload.min_purchase_amount is not None:
-        data['min_purchase_amount'] = payload.min_purchase_amount
+        updates.append('min_purchase_amount = %s')
+        params.append(payload.min_purchase_amount)
     if payload.platform is not None:
-        data['platform'] = payload.platform.value
+        updates.append('platform = %s')
+        params.append(payload.platform.value)
     if payload.platform_name is not None:
-        data['platform_name'] = payload.platform_name
+        updates.append('platform_name = %s')
+        params.append(payload.platform_name)
     if payload.platform_url is not None:
-        data['platform_url'] = payload.platform_url
+        updates.append('platform_url = %s')
+        params.append(payload.platform_url)
     if payload.code_prefix is not None:
-        data['code_prefix'] = payload.code_prefix.upper()
+        updates.append('code_prefix = %s')
+        params.append(payload.code_prefix.upper())
     if payload.starts_at is not None:
-        data['starts_at'] = payload.starts_at.isoformat()
+        updates.append('starts_at = %s')
+        params.append(payload.starts_at)
     if payload.ends_at is not None:
-        data['ends_at'] = payload.ends_at.isoformat()
+        updates.append('ends_at = %s')
+        params.append(payload.ends_at)
     if payload.status is not None:
-        data['status'] = payload.status.value
+        updates.append('status = %s')
+        params.append(payload.status.value)
 
-    if not data:
+    if not updates:
         return get_promotion(promotion_id, organization_id)
 
-    result = supabase.table('manufacturer_promotions') \
-        .update(data) \
-        .eq('id', promotion_id) \
-        .eq('organization_id', organization_id) \
-        .execute()
+    updates.append('updated_at = %s')
+    params.append(datetime.now(timezone.utc))
 
-    if not result.data:
+    params.extend([promotion_id, organization_id])
+
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f'''
+                UPDATE manufacturer_promotions
+                SET {', '.join(updates)}
+                WHERE id = %s AND organization_id = %s
+                RETURNING *
+                ''',
+                params,
+            )
+            row = cur.fetchone()
+            conn.commit()
+
+    if not row:
         return None
 
-    row = result.data[0]
     sub_count = get_subscriber_count(organization_id)
-
-    return Promotion(
-        **row,
-        subscriber_count=sub_count.count,
-        discount_display=_format_discount_display(
-            row['discount_type'],
-            row.get('discount_value'),
-            row.get('discount_description'),
-        ),
-    )
+    return _row_to_promotion(row, sub_count.count)
 
 
 def delete_promotion(promotion_id: str, organization_id: str) -> bool:
     """Delete a promotion (soft delete by setting status to cancelled)."""
-    supabase = get_supabase_client()
-
-    # Check if promotion exists and has no distributed codes
     promo = get_promotion(promotion_id, organization_id)
     if not promo:
         return False
 
-    if promo.total_codes_generated > 0:
-        # Soft delete - mark as cancelled
-        supabase.table('manufacturer_promotions') \
-            .update({'status': 'cancelled'}) \
-            .eq('id', promotion_id) \
-            .eq('organization_id', organization_id) \
-            .execute()
-    else:
-        # Hard delete if no codes generated
-        supabase.table('manufacturer_promotions') \
-            .delete() \
-            .eq('id', promotion_id) \
-            .eq('organization_id', organization_id) \
-            .execute()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            if promo.total_codes_generated > 0:
+                # Soft delete - mark as cancelled
+                cur.execute(
+                    '''
+                    UPDATE manufacturer_promotions
+                    SET status = 'cancelled', updated_at = %s
+                    WHERE id = %s AND organization_id = %s
+                    ''',
+                    (datetime.now(timezone.utc), promotion_id, organization_id),
+                )
+            else:
+                # Hard delete if no codes generated
+                cur.execute(
+                    '''
+                    DELETE FROM manufacturer_promotions
+                    WHERE id = %s AND organization_id = %s
+                    ''',
+                    (promotion_id, organization_id),
+                )
+            conn.commit()
 
     return True
 
@@ -268,17 +325,22 @@ def delete_promotion(promotion_id: str, organization_id: str) -> bool:
 
 def get_subscriber_count(organization_id: str) -> SubscriberCountResponse:
     """Get count of active subscribers for an organization."""
-    supabase = get_supabase_client()
-
-    result = supabase.table('consumer_subscriptions') \
-        .select('id', count='exact') \
-        .eq('target_type', 'organization') \
-        .eq('target_id', organization_id) \
-        .eq('is_active', True) \
-        .execute()
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                SELECT COUNT(*) as count
+                FROM consumer_subscriptions
+                WHERE target_type = 'organization'
+                  AND target_id = %s
+                  AND is_active = true
+                ''',
+                (organization_id,),
+            )
+            result = cur.fetchone()
 
     return SubscriberCountResponse(
-        count=result.count or 0,
+        count=result['count'] if result else 0,
         organization_id=UUID(organization_id),
     )
 
@@ -290,23 +352,21 @@ def distribute_codes(
     notify_in_app: bool = True,
 ) -> DistributeResponse:
     """Distribute promo codes to all subscribers."""
-    supabase = get_supabase_client()
-
-    # Call the database function to distribute codes
-    result = supabase.rpc(
-        'distribute_promotion_codes',
-        {
-            'p_promotion_id': promotion_id,
-            'p_notify_email': notify_email,
-            'p_notify_in_app': notify_in_app,
-        }
-    ).execute()
-
-    data = result.data
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            # Call the database function to distribute codes
+            cur.execute(
+                '''
+                SELECT * FROM distribute_promotion_codes(%s, %s, %s)
+                ''',
+                (promotion_id, notify_email, notify_in_app),
+            )
+            result = cur.fetchone()
+            conn.commit()
 
     return DistributeResponse(
-        success=data.get('success', False),
-        codes_created=data.get('codes_created', 0),
+        success=result.get('success', False) if result else False,
+        codes_created=result.get('codes_created', 0) if result else 0,
         distributed_at=datetime.now(timezone.utc),
     )
 
@@ -321,47 +381,44 @@ def list_user_promo_codes(
     limit: int = 50,
 ) -> PromoCodeListResponse:
     """List all promo codes for a user."""
-    supabase = get_supabase_client()
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            query = '''
+                SELECT
+                    spc.*,
+                    mp.title as promotion_title,
+                    mp.discount_type,
+                    mp.discount_value,
+                    mp.discount_description,
+                    mp.platform,
+                    mp.platform_name,
+                    mp.platform_url,
+                    o.name as organization_name,
+                    op.logo_url as organization_logo
+                FROM subscriber_promo_codes spc
+                JOIN manufacturer_promotions mp ON mp.id = spc.promotion_id
+                JOIN organizations o ON o.id = mp.organization_id
+                LEFT JOIN organization_profiles op ON op.organization_id = o.id
+                WHERE spc.user_id = %s
+            '''
+            params = [user_id]
 
-    # Query with joins to get promotion and organization details
-    query = supabase.table('subscriber_promo_codes') \
-        .select('''
-            *,
-            manufacturer_promotions!inner (
-                title,
-                discount_type,
-                discount_value,
-                discount_description,
-                platform,
-                platform_name,
-                platform_url,
-                organization_id,
-                organizations!inner (
-                    name,
-                    organization_profiles (logo_url)
-                )
-            )
-        ''') \
-        .eq('user_id', user_id) \
-        .order('created_at', desc=True)
+            if status:
+                query += ' AND spc.status = %s'
+                params.append(status.value)
 
-    if status:
-        query = query.eq('status', status.value)
+            query += ' ORDER BY spc.created_at DESC LIMIT %s'
+            params.append(limit)
 
-    query = query.limit(limit)
-    result = query.execute()
+            cur.execute(query, params)
+            rows = cur.fetchall()
 
     items = []
     active_count = 0
     used_count = 0
     expired_count = 0
 
-    for row in result.data:
-        promo = row.get('manufacturer_promotions', {})
-        org = promo.get('organizations', {})
-        org_profile = org.get('organization_profiles', [{}])
-        logo_url = org_profile[0].get('logo_url') if org_profile else None
-
+    for row in rows:
         code = PromoCode(
             id=row['id'],
             promotion_id=row['promotion_id'],
@@ -372,23 +429,23 @@ def list_user_promo_codes(
             used_at=row.get('used_at'),
             expires_at=row.get('expires_at'),
             created_at=row['created_at'],
-            promotion_title=promo.get('title'),
-            organization_name=org.get('name'),
-            organization_logo=logo_url,
-            discount_type=promo.get('discount_type'),
-            discount_value=promo.get('discount_value'),
-            discount_description=promo.get('discount_description'),
+            promotion_title=row.get('promotion_title'),
+            organization_name=row.get('organization_name'),
+            organization_logo=row.get('organization_logo'),
+            discount_type=row.get('discount_type'),
+            discount_value=row.get('discount_value'),
+            discount_description=row.get('discount_description'),
             discount_display=_format_discount_display(
-                promo.get('discount_type', ''),
-                promo.get('discount_value'),
-                promo.get('discount_description'),
+                row.get('discount_type', ''),
+                row.get('discount_value'),
+                row.get('discount_description'),
             ),
-            platform=promo.get('platform'),
+            platform=row.get('platform'),
             platform_name=_format_platform_name(
-                promo.get('platform', ''),
-                promo.get('platform_name'),
+                row.get('platform', ''),
+                row.get('platform_name'),
             ),
-            platform_url=promo.get('platform_url'),
+            platform_url=row.get('platform_url'),
         )
         items.append(code)
 
@@ -411,91 +468,93 @@ def list_user_promo_codes(
 
 def mark_code_viewed(code_id: str, user_id: str) -> Optional[PromoCode]:
     """Mark a promo code as viewed."""
-    supabase = get_supabase_client()
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                UPDATE subscriber_promo_codes
+                SET viewed_at = %s
+                WHERE id = %s AND user_id = %s AND viewed_at IS NULL
+                RETURNING id
+                ''',
+                (datetime.now(timezone.utc), code_id, user_id),
+            )
+            result = cur.fetchone()
+            conn.commit()
 
-    result = supabase.table('subscriber_promo_codes') \
-        .update({'viewed_at': datetime.now(timezone.utc).isoformat()}) \
-        .eq('id', code_id) \
-        .eq('user_id', user_id) \
-        .is_('viewed_at', 'null') \
-        .execute()
-
-    if result.data:
-        return list_user_promo_codes(user_id, limit=1).items[0]
+    if result:
+        codes = list_user_promo_codes(user_id, limit=100)
+        for code in codes.items:
+            if str(code.id) == code_id:
+                return code
     return None
 
 
 def mark_code_used(code_id: str, user_id: str) -> Optional[PromoCode]:
     """Mark a promo code as used."""
-    supabase = get_supabase_client()
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                UPDATE subscriber_promo_codes
+                SET status = 'used', used_at = %s
+                WHERE id = %s AND user_id = %s AND status = 'active'
+                RETURNING promotion_id
+                ''',
+                (datetime.now(timezone.utc), code_id, user_id),
+            )
+            result = cur.fetchone()
 
-    result = supabase.table('subscriber_promo_codes') \
-        .update({
-            'status': 'used',
-            'used_at': datetime.now(timezone.utc).isoformat(),
-        }) \
-        .eq('id', code_id) \
-        .eq('user_id', user_id) \
-        .eq('status', 'active') \
-        .execute()
+            if result:
+                # Update promotion stats
+                cur.execute(
+                    '''
+                    UPDATE manufacturer_promotions
+                    SET total_codes_used = total_codes_used + 1,
+                        updated_at = %s
+                    WHERE id = %s
+                    ''',
+                    (datetime.now(timezone.utc), result['promotion_id']),
+                )
+            conn.commit()
 
-    if result.data:
-        # Update promotion stats using RPC to increment counter
-        row = result.data[0]
-        # Fetch current value and increment
-        promo_result = supabase.table('manufacturer_promotions') \
-            .select('total_codes_used') \
-            .eq('id', row['promotion_id']) \
-            .execute()
-
-        if promo_result.data:
-            current_count = promo_result.data[0].get('total_codes_used', 0)
-            supabase.table('manufacturer_promotions') \
-                .update({'total_codes_used': current_count + 1}) \
-                .eq('id', row['promotion_id']) \
-                .execute()
-
-        # Re-fetch to get full data
-        codes = list_user_promo_codes(user_id)
+    if result:
+        codes = list_user_promo_codes(user_id, limit=100)
         for code in codes.items:
             if str(code.id) == code_id:
                 return code
-
     return None
 
 
 def get_promo_code_by_code(code: str) -> Optional[PromoCode]:
     """Look up a promo code by its code string."""
-    supabase = get_supabase_client()
-
-    result = supabase.table('subscriber_promo_codes') \
-        .select('''
-            *,
-            manufacturer_promotions!inner (
-                title,
-                discount_type,
-                discount_value,
-                discount_description,
-                platform,
-                platform_name,
-                platform_url,
-                organizations!inner (
-                    name,
-                    organization_profiles (logo_url)
-                )
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                '''
+                SELECT
+                    spc.*,
+                    mp.title as promotion_title,
+                    mp.discount_type,
+                    mp.discount_value,
+                    mp.discount_description,
+                    mp.platform,
+                    mp.platform_name,
+                    mp.platform_url,
+                    o.name as organization_name,
+                    op.logo_url as organization_logo
+                FROM subscriber_promo_codes spc
+                JOIN manufacturer_promotions mp ON mp.id = spc.promotion_id
+                JOIN organizations o ON o.id = mp.organization_id
+                LEFT JOIN organization_profiles op ON op.organization_id = o.id
+                WHERE spc.code = %s
+                ''',
+                (code.upper(),),
             )
-        ''') \
-        .eq('code', code.upper()) \
-        .execute()
+            row = cur.fetchone()
 
-    if not result.data:
+    if not row:
         return None
-
-    row = result.data[0]
-    promo = row.get('manufacturer_promotions', {})
-    org = promo.get('organizations', {})
-    org_profile = org.get('organization_profiles', [{}])
-    logo_url = org_profile[0].get('logo_url') if org_profile else None
 
     return PromoCode(
         id=row['id'],
@@ -507,21 +566,21 @@ def get_promo_code_by_code(code: str) -> Optional[PromoCode]:
         used_at=row.get('used_at'),
         expires_at=row.get('expires_at'),
         created_at=row['created_at'],
-        promotion_title=promo.get('title'),
-        organization_name=org.get('name'),
-        organization_logo=logo_url,
-        discount_type=promo.get('discount_type'),
-        discount_value=promo.get('discount_value'),
-        discount_description=promo.get('discount_description'),
+        promotion_title=row.get('promotion_title'),
+        organization_name=row.get('organization_name'),
+        organization_logo=row.get('organization_logo'),
+        discount_type=row.get('discount_type'),
+        discount_value=row.get('discount_value'),
+        discount_description=row.get('discount_description'),
         discount_display=_format_discount_display(
-            promo.get('discount_type', ''),
-            promo.get('discount_value'),
-            promo.get('discount_description'),
+            row.get('discount_type', ''),
+            row.get('discount_value'),
+            row.get('discount_description'),
         ),
-        platform=promo.get('platform'),
+        platform=row.get('platform'),
         platform_name=_format_platform_name(
-            promo.get('platform', ''),
-            promo.get('platform_name'),
+            row.get('platform', ''),
+            row.get('platform_name'),
         ),
-        platform_url=promo.get('platform_url'),
+        platform_url=row.get('platform_url'),
     )
