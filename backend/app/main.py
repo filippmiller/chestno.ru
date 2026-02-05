@@ -77,6 +77,7 @@ from app.api.routes.product_portfolio import router as portfolio_router, public_
 from app.api.routes.defect_detection import router as defect_router, org_router as defect_org_router
 from app.api.routes.trust_circles import router as circles_router
 from app.api.routes.review_intelligence import router as intelligence_router, org_router as intelligence_org_router
+from app.api.routes.promotions import router as promotions_router
 
 from app.core.config import get_settings
 
@@ -275,6 +276,9 @@ def create_app() -> FastAPI:
     # Feature 10: Review Intelligence Dashboard
     app.include_router(intelligence_router)
     app.include_router(intelligence_org_router)
+
+    # Manufacturer Promotions & Promo Codes
+    app.include_router(promotions_router)
 
     # Настройка раздачи статики фронтенда (после всех API роутеров)
     # Проверяем несколько возможных путей
