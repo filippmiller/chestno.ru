@@ -70,9 +70,9 @@ CREATE TABLE IF NOT EXISTS public.manufacturer_promotions (
 );
 
 -- Indexes
-CREATE INDEX idx_manufacturer_promos_org ON public.manufacturer_promotions(organization_id);
-CREATE INDEX idx_manufacturer_promos_status ON public.manufacturer_promotions(status, organization_id);
-CREATE INDEX idx_manufacturer_promos_active ON public.manufacturer_promotions(organization_id, status, starts_at, ends_at)
+CREATE INDEX IF NOT EXISTS idx_manufacturer_promos_org ON public.manufacturer_promotions(organization_id);
+CREATE INDEX IF NOT EXISTS idx_manufacturer_promos_status ON public.manufacturer_promotions(status, organization_id);
+CREATE INDEX IF NOT EXISTS idx_manufacturer_promos_active ON public.manufacturer_promotions(organization_id, status, starts_at, ends_at)
   WHERE status = 'active';
 
 -- ============================================================
@@ -115,16 +115,16 @@ CREATE TABLE IF NOT EXISTS public.subscriber_promo_codes (
 );
 
 -- Unique constraint: one code per user per promotion
-CREATE UNIQUE INDEX idx_subscriber_codes_unique ON public.subscriber_promo_codes(promotion_id, user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_codes_unique ON public.subscriber_promo_codes(promotion_id, user_id);
 
 -- Index for looking up by code
-CREATE UNIQUE INDEX idx_subscriber_codes_code ON public.subscriber_promo_codes(code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_codes_code ON public.subscriber_promo_codes(code);
 
 -- Index for user's codes
-CREATE INDEX idx_subscriber_codes_user ON public.subscriber_promo_codes(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_subscriber_codes_user ON public.subscriber_promo_codes(user_id, status);
 
 -- Index for promotion's codes
-CREATE INDEX idx_subscriber_codes_promo ON public.subscriber_promo_codes(promotion_id, status);
+CREATE INDEX IF NOT EXISTS idx_subscriber_codes_promo ON public.subscriber_promo_codes(promotion_id, status);
 
 -- ============================================================
 -- RLS POLICIES
@@ -134,6 +134,7 @@ ALTER TABLE public.manufacturer_promotions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriber_promo_codes ENABLE ROW LEVEL SECURITY;
 
 -- Promotions: Organization members can view their org's promotions
+DROP POLICY IF EXISTS "Org members view promotions" ON public.manufacturer_promotions;
 CREATE POLICY "Org members view promotions"
 ON public.manufacturer_promotions FOR SELECT
 USING (
@@ -150,6 +151,7 @@ USING (
 );
 
 -- Promotions: Org editors can create/update promotions
+DROP POLICY IF EXISTS "Org editors manage promotions" ON public.manufacturer_promotions;
 CREATE POLICY "Org editors manage promotions"
 ON public.manufacturer_promotions FOR ALL
 USING (
@@ -170,17 +172,20 @@ WITH CHECK (
 );
 
 -- Promo codes: Users see their own codes
+DROP POLICY IF EXISTS "Users view own codes" ON public.subscriber_promo_codes;
 CREATE POLICY "Users view own codes"
 ON public.subscriber_promo_codes FOR SELECT
 USING (auth.uid() = user_id);
 
 -- Promo codes: Users can update their own codes (mark as used)
+DROP POLICY IF EXISTS "Users update own codes" ON public.subscriber_promo_codes;
 CREATE POLICY "Users update own codes"
 ON public.subscriber_promo_codes FOR UPDATE
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
 -- Promo codes: Org members can view codes for their promotions
+DROP POLICY IF EXISTS "Org members view promotion codes" ON public.subscriber_promo_codes;
 CREATE POLICY "Org members view promotion codes"
 ON public.subscriber_promo_codes FOR SELECT
 USING (
@@ -193,6 +198,7 @@ USING (
 );
 
 -- Promo codes: Service role can manage all codes
+DROP POLICY IF EXISTS "Service role manages codes" ON public.subscriber_promo_codes;
 CREATE POLICY "Service role manages codes"
 ON public.subscriber_promo_codes FOR ALL
 USING (auth.jwt() ->> 'role' = 'service_role');

@@ -79,6 +79,11 @@ import { ProductStoryViewerPage } from '@/pages/ProductStoryViewer'
 import { OrganizationStoriesPage } from '@/pages/OrganizationStories'
 import { OrganizationStoryEditPage } from '@/pages/OrganizationStoryEdit'
 
+// Manufacturer Promotions
+import { OrganizationPromotionsPage } from '@/pages/OrganizationPromotions'
+import { OrganizationPromotionEditPage } from '@/pages/OrganizationPromotionEdit'
+import { MyPromoCodesPage } from '@/pages/MyPromoCodes'
+
 export const AppRoutes = () => (
   <Routes>
     {/* Public routes */}
@@ -282,6 +287,38 @@ export const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <OrganizationMarketingEditPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/promotions"
+      element={
+        <ProtectedRoute>
+          <OrganizationPromotionsPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/promotions/new"
+      element={
+        <ProtectedRoute>
+          <OrganizationPromotionEditPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/organization/promotions/:promotionId"
+      element={
+        <ProtectedRoute>
+          <OrganizationPromotionEditPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard/promo-codes"
+      element={
+        <ProtectedRoute>
+          <MyPromoCodesPage />
         </ProtectedRoute>
       }
     />

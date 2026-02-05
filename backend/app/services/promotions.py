@@ -440,12 +440,20 @@ def mark_code_used(code_id: str, user_id: str) -> Optional[PromoCode]:
         .execute()
 
     if result.data:
-        # Update promotion stats
+        # Update promotion stats using RPC to increment counter
         row = result.data[0]
-        supabase.table('manufacturer_promotions') \
-            .update({'total_codes_used': supabase.raw('total_codes_used + 1')}) \
+        # Fetch current value and increment
+        promo_result = supabase.table('manufacturer_promotions') \
+            .select('total_codes_used') \
             .eq('id', row['promotion_id']) \
             .execute()
+
+        if promo_result.data:
+            current_count = promo_result.data[0].get('total_codes_used', 0)
+            supabase.table('manufacturer_promotions') \
+                .update({'total_codes_used': current_count + 1}) \
+                .eq('id', row['promotion_id']) \
+                .execute()
 
         # Re-fetch to get full data
         codes = list_user_promo_codes(user_id)

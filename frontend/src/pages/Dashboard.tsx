@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle, Package, CreditCard, ClipboardList, BarChart2, LayoutDashboard, Link2, Newspaper, MessageSquare, TrendingUp } from 'lucide-react'
+import { Building2, ShieldCheck, FileText, Users, QrCode, CheckCircle, Package, CreditCard, ClipboardList, BarChart2, LayoutDashboard, Link2, Newspaper, MessageSquare, TrendingUp, Gift, Tag } from 'lucide-react'
 
 import { fetchSession } from '@/api/authService'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -300,6 +300,14 @@ export const DashboardPage = () => {
                   Отзывы
                 </Link>
               </Button>
+              {canEditProfile && (
+                <Button asChild variant="outline">
+                  <Link to="/dashboard/organization/promotions">
+                    <Gift className="mr-2 h-4 w-4" />
+                    Промокоды
+                  </Link>
+                </Button>
+              )}
             </div>
             {!canEditProfile && (
               <p className="text-xs text-muted-foreground">
@@ -327,6 +335,12 @@ export const DashboardPage = () => {
               <Link to="/settings/notifications">
                 <FileText className="mr-2 h-4 w-4" />
                 Уведомления
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/dashboard/promo-codes">
+                <Tag className="mr-2 h-4 w-4" />
+                Мои промокоды
               </Link>
             </Button>
           </div>
