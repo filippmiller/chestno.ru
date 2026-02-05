@@ -215,7 +215,7 @@ USING (
   OR EXISTS (
     SELECT 1 FROM public.organizations o
     WHERE o.id = supply_chain_nodes.organization_id
-      AND o.is_approved = true
+      AND o.public_visible = true
   )
 );
 

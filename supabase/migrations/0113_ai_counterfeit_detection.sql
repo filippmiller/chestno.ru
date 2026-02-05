@@ -60,8 +60,9 @@ CREATE TABLE IF NOT EXISTS counterfeit_checks (
     processed_at TIMESTAMPTZ
 );
 
--- Counterfeit reports (user-submitted concerns)
-CREATE TABLE IF NOT EXISTS counterfeit_reports (
+-- AI Counterfeit reports (user-submitted concerns from AI detection)
+-- Named differently to avoid conflict with existing counterfeit_reports table
+CREATE TABLE IF NOT EXISTS ai_counterfeit_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     check_id UUID REFERENCES counterfeit_checks(id) ON DELETE SET NULL,
 
@@ -83,16 +84,17 @@ CREATE TABLE IF NOT EXISTS counterfeit_reports (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Indexes
-CREATE INDEX idx_reference_images_product ON product_reference_images(product_id);
-CREATE INDEX idx_reference_images_org ON product_reference_images(organization_id);
-CREATE INDEX idx_counterfeit_checks_product ON counterfeit_checks(product_id);
-CREATE INDEX idx_counterfeit_checks_user ON counterfeit_checks(user_id);
-CREATE INDEX idx_counterfeit_checks_status ON counterfeit_checks(status);
-CREATE INDEX idx_counterfeit_checks_confidence ON counterfeit_checks(overall_confidence);
-CREATE INDEX idx_counterfeit_reports_status ON counterfeit_reports(status);
+-- Indexes (use IF NOT EXISTS to avoid conflicts with existing tables)
+CREATE INDEX IF NOT EXISTS idx_reference_images_product ON product_reference_images(product_id);
+CREATE INDEX IF NOT EXISTS idx_reference_images_org ON product_reference_images(organization_id);
+CREATE INDEX IF NOT EXISTS idx_counterfeit_checks_product ON counterfeit_checks(product_id);
+CREATE INDEX IF NOT EXISTS idx_counterfeit_checks_user ON counterfeit_checks(user_id);
+CREATE INDEX IF NOT EXISTS idx_counterfeit_checks_status ON counterfeit_checks(status);
+CREATE INDEX IF NOT EXISTS idx_counterfeit_checks_confidence ON counterfeit_checks(overall_confidence);
+CREATE INDEX IF NOT EXISTS idx_ai_counterfeit_reports_status ON ai_counterfeit_reports(status);
 
 -- Trigger to update updated_at
+DROP TRIGGER IF EXISTS trigger_reference_images_updated_at ON product_reference_images;
 CREATE TRIGGER trigger_reference_images_updated_at
     BEFORE UPDATE ON product_reference_images
     FOR EACH ROW EXECUTE FUNCTION update_challenge_updated_at();
@@ -113,7 +115,7 @@ BEGIN
         COUNT(*) FILTER (WHERE is_likely_authentic = true)::BIGINT as authentic_count,
         COUNT(*) FILTER (WHERE is_likely_authentic = false)::BIGINT as suspicious_count,
         ROUND(AVG(overall_confidence), 2)::DECIMAL(5,2) as avg_confidence,
-        (SELECT COUNT(*) FROM counterfeit_reports cr
+        (SELECT COUNT(*) FROM ai_counterfeit_reports cr
          JOIN counterfeit_checks cc ON cc.id = cr.check_id
          WHERE cc.organization_id = org_id
          AND cr.created_at >= now() - (days || ' days')::INTERVAL)::BIGINT as reports_count
@@ -126,7 +128,7 @@ $$ LANGUAGE plpgsql;
 -- RLS Policies
 ALTER TABLE product_reference_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE counterfeit_checks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE counterfeit_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_counterfeit_reports ENABLE ROW LEVEL SECURITY;
 
 -- Reference images: org members can manage, public can view for active products
 CREATE POLICY "Public can view active reference images"
@@ -163,24 +165,24 @@ CREATE POLICY "Anyone can create checks"
     ON counterfeit_checks FOR INSERT
     WITH CHECK (true);
 
--- Counterfeit reports: org can view, reporters can view own
-CREATE POLICY "Reporters can view own reports"
-    ON counterfeit_reports FOR SELECT
+-- AI Counterfeit reports: org can view, reporters can view own
+CREATE POLICY "Reporters can view own AI reports"
+    ON ai_counterfeit_reports FOR SELECT
     USING (reporter_user_id = auth.uid());
 
-CREATE POLICY "Org members can view org reports"
-    ON counterfeit_reports FOR SELECT
+CREATE POLICY "Org members can view org AI reports"
+    ON ai_counterfeit_reports FOR SELECT
     USING (
         EXISTS (
             SELECT 1 FROM counterfeit_checks cc
             JOIN organization_members om ON om.organization_id = cc.organization_id
-            WHERE cc.id = counterfeit_reports.check_id
+            WHERE cc.id = ai_counterfeit_reports.check_id
             AND om.user_id = auth.uid()
         )
     );
 
-CREATE POLICY "Anyone can create reports"
-    ON counterfeit_reports FOR INSERT
+CREATE POLICY "Anyone can create AI reports"
+    ON ai_counterfeit_reports FOR INSERT
     WITH CHECK (true);
 
 -- Notification type for counterfeit alerts

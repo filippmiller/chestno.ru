@@ -284,9 +284,8 @@ ON public.product_stories
 FOR SELECT
 USING (
   organization_id IN (
-    SELECT organization_id FROM public.organization_memberships
-    WHERE user_id = auth.uid() AND status = 'active'
-  )
+    SELECT organization_id FROM public.organization_members
+    WHERE user_id = auth.uid()   )
 );
 
 CREATE POLICY "product_stories_insert_org_member"
@@ -294,10 +293,9 @@ ON public.product_stories
 FOR INSERT
 WITH CHECK (
   organization_id IN (
-    SELECT organization_id FROM public.organization_memberships
+    SELECT organization_id FROM public.organization_members
     WHERE user_id = auth.uid()
-    AND status = 'active'
-    AND role IN ('owner', 'admin', 'editor')
+        AND role IN ('owner', 'admin', 'editor')
   )
 );
 
@@ -306,10 +304,9 @@ ON public.product_stories
 FOR UPDATE
 USING (
   organization_id IN (
-    SELECT organization_id FROM public.organization_memberships
+    SELECT organization_id FROM public.organization_members
     WHERE user_id = auth.uid()
-    AND status = 'active'
-    AND role IN ('owner', 'admin', 'editor')
+        AND role IN ('owner', 'admin', 'editor')
   )
 );
 
@@ -318,10 +315,9 @@ ON public.product_stories
 FOR DELETE
 USING (
   organization_id IN (
-    SELECT organization_id FROM public.organization_memberships
+    SELECT organization_id FROM public.organization_members
     WHERE user_id = auth.uid()
-    AND status = 'active'
-    AND role IN ('owner', 'admin')
+        AND role IN ('owner', 'admin')
   )
 );
 
@@ -334,9 +330,8 @@ USING (
     SELECT id FROM public.product_stories
     WHERE status = 'published'
     OR organization_id IN (
-      SELECT organization_id FROM public.organization_memberships
-      WHERE user_id = auth.uid() AND status = 'active'
-    )
+      SELECT organization_id FROM public.organization_members
+      WHERE user_id = auth.uid()     )
   )
 );
 
@@ -347,10 +342,9 @@ WITH CHECK (
   story_id IN (
     SELECT id FROM public.product_stories
     WHERE organization_id IN (
-      SELECT organization_id FROM public.organization_memberships
+      SELECT organization_id FROM public.organization_members
       WHERE user_id = auth.uid()
-      AND status = 'active'
-      AND role IN ('owner', 'admin', 'editor')
+            AND role IN ('owner', 'admin', 'editor')
     )
   )
 );
@@ -362,10 +356,9 @@ USING (
   story_id IN (
     SELECT id FROM public.product_stories
     WHERE organization_id IN (
-      SELECT organization_id FROM public.organization_memberships
+      SELECT organization_id FROM public.organization_members
       WHERE user_id = auth.uid()
-      AND status = 'active'
-      AND role IN ('owner', 'admin', 'editor')
+            AND role IN ('owner', 'admin', 'editor')
     )
   )
 );
@@ -377,10 +370,9 @@ USING (
   story_id IN (
     SELECT id FROM public.product_stories
     WHERE organization_id IN (
-      SELECT organization_id FROM public.organization_memberships
+      SELECT organization_id FROM public.organization_members
       WHERE user_id = auth.uid()
-      AND status = 'active'
-      AND role IN ('owner', 'admin')
+            AND role IN ('owner', 'admin')
     )
   )
 );
@@ -418,9 +410,8 @@ USING (
   story_id IN (
     SELECT id FROM public.product_stories
     WHERE organization_id IN (
-      SELECT organization_id FROM public.organization_memberships
-      WHERE user_id = auth.uid() AND status = 'active'
-    )
+      SELECT organization_id FROM public.organization_members
+      WHERE user_id = auth.uid()     )
   )
 );
 
