@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document details the 9 major features implemented in the platform enhancement iteration. These features transform Chestno.ru from a basic verification platform into a comprehensive consumer trust ecosystem.
+This document details the 10 major features implemented in the platform enhancement iteration. These features transform Chestno.ru from a basic verification platform into a comprehensive consumer trust ecosystem.
 
 ---
 
@@ -393,6 +393,85 @@ Enables users to create private groups where they share product recommendations 
 
 ---
 
+## Feature 9: Manufacturer Promotional Codes
+
+### Purpose
+Enables manufacturers to create and distribute exclusive discount codes to their subscribers, building loyalty and rewarding engaged consumers who follow their brand.
+
+### How It Works
+1. Consumer subscribes to a manufacturer via "Follow" button
+2. Manufacturer creates a promotion with discount details
+3. Manufacturer activates and distributes codes to all subscribers
+4. Each subscriber receives a unique personal code
+5. Consumer can copy code and use on specified platform
+6. Consumer marks code as used to track redemption
+
+### Discount Types
+| Type | Description | Example |
+|------|-------------|---------|
+| `percent` | Percentage discount | 10% off |
+| `fixed` | Fixed amount in rubles | 500₽ off |
+| `free_shipping` | Free delivery | Бесплатная доставка |
+| `custom` | Custom offer | Free gift with purchase |
+
+### Supported Platforms
+- Own Website (Сайт производителя)
+- Ozon
+- Wildberries
+- Yandex Market (Яндекс Маркет)
+- Other (custom name)
+
+### Code Format
+```
+PREFIX-XXXX-XXXX
+```
+Where PREFIX is configurable by manufacturer (default: PROMO) and X is alphanumeric.
+
+### Database Tables
+- `manufacturer_promotions` - Promotion campaigns
+- `subscriber_promo_codes` - Individual codes per user
+
+### API Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/organizations/{id}/promotions` | Create promotion |
+| GET | `/api/organizations/{id}/promotions` | List promotions |
+| GET | `/api/organizations/{id}/promotions/{id}` | Get promotion |
+| PUT | `/api/organizations/{id}/promotions/{id}` | Update promotion |
+| DELETE | `/api/organizations/{id}/promotions/{id}` | Delete promotion |
+| POST | `/api/organizations/{id}/promotions/{id}/distribute` | Distribute codes |
+| GET | `/api/organizations/{id}/promotions/subscriber-count` | Get subscriber count |
+| GET | `/api/me/promo-codes` | Get user's codes |
+| POST | `/api/me/promo-codes/{id}/view` | Mark as viewed |
+| POST | `/api/me/promo-codes/{id}/use` | Mark as used |
+
+### Promotion Statuses
+- `draft` - Created but not active
+- `active` - Running, can distribute codes
+- `paused` - Temporarily stopped
+- `completed` - Ended naturally
+- `cancelled` - Manually stopped
+
+### Code Statuses
+- `pending` - Generated but not sent
+- `active` - Sent and valid for use
+- `used` - Consumer marked as used
+- `expired` - Past expiration date
+
+### Frontend Pages
+- `/dashboard/organization/promotions` - Manufacturer promotion list
+- `/dashboard/organization/promotions/new` - Create new promotion
+- `/dashboard/organization/promotions/:id` - Edit promotion
+- `/dashboard/promo-codes` - Consumer's received codes
+
+### Business Value
+- Rewards loyal subscribers with exclusive discounts
+- Drives traffic to manufacturer's sales channels
+- Tracks promotion effectiveness via usage stats
+- Builds subscriber base through value proposition
+
+---
+
 ## Feature 10: Review Intelligence Dashboard
 
 ### Purpose
@@ -456,6 +535,7 @@ The system filters common Russian words (и, в, не, что, etc.) and common 
 | 0117 | Trust Circles | 7 tables, 2 functions |
 | 0118 | Review Intelligence | 4 tables, 2 functions |
 | 0119 | Telegram Scan Logs | 1 table |
+| 0120 | Manufacturer Promo Codes | 2 tables, 3 functions |
 
 ---
 
@@ -469,6 +549,7 @@ All features integrate with the existing notification system:
 - `consumer.challenge_response` - Org responded to challenge
 - `consumer.recall_alert` - Product recall affects user
 - `consumer.circle_invite` - Invited to trust circle
+- `subscriber.promo_code` - Received promotional code
 
 ### Trust Score Impact
 Several features affect the trust score:
@@ -513,3 +594,4 @@ Each feature needs frontend implementation:
 | Version | Date | Changes |
 |---------|------|---------|
 | 4.0 | 2026-02-05 | Initial implementation of 9 features |
+| 4.1 | 2026-02-05 | Added Feature 9: Manufacturer Promotional Codes |
